@@ -1,0 +1,21 @@
+{
+    "introText": "Sterownik Samba Solar Track działa samodzielnie. Ten adapter pokazuje jego stan i odbiera jego komunikaty.",
+    "headerConnection": "Połączenie",
+    "ipLabel": "Adres urządzenia",
+    "ipHelp": "Adres IP lub nazwa hosta, widoczne na wyświetlaczu w konfiguracja > sieć",
+    "portLabel": "Port",
+    "portHelp": "Urządzenie używa portu 80",
+    "tokenLabel": "Token",
+    "tokenHelp": "Widoczny na wyświetlaczu w konfiguracja > sieć > dostęp zdalny. Bez tokenu adapter tylko odczytuje.",
+    "headerMessages": "Komunikaty",
+    "forwardLevelLabel": "Zapisuj komunikaty urządzenia w dzienniku ioBroker",
+    "forwardLevelHelp": "Wszystkie komunikaty są zapisywane w stanach w messages, niezależnie od tego wyboru",
+    "forwardOff": "żadne",
+    "forwardE": "tylko błędy",
+    "forwardW": "ostrzeżenia i błędy",
+    "forwardI": "informacje, ostrzeżenia i błędy",
+    "forwardD": "także komunikaty debugowania",
+    "forwardV": "wszystko (także wartości surowe)",
+    "historySizeLabel": "Komunikaty w historii",
+    "historySizeHelp": "Liczba komunikatów w messages.history (od 1 do 500)"
+}

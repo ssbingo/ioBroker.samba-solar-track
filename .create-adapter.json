@@ -1,0 +1,49 @@
+{
+    "cli": true,
+    "adapterName": "samba-solar-track",
+    "title": "Samba Solar Track",
+    "description": "Monitor and control the Samba Solar Track sun tracker with storm protection (ESP32 controller, not the Samba file sharing service)",
+    "expert": "yes",
+    "keywords": [
+        "solar",
+        "tracker",
+        "sun tracking",
+        "photovoltaic",
+        "storm protection",
+        "esp32"
+    ],
+    "contributors": [],
+    "features": [
+        "adapter"
+    ],
+    "adminFeatures": [],
+    "type": "energy",
+    "startMode": "daemon",
+    "connectionType": "local",
+    "dataSource": "push",
+    "connectionIndicator": "yes",
+    "language": "TypeScript",
+    "nodeVersion": "22",
+    "adminUi": "json",
+    "tabReact": "no",
+    "tools": [
+        "ESLint"
+    ],
+    "eslintConfig": "official",
+    "releaseScript": "yes",
+    "devServer": "local",
+    "devServerPort": 8081,
+    "indentation": "Space (4)",
+    "quotes": "double",
+    "es6class": "yes",
+    "authorName": "ssbingo",
+    "authorGithub": "ssbingo",
+    "authorEmail": "s.sternitzke@online.de",
+    "gitRemoteProtocol": "HTTPS",
+    "gitCommit": "no",
+    "defaultBranch": "main",
+    "license": "MIT License",
+    "dependabot": "yes",
+    "replay": "/tmp/claude-1000/-home-ssternitzke-samba-solar-track/963924ad-75a7-4334-a3d2-82070b66df8a/scratchpad/create-adapter-answers.json",
+    "creatorVersion": "3.1.5"
+}

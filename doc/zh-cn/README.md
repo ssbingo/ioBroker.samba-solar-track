@@ -1,0 +1,48 @@
+![Logo](../../admin/samba-solar-track.png)
+# ioBroker.samba-solar-track
+
+> [English README](../../README.md)
+
+监视 **Samba Solar Track** 控制器：一款带风暴保护的太阳能组件太阳跟踪器，基于配有 7 英寸触摸屏的 ESP32-S3 开发板。适配器在 ioBroker 中显示控制器的状态，并接收设备写入其日志的每一条消息。
+
+设备的硬件、固件和手册： <https://github.com/ssbingo/samba-solar-track> （该仓库尚未公开）
+
+“Samba”是项目的名称。本适配器与 Samba 文件共享服务（SMB）无关。
+
+## 工作方式
+
+设备是主导。跟踪、风暴保护、限位开关和运行时间监控完全不依赖网络和 ioBroker。适配器只是补充：它在家庭 WLAN 中连接设备（端口 80 上的 HTTP 和 WebSocket），并映射设备报告的内容。如果 ioBroker 或 WLAN 发生故障，跟踪器的工作不受任何影响。
+
+## 项目状态
+
+开发中的早期版本，尚未发布到 npm。已具备：带自动重连的连接、以状态形式呈现的控制器状态、带时间和历史记录的消息。计划中：命令、设备设置、通知、vis-2 小部件。目前仅用模拟设备测试，**尚未用真实硬件测试**。
+
+## 要求
+
+- 固件 0.0.1 或更高版本的 Samba Solar Track（协议版本 1），并在显示屏上启用 WLAN
+- ioBroker js-controller 6.0.11 或更高版本、admin 8.0.0 或更高版本、Node.js 22 或更高版本
+
+## 配置
+
+| 设置 | 含义 |
+| --- | --- |
+| 设备地址 | IP 地址或主机名；显示屏在 设置 > 网络 中显示两者。 |
+| 端口 | 设备使用端口 80。 |
+| 令牌 | 显示在显示屏的 设置 > 网络 > 远程访问 中。读取无需令牌；发送命令时需要。令牌以加密方式保存。 |
+| 将设备消息写入 ioBroker 日志 | 从哪个级别开始，设备消息也会出现在 ioBroker 日志中。无论如何，所有消息都会保存在 `messages` 下的状态中。 |
+| 历史记录中的消息数 | `messages.history` 中的消息数（1 到 500）。 |
+
+## 日志与调试
+
+日志级别、标签以及如何切换日志级别，请参阅[英文 README](../../README.md#logging-and-debugging)。令牌绝不会出现在日志中。
+
+## Changelog
+
+### 0.0.1 (2026-10-02)
+- (ssbingo) 初始版本：与设备的连接、以状态形式呈现的控制器状态和消息
+
+## 许可
+
+Copyright (c) 2026 ssbingo <s.sternitzke@online.de>
+
+本适配器（包括徽标）与设备的硬件和固件一样，采用 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可。不允许商业使用。允许私人使用和私人仿制；改编作品必须以相同许可共享。完整文本见 [LICENSE](../../LICENSE)。

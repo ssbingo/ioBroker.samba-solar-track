@@ -1,0 +1,124 @@
+{
+    "common": {
+        "name": "samba-solar-track",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "uk": "Початкова версія",
+                "zh-cn": "首次出版"
+            }
+        },
+        "titleLang": {
+            "en": "Samba Solar Track",
+            "de": "Samba Solar Track",
+            "ru": "Samba Solar Track",
+            "pt": "Samba Solar Track",
+            "nl": "Samba Solar Track",
+            "fr": "Samba Solar Track",
+            "it": "Samba Solar Track",
+            "es": "Samba Solar Track",
+            "pl": "Samba Solar Track",
+            "uk": "Samba Solar Track",
+            "zh-cn": "Samba Solar Track"
+        },
+        "desc": {
+            "en": "Monitor the Samba Solar Track sun tracker with storm protection (ESP32 controller, not the Samba file sharing service)",
+            "de": "Überwacht die Solarnachführung Samba Solar Track mit Sturmschutz (ESP32-Steuerung, nicht der Dateidienst Samba)",
+            "ru": "Мониторинг солнечного трекера Samba Solar Track с защитой от шторма (контроллер ESP32, не файловый сервис Samba)",
+            "pt": "Monitoriza o seguidor solar Samba Solar Track com proteção contra tempestades (controlador ESP32, não o serviço de ficheiros Samba)",
+            "nl": "Bewaakt de zonnevolger Samba Solar Track met stormbeveiliging (ESP32-besturing, niet de bestandsdienst Samba)",
+            "fr": "Surveille le suiveur solaire Samba Solar Track avec protection contre les tempêtes (contrôleur ESP32, pas le service de fichiers Samba)",
+            "it": "Monitora l'inseguitore solare Samba Solar Track con protezione dalle tempeste (controllore ESP32, non il servizio di file Samba)",
+            "es": "Supervisa el seguidor solar Samba Solar Track con protección contra tormentas (controlador ESP32, no el servicio de archivos Samba)",
+            "pl": "Monitoruje tracker słoneczny Samba Solar Track z ochroną przed burzą (sterownik ESP32, nie usługa plików Samba)",
+            "uk": "Моніторинг сонячного трекера Samba Solar Track із захистом від шторму (контролер ESP32, не файловий сервіс Samba)",
+            "zh-cn": "监视带风暴保护的 Samba Solar Track 太阳跟踪器（ESP32 控制器，不是 Samba 文件共享服务）"
+        },
+        "authors": [
+            "ssbingo <s.sternitzke@online.de>"
+        ],
+        "keywords": [
+            "solar",
+            "tracker",
+            "sun tracking",
+            "photovoltaic",
+            "storm protection",
+            "esp32"
+        ],
+        "licenseInformation": {
+            "type": "free",
+            "license": "CC-BY-NC-SA-4.0"
+        },
+        "platform": "Javascript/Node.js",
+        "icon": "samba-solar-track.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/ssbingo/ioBroker.samba-solar-track/main/admin/samba-solar-track.png",
+        "readme": "https://github.com/ssbingo/ioBroker.samba-solar-track/blob/main/README.md",
+        "loglevel": "info",
+        "tier": 3,
+        "mode": "daemon",
+        "type": "energy",
+        "compact": true,
+        "connectionType": "local",
+        "dataSource": "push",
+        "adminUI": {
+            "config": "json"
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=6.0.11"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=8.0.0"
+            }
+        ]
+    },
+    "native": {
+        "ip": "",
+        "port": 80,
+        "token": "",
+        "forwardLevel": "W",
+        "historySize": 50
+    },
+    "encryptedNative": [
+        "token"
+    ],
+    "protectedNative": [
+        "token"
+    ],
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Device or service connected",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}

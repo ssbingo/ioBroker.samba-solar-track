@@ -1,0 +1,21 @@
+{
+    "introText": "Die Steuerung Samba Solar Track arbeitet selbstständig. Dieser Adapter zeigt ihren Zustand und empfängt ihre Meldungen.",
+    "headerConnection": "Verbindung",
+    "ipLabel": "Adresse des Geräts",
+    "ipHelp": "IP-Adresse oder Gerätename, am Display unter Einrichtung > Netzwerk zu sehen",
+    "portLabel": "Port",
+    "portHelp": "Das Gerät verwendet Port 80",
+    "tokenLabel": "Token",
+    "tokenHelp": "Steht am Display unter Einrichtung > Netzwerk > Fernzugriff. Ohne Token liest der Adapter nur.",
+    "headerMessages": "Meldungen",
+    "forwardLevelLabel": "Meldungen des Geräts ins ioBroker-Log schreiben",
+    "forwardLevelHelp": "Alle Meldungen stehen unabhängig davon in den Datenpunkten unter messages",
+    "forwardOff": "keine",
+    "forwardE": "nur Fehler",
+    "forwardW": "Warnungen und Fehler",
+    "forwardI": "Info, Warnungen und Fehler",
+    "forwardD": "auch Debug-Meldungen",
+    "forwardV": "alles (auch Rohwerte)",
+    "historySizeLabel": "Meldungen im Verlauf",
+    "historySizeHelp": "Anzahl der Meldungen in messages.history (1 bis 500)"
+}

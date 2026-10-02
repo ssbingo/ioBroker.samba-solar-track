@@ -1,0 +1,21 @@
+{
+    "introText": "De Samba Solar Track-besturing werkt zelfstandig. Deze adapter toont de toestand en ontvangt de meldingen.",
+    "headerConnection": "Verbinding",
+    "ipLabel": "Adres van het apparaat",
+    "ipHelp": "IP-adres of hostnaam, te zien op het display onder instellen > netwerk",
+    "portLabel": "Poort",
+    "portHelp": "Het apparaat gebruikt poort 80",
+    "tokenLabel": "Token",
+    "tokenHelp": "Staat op het display onder instellen > netwerk > toegang op afstand. Zonder token leest de adapter alleen.",
+    "headerMessages": "Meldingen",
+    "forwardLevelLabel": "Meldingen van het apparaat in het ioBroker-log schrijven",
+    "forwardLevelHelp": "Alle meldingen staan hoe dan ook in de datapunten onder messages",
+    "forwardOff": "geen",
+    "forwardE": "alleen fouten",
+    "forwardW": "waarschuwingen en fouten",
+    "forwardI": "info, waarschuwingen en fouten",
+    "forwardD": "ook debug-meldingen",
+    "forwardV": "alles (ook ruwe waarden)",
+    "historySizeLabel": "Meldingen in de geschiedenis",
+    "historySizeHelp": "Aantal meldingen in messages.history (1 tot 500)"
+}

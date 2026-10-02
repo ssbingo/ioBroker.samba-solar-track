@@ -1,0 +1,21 @@
+{
+    "introText": "The Samba Solar Track controller works on its own. This adapter shows its state and receives its messages.",
+    "headerConnection": "Connection",
+    "ipLabel": "Address of the device",
+    "ipHelp": "IP address or host name, shown at the display under setup > network",
+    "portLabel": "Port",
+    "portHelp": "The device uses port 80",
+    "tokenLabel": "Token",
+    "tokenHelp": "Shown at the display under setup > network > remote access. Without a token the adapter only reads.",
+    "headerMessages": "Messages",
+    "forwardLevelLabel": "Write messages of the device to the ioBroker log",
+    "forwardLevelHelp": "All messages are stored in the states under messages, whatever is chosen here",
+    "forwardOff": "none",
+    "forwardE": "errors only",
+    "forwardW": "warnings and errors",
+    "forwardI": "info, warnings and errors",
+    "forwardD": "also debug messages",
+    "forwardV": "everything (raw values too)",
+    "historySizeLabel": "Messages in the history",
+    "historySizeHelp": "Number of messages kept in messages.history (1 to 500)"
+}

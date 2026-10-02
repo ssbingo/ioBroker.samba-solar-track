@@ -1,0 +1,21 @@
+{
+    "introText": "O controlador Samba Solar Track funciona de forma autónoma. Este adaptador mostra o seu estado e recebe as suas mensagens.",
+    "headerConnection": "Ligação",
+    "ipLabel": "Endereço do dispositivo",
+    "ipHelp": "Endereço IP ou nome do anfitrião, mostrado no ecrã em configuração > rede",
+    "portLabel": "Porta",
+    "portHelp": "O dispositivo utiliza a porta 80",
+    "tokenLabel": "Token",
+    "tokenHelp": "Mostrado no ecrã em configuração > rede > acesso remoto. Sem token, o adaptador apenas lê.",
+    "headerMessages": "Mensagens",
+    "forwardLevelLabel": "Escrever as mensagens do dispositivo no registo do ioBroker",
+    "forwardLevelHelp": "Todas as mensagens ficam nos estados em messages, independentemente desta escolha",
+    "forwardOff": "nenhuma",
+    "forwardE": "apenas erros",
+    "forwardW": "avisos e erros",
+    "forwardI": "informações, avisos e erros",
+    "forwardD": "também mensagens de depuração",
+    "forwardV": "tudo (também valores em bruto)",
+    "historySizeLabel": "Mensagens no histórico",
+    "historySizeHelp": "Número de mensagens guardadas em messages.history (1 a 500)"
+}

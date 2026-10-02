@@ -1,0 +1,105 @@
+{
+    "i18n": true,
+    "type": "panel",
+    "items": {
+        "_intro": {
+            "type": "staticText",
+            "text": "introText",
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12
+        },
+        "_connection": {
+            "type": "header",
+            "text": "headerConnection",
+            "size": 3,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12
+        },
+        "ip": {
+            "type": "text",
+            "label": "ipLabel",
+            "help": "ipHelp",
+            "trim": true,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "port": {
+            "type": "number",
+            "label": "portLabel",
+            "help": "portHelp",
+            "min": 1,
+            "max": 65535,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "token": {
+            "type": "password",
+            "label": "tokenLabel",
+            "help": "tokenHelp",
+            "visible": true,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "_messages": {
+            "type": "header",
+            "text": "headerMessages",
+            "size": 3,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12
+        },
+        "forwardLevel": {
+            "type": "select",
+            "label": "forwardLevelLabel",
+            "help": "forwardLevelHelp",
+            "options": [
+                { "label": "forwardOff", "value": "off" },
+                { "label": "forwardE", "value": "E" },
+                { "label": "forwardW", "value": "W" },
+                { "label": "forwardI", "value": "I" },
+                { "label": "forwardD", "value": "D" },
+                { "label": "forwardV", "value": "V" }
+            ],
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "historySize": {
+            "type": "number",
+            "label": "historySizeLabel",
+            "help": "historySizeHelp",
+            "min": 1,
+            "max": 500,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        }
+    }
+}
