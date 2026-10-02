@@ -7,6 +7,11 @@
  */
 const http = require("node:http");
 const { WebSocketServer } = require("ws");
+const FIRMWARE_PARAMS = require("./mock-params");
+
+/** Settings that exist only with two axes or with a wind sensor with direction */
+const AZIMUTH_ONLY = ["motorMaxRunMsAzimuth", "limitSwitchesAzimuth", "nightReturnEast"];
+const DIRECTION_ONLY = ["windDirAddr", "windDirFunction", "windDirRegister", "windDirScale"];
 
 const TOKEN = "0123456789abcdef0123456789abcdef";
 
@@ -93,6 +98,10 @@ class MockDevice {
         this.release = undefined;
         /** number of jog frames received, including renewals */
         this.jogFrames = 0;
+        /** all settings; which of them are reported depends on mode and wind sensor */
+        this.params = FIRMWARE_PARAMS.map(entry => ({ ...entry }));
+        /** bodies of the POST requests received, with the token that came with them */
+        this.posts = [];
         this.token = TOKEN;
         this.status = defaultStatus();
         /** frames received from clients, parsed */
@@ -216,6 +225,26 @@ class MockDevice {
             send(200, this.info());
         } else if (req.method === "GET" && url.pathname === "/api/status") {
             send(200, this.statusBody());
+        } else if (req.method === "GET" && url.pathname === "/api/params") {
+            send(200, { params: this.visibleParams() });
+        } else if (req.method === "GET" && url.pathname === "/api/setup") {
+            send(200, { configured: this.status.setupDone, mode: this.status.mode, windSensor: this.status.windSensor });
+        } else if (req.method === "POST" && (url.pathname === "/api/params" || url.pathname === "/api/setup")) {
+            let text = "";
+            req.on("data", chunk => (text += chunk));
+            req.on("end", () => {
+                let body;
+                try {
+                    body = JSON.parse(text);
+                } catch {
+                    body = undefined;
+                }
+                const authed = req.headers.authorization === `Bearer ${this.token}`;
+                this.posts.push({ path: url.pathname, body, authed });
+                const [code, answer] =
+                    url.pathname === "/api/params" ? this.postParams(body, authed) : this.postSetup(body, authed);
+                send(code, answer);
+            });
         } else {
             send(404, { ok: false, reason: "unknown", detail: "unbekannte Adresse" });
         }
@@ -265,6 +294,136 @@ class MockDevice {
             }),
         );
         ws.send(JSON.stringify({ t: "status", ...this.statusBody() }));
+    }
+
+    /** The settings the firmware reports for the chosen mode and wind sensor */
+    visibleParams() {
+        return this.params.filter(
+            entry =>
+                (this.status.mode === 2 || !AZIMUTH_ONLY.includes(entry.key)) &&
+                (this.status.windSensor === 2 || !DIRECTION_ONLY.includes(entry.key)),
+        );
+    }
+
+    /** POST /api/params as in the firmware: one result per key */
+    postParams(body, authed) {
+        if (!body || typeof body.values !== "object" || body.values === null) {
+            return [400, { ok: false, reason: "format", detail: "fehlerhafte Anfrage" }];
+        }
+        if (!authed) {
+            return [401, { ok: false, reason: "auth", detail: "Token fehlt oder ist falsch" }];
+        }
+        if (this.status.remoteLocked) {
+            return [423, { ok: false, reason: "locked", detail: "Fernsteuerung am Display gesperrt" }];
+        }
+        const results = {};
+        const changed = [];
+        for (const [key, value] of Object.entries(body.values)) {
+            if (key === "design") {
+                if (typeof value !== "number" || value < 0 || value > 6) {
+                    results[key] = { result: "rejected", reason: "range" };
+                } else {
+                    this.status.design = value;
+                    results[key] = { result: "applied", value };
+                }
+                continue;
+            }
+            if (key === "simulation") {
+                if (value !== false) {
+                    results[key] = { result: "rejected", reason: "range" };
+                } else {
+                    results[key] = { result: "applied", value: false };
+                    setTimeout(() => {
+                        this.status.simulation = false;
+                        this.restart();
+                    }, 50);
+                }
+                continue;
+            }
+            const entry = this.visibleParams().find(candidate => candidate.key === key);
+            if (!entry) {
+                results[key] = { result: "rejected", reason: "unknown" };
+                continue;
+            }
+            const typeOk = entry.type === "bool" ? typeof value === "boolean" : typeof value === "number";
+            if (!typeOk) {
+                results[key] = { result: "rejected", reason: "format" };
+            } else if (
+                entry.type !== "bool" &&
+                (value < entry.min || value > entry.max || (entry.type === "int" && !Number.isInteger(value)))
+            ) {
+                results[key] = { result: "rejected", reason: "range" };
+            } else if (entry.apply === "standstill" && this.jog) {
+                results[key] = { result: "rejected", reason: "busy" };
+            } else if (entry.apply === "confirm") {
+                // a proposal with the valid value withdraws the waiting one
+                entry.pending = value === entry.value ? null : value;
+                results[key] =
+                    entry.pending === null
+                        ? { result: "applied", value: entry.value }
+                        : { result: "pending", value: entry.value, pending: value };
+                changed.push(entry);
+            } else {
+                entry.value = value;
+                results[key] = { result: "applied", value };
+                changed.push(entry);
+            }
+        }
+        this.status.pendingConfirm = this.params.filter(entry => entry.pending !== null).map(entry => entry.key);
+        if (changed.length) {
+            this.broadcast({ t: "params", changed });
+        }
+        this.broadcast({ t: "status", ...this.statusBody() });
+        return [200, { ok: true, results }];
+    }
+
+    /**
+     * Someone answers the question at the display.
+     *
+     * @param {string} key key of the setting
+     * @param {boolean} accept true = UEBERNEHMEN, false = ABLEHNEN
+     */
+    confirmAtDisplay(key, accept) {
+        const entry = this.params.find(candidate => candidate.key === key);
+        if (!entry || entry.pending === null) {
+            return;
+        }
+        if (accept) {
+            entry.value = entry.pending;
+        }
+        entry.pending = null;
+        this.status.pendingConfirm = this.params.filter(e => e.pending !== null).map(e => e.key);
+        this.broadcast({ t: "params", changed: [entry] });
+        this.broadcast({ t: "status", ...this.statusBody() });
+    }
+
+    /** POST /api/setup as in the firmware: saves and restarts */
+    postSetup(body, authed) {
+        const valid = v => v === 1 || v === 2;
+        if (!body || typeof body.mode !== "number" || typeof body.windSensor !== "number") {
+            return [400, { ok: false, reason: "format", detail: "fehlerhafte Anfrage" }];
+        }
+        if (!authed) {
+            return [401, { ok: false, reason: "auth", detail: "Token fehlt oder ist falsch" }];
+        }
+        if (this.status.remoteLocked) {
+            return [423, { ok: false, reason: "locked", detail: "Fernsteuerung am Display gesperrt" }];
+        }
+        if (!valid(body.mode) || !valid(body.windSensor)) {
+            return [422, { ok: false, reason: "range", detail: "Wert ausserhalb der Grenzen" }];
+        }
+        setTimeout(() => {
+            this.status.mode = body.mode;
+            this.status.windSensor = body.windSensor;
+            this.status.axes.azimuth.enabled = body.mode === 2;
+            this.status.wind.hasDirection = body.windSensor === 2;
+            for (const entry of this.params) {
+                entry.pending = null;
+            }
+            this.status.pendingConfirm = [];
+            this.restart();
+        }, 50);
+        return [200, { ok: true, restart: true }];
     }
 
     /** Answers a command like the firmware: {"t":"result","id":…,"ok":…,"reason":…} */

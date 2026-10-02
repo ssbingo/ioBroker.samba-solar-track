@@ -15,7 +15,7 @@ Het apparaat heeft de leiding. Volgen, stormbeveiliging, eindschakelaars en loop
 
 ## Stand van het project
 
-Vroege versie in ontwikkeling, niet op npm gepubliceerd. Beschikbaar: verbinding met automatisch opnieuw verbinden, toestand van de besturing als datapunten, meldingen met tijdstip en geschiedenis, commando's (automatisch, vlak parkeren, storing bevestigen, handmatig rijden met dodemansfunctie, zie de [Engelse README](../../README.md#commands)). Gepland: instellingen van het apparaat, meldingen via berichtendiensten, vis-2-widgets. Tot nu toe alleen getest met een gesimuleerd apparaat, **niet met echte hardware**.
+Vroege versie in ontwikkeling, niet op npm gepubliceerd. Beschikbaar: verbinding met automatisch opnieuw verbinden, toestand van de besturing als datapunten, meldingen met tijdstip en geschiedenis, commando's (automatisch, vlak parkeren, storing bevestigen, handmatig rijden met dodemansfunctie) en instellingen van het apparaat (waarden met grenzen, voorstellen met bevestiging op het display, inrichting, design), zie de [Engelse README](../../README.md#commands). Gepland: meldingen via berichtendiensten, vis-2-widgets. Tot nu toe alleen getest met een gesimuleerd apparaat, **niet met echte hardware**.
 
 ## Vereisten
 
@@ -37,6 +37,9 @@ Vroege versie in ontwikkeling, niet op npm gepubliceerd. Beschikbaar: verbinding
 Logniveaus, tags en het omschakelen van het logniveau staan in de [Engelse README](../../README.md#logging-and-debugging). Het token verschijnt nooit in het log.
 
 ## Changelog
+
+### 0.0.3 (2026-10-02)
+- (ssbingo) instellingen van het apparaat als datapunten: waarden met grenzen, voorstellen die op bevestiging op het display wachten, inrichting, design
 
 ### 0.0.2 (2026-10-02)
 - (ssbingo) commando's: automatisch aan/uit, vlak parkeren, storing bevestigen en handmatig rijden met dodemansfunctie

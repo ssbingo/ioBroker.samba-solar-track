@@ -230,6 +230,143 @@ tests.integration(path.join(__dirname, ".."), {
             });
         });
 
+        suite("Settings of a Samba Solar Track (mock device)", getHarness => {
+            /** @type {MockDevice} */
+            let device;
+
+            before(async () => {
+                device = new MockDevice();
+                await device.start();
+            });
+
+            after(async () => {
+                await device.stop();
+            });
+
+            it("creates a state for every setting, writes changes, shows proposals and saves the setup", async function () {
+                this.timeout(120000);
+                const harness = getHarness();
+                const state = async id => harness.states.getStateAsync(`${NAMESPACE}.${id}`);
+                const object = async id => harness.objects.getObjectAsync(`${NAMESPACE}.${id}`);
+                const write = (id, val) => harness.states.setStateAsync(`${NAMESPACE}.${id}`, { val, ack: false });
+                const expectState = async (id, expected, ack) => {
+                    let last;
+                    await until(async () => {
+                        last = await state(id);
+                        return last?.val === expected && (ack === undefined || last.ack === ack);
+                    }, `${id} to become ${JSON.stringify(expected)}`).catch(error => {
+                        throw new Error(`${error.message} (last ${JSON.stringify(last)})`);
+                    });
+                };
+                const lastResult = async () => JSON.parse((await state("params.lastResult"))?.val ?? "{}");
+                const param = key => device.params.find(entry => entry.key === key);
+
+                await harness.changeAdapterConfig("samba-solar-track", {
+                    common: { loglevel: "debug" },
+                    native: { ip: "127.0.0.1", port: device.port, token: TOKEN },
+                });
+                await harness.startAdapterAndWait(true);
+
+                // every setting of the device has a state with its limits
+                await expectState("params.safety.stormKmh", 40, true);
+                await expectState("params.control.nightReturnEast", true, true);
+                await expectState("params.diagnostics.logLevel", 4, true);
+                await expectState("params.pending", "{}", true);
+                const storm = await object("params.safety.stormKmh");
+                expect(storm.common).to.include({ type: "number", role: "level", unit: "km/h", min: 20, max: 60, write: true });
+                expect(storm.native).to.deep.equal({ key: "stormKmh", apply: "confirm" });
+                expect((await object("params.safety")).type).to.equal("channel");
+                expect((await object("params.commissioning.limitSwitchesAzimuth")).common).to.include({
+                    type: "boolean",
+                    role: "switch",
+                });
+
+                // a value that is valid at once
+                await write("params.control.trackStartPermille", 100);
+                await expectState("params.control.trackStartPermille", 100, true);
+                expect(param("trackStartPermille").value).to.equal(100);
+                await until(async () => (await lastResult()).key === "trackStartPermille", "result of the change");
+                expect(await lastResult()).to.include({ result: "applied", reason: null });
+
+                // a safety value is only a proposal until it is confirmed at the display
+                await write("params.safety.stormKmh", 45);
+                await expectState("params.pending", '{"stormKmh":45}', true);
+                await expectState("params.safety.stormKmh", 40, true);
+                await expectState("status.pendingConfirm", '["stormKmh"]');
+                expect(param("stormKmh")).to.include({ value: 40, pending: 45 });
+                expect((await lastResult()).result).to.equal("pending");
+                device.confirmAtDisplay("stormKmh", true);
+                await expectState("params.safety.stormKmh", 45, true);
+                await expectState("params.pending", "{}", true);
+                expect(harness.hasLog("stormKmh: the proposal 45 was confirmed at the display", "info")).to.equal(true);
+
+                // a proposal that is refused at the display
+                await write("params.safety.motorDeadtimeMs", 800);
+                await expectState("params.pending", '{"motorDeadtimeMs":800}', true);
+                device.confirmAtDisplay("motorDeadtimeMs", false);
+                await expectState("params.pending", "{}", true);
+                await expectState("params.safety.motorDeadtimeMs", 500, true);
+                expect(harness.hasLog("motorDeadtimeMs: the proposal 800 was not accepted", "info")).to.equal(true);
+
+                // outside the limits: the device refuses, the old value stays
+                await write("params.safety.stormKmh", 80);
+                await until(async () => (await lastResult()).reason === "range", "result range");
+                await expectState("params.safety.stormKmh", 45, true);
+                expect(harness.hasLog("stormKmh = 80", "warn")).to.equal(true);
+
+                // a change made at the display arrives
+                param("nightDelayMs").value = 600000;
+                device.sendRaw({ t: "params", changed: [param("nightDelayMs")] });
+                await expectState("params.control.nightDelayMs", 600000, true);
+
+                // design
+                await write("control.design", 3);
+                await expectState("status.design", 3);
+                await expectState("control.design", 3, true);
+                await write("control.design", 99);
+                await until(async () => (await lastResult()).key === "design" && (await lastResult()).reason === "range", "design out of range");
+                await expectState("control.design", 3, true);
+
+                // locked at the display: nothing can be changed
+                device.setStatus({ remoteLocked: true });
+                await expectState("status.remoteLocked", true);
+                await write("params.control.trackStartPermille", 120);
+                await until(async () => (await lastResult()).reason === "locked", "result locked");
+                await expectState("params.control.trackStartPermille", 100, true);
+                device.setStatus({ remoteLocked: false });
+                await expectState("status.remoteLocked", false);
+
+                // setup: choose first, then save; the device restarts with one axis
+                await write("setup.mode", 1);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                expect(device.status.mode, "choosing alone changes nothing").to.equal(2);
+                const bootBefore = device.bootId;
+                await write("setup.save", true);
+                await until(() => device.bootId !== bootBefore, "restart of the device");
+                await expectState("status.mode", 1);
+                await expectState("setup.mode", 1, true);
+                await expectState("info.connection", true);
+                expect(harness.hasLog("Setup saved", "info")).to.equal(true);
+
+                // the settings of the second axis are gone, the others are still there
+                await until(async () => (await object("params.safety.motorMaxRunMsAzimuth")) == null, "azimuth setting removed");
+                expect(await object("params.control.nightReturnEast")).to.be.oneOf([null, undefined]);
+                expect(await object("params.safety.motorMaxRunMsElevation")).to.be.an("object");
+                await expectState("params.control.trackStartPermille", 100, true);
+
+                // saving again without a change does not restart the device
+                const bootAfter = device.bootId;
+                await write("setup.save", true);
+                await until(async () => (await lastResult()).reason === "same", "result same");
+                expect(device.bootId).to.equal(bootAfter);
+
+                for (const log of harness.getLogs()) {
+                    expect(log.message).to.not.contain(TOKEN);
+                }
+                expect(harness.getLogs("error")).to.deep.equal([]);
+            });
+        });
+
         suite("Commands without a token (mock device)", getHarness => {
             /** @type {MockDevice} */
             let device;

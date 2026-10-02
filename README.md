@@ -31,7 +31,7 @@ This is an early version under development. It is not published on npm.
 | State of the controller as states (state machine, axes, sun sensor, wind, supplies, lights) | available |
 | Messages of the device with time of day, history, last warning | available |
 | Commands (automatic on/off, park flat, acknowledge fault, manual drive with dead man) | available |
-| Settings of the device | planned |
+| Settings of the device (values with limits, proposals, setup, design) | available |
 | Notifications (Telegram, Pushover, e-mail) | planned |
 | vis-2 widgets (overview, operation, messages, values) | planned |
 
@@ -71,6 +71,7 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | `counters` | error counters of the device |
 | `messages` | last message, last warning or error, history as JSON, lost messages |
 | `control` | commands, see below |
+| `setup`, `params` | setup and settings of the device, see below |
 
 If `info.simulation` is `true`, the device runs its built-in simulation: no value is a real measurement.
 
@@ -116,6 +117,35 @@ A command the device refuses is taken back: the state returns to what the device
 | `hold` | a manual drive was stopped because its state was not written again in time (dead man) |
 | `device` | the device ended a manual drive, for example because of storm or an operation at the display |
 
+### Settings of the device
+
+The device tells the adapter which values can be set, with their limits and defaults. The adapter creates one state
+per value under `params`, in the groups of the display: `params.control`, `params.commissioning`, `params.safety` and
+`params.diagnostics`. Which values exist depends on the setup: with one axis the values of the azimuth are missing,
+without a wind sensor with direction the values of the wind direction.
+
+Writing a state sends the value to the device. The device checks it against its limits and answers:
+
+| Result | Meaning |
+| --- | --- |
+| `applied` | the value is valid, the state shows it |
+| `pending` | the value is a proposal. **Safety values, the direction of the flat position and the data of the wind sensor become valid only after someone confirms them at the display**, which shows the old and the new value. Until then the state keeps the old value and the proposal is listed in `params.pending`. |
+| `rejected` | the device refused the value, for example `range` (outside the limits), `busy` (only possible while no drive is running), `locked` or `auth`. The state keeps the old value. |
+
+The result of the last change is in `params.lastResult`. Changes made at the display arrive in the states by themselves.
+
+| State | Meaning |
+| --- | --- |
+| `params.<group>.<key>` | one value; unit, limits (`min`, `max`) and default (`def`) are in the object |
+| `params.pending` | proposals that wait for confirmation at the display, as JSON: `{"stormKmh": 45}` |
+| `params.lastResult` | result of the last change as JSON: `key`, `value`, `result`, `reason`, `text`, `from`, `ts` |
+| `setup.mode`, `setup.windSensor` | operating mode (1 = vertical only, 2 = vertical + horizontal) and wind sensor type (1 = speed only, 2 = speed + direction). Writing only chooses the value. |
+| `setup.save` | saves the chosen setup. Like at the display the drives stop and **the device restarts**. |
+| `control.design` | design of the display and of the web page of the device |
+| `control.endSimulation` | ends the simulation of the device; the device restarts. Switching the simulation on is only possible at the display. |
+
+WLAN, host name and token of the device cannot be changed from ioBroker; a mistake there would lock the adapter out.
+
 ### Logging and debugging
 
 The log level of the instance is set in the admin under Instances (expert mode) or with
@@ -124,7 +154,7 @@ The log level of the instance is set in the admin under Instances (expert mode) 
 | Level | Content |
 | --- | --- |
 | `error` | The adapter cannot work, for example no address configured |
-| `warn` | Something the user has to act on: device not reachable, token not accepted, messages lost, newer protocol, a command that was not executed, a manual drive that was stopped. Each problem is reported once; repetitions follow at `debug` until it is resolved. Warnings and errors of the device are forwarded at this level. |
+| `warn` | Something the user has to act on: device not reachable, token not accepted, messages lost, newer protocol, a command that was not executed, a manual drive that was stopped, a setting that was not accepted. Each problem is reported once; repetitions follow at `debug` until it is resolved. Warnings and errors of the device are forwarded at this level. |
 | `info` | Milestones: configuration (without the token), connected, reachable again, device restarted |
 | `debug` | Every step: attempts with their number, durations, decisions, skipped input with the reason |
 | `silly` | Every frame received and sent |
@@ -141,6 +171,7 @@ Every line starts with a tag that names the part of the adapter:
 | `[msg]` | handling of the messages (sequence numbers, history) |
 | `[cmd]` | commands with their number, result and duration |
 | `[jog]` | manual drive: start, renewals, stop and the reason |
+| `[par]` | settings and setup of the device: old and new value, proposals, refusals |
 | `[unload]` | shutdown |
 
 The token never appears in the log.
@@ -150,6 +181,9 @@ The token never appears in the log.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.0.3 (2026-10-02)
+- (ssbingo) settings of the device as states: values with limits, proposals that wait for confirmation at the display, setup, design
+
 ### 0.0.2 (2026-10-02)
 - (ssbingo) commands: automatic on/off, park flat, acknowledge fault and manual drive with dead man
 

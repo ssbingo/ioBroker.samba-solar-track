@@ -15,7 +15,7 @@ C'est l'appareil qui décide. Le suivi, la protection contre les tempêtes, les 
 
 ## État du projet
 
-Version précoce en cours de développement, non publiée sur npm. Disponible : connexion avec reconnexion automatique, état du contrôleur sous forme d'états, messages avec heure et historique, commandes (automatique, mise à plat, acquittement de défaut, déplacement manuel avec homme mort, voir le [README anglais](../../README.md#commands)). Prévu : réglages de l'appareil, notifications, widgets vis-2. Testé jusqu'ici uniquement avec un appareil simulé, **pas avec du matériel réel**.
+Version précoce en cours de développement, non publiée sur npm. Disponible : connexion avec reconnexion automatique, état du contrôleur sous forme d'états, messages avec heure et historique, commandes (automatique, mise à plat, acquittement de défaut, déplacement manuel avec homme mort) et réglages de l'appareil (valeurs avec limites, propositions avec confirmation à l'écran, configuration, design), voir le [README anglais](../../README.md#commands). Prévu : notifications, widgets vis-2. Testé jusqu'ici uniquement avec un appareil simulé, **pas avec du matériel réel**.
 
 ## Prérequis
 
@@ -37,6 +37,9 @@ Version précoce en cours de développement, non publiée sur npm. Disponible : 
 Les niveaux de journalisation, les balises et le changement de niveau sont décrits dans le [README anglais](../../README.md#logging-and-debugging). Le jeton n'apparaît jamais dans le journal.
 
 ## Changelog
+
+### 0.0.3 (2026-10-02)
+- (ssbingo) réglages de l'appareil sous forme d'états : valeurs avec limites, propositions en attente de confirmation à l'écran, configuration, design
 
 ### 0.0.2 (2026-10-02)
 - (ssbingo) commandes : automatique marche/arrêt, mise à plat, acquittement de défaut et déplacement manuel avec homme mort

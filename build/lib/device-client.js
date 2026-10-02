@@ -138,6 +138,37 @@ class DeviceClient {
     this.options.log.debug(`[conn] GET ${path} answered after ${Date.now() - started} ms`);
     return json;
   }
+  /**
+   * Sends a JSON document to the device with the token (commands and changes need it).
+   * An answer with an HTTP error is not an exception: the device explains the refusal in the body.
+   *
+   * @param path path with leading slash, e.g. "/api/params"
+   * @param body the document to send
+   * @returns HTTP status and the parsed answer (undefined when the answer is no JSON)
+   */
+  async postJson(path, body) {
+    const started = Date.now();
+    const headers = { "Content-Type": "application/json", Accept: "application/json" };
+    if (this.options.token) {
+      headers.Authorization = `Bearer ${this.options.token}`;
+    }
+    const text = JSON.stringify(body);
+    this.options.log.silly(`[tx] POST ${path} ${text}`);
+    const response = await fetch(`http://${this.baseUrl}${path}`, {
+      method: "POST",
+      signal: AbortSignal.timeout(this.timing.httpTimeoutMs),
+      headers,
+      body: text
+    });
+    let json;
+    try {
+      json = await response.json();
+    } catch {
+      json = void 0;
+    }
+    this.options.log.debug(`[conn] POST ${path} answered HTTP ${response.status} after ${Date.now() - started} ms`);
+    return { status: response.status, json };
+  }
   async connect() {
     const session = ++this.session;
     const attempt = ++this.attempt;
@@ -269,7 +300,7 @@ class DeviceClient {
         );
         break;
       case "params":
-        log.debug(`[rx] Frame "${frame.t}" ignored: not used by this version of the adapter`);
+        events.onParams(frame.changed);
         break;
       default:
         log.debug(`[rx] Unknown frame "${frame.t}" ignored`);

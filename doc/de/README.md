@@ -15,7 +15,7 @@ Das Gerät ist der Kopf. Nachführung, Sturmschutz, Endschalter und Laufzeitübe
 
 ## Stand des Projekts
 
-Frühe Version in Entwicklung, nicht auf npm veröffentlicht. Vorhanden: Verbindung mit automatischem Wiederverbinden, Zustand der Steuerung als Datenpunkte, Meldungen mit Uhrzeit und Verlauf, Befehle (Automatik, flach parken, Störung quittieren, Handfahrt mit Totmann, siehe [englisches README](../../README.md#commands)). Geplant: Einstellungen des Geräts, Benachrichtigungen, vis-2-Widgets. Bisher nur gegen ein nachgebildetes Gerät geprüft, **nicht mit echter Hardware**.
+Frühe Version in Entwicklung, nicht auf npm veröffentlicht. Vorhanden: Verbindung mit automatischem Wiederverbinden, Zustand der Steuerung als Datenpunkte, Meldungen mit Uhrzeit und Verlauf, Befehle (Automatik, flach parken, Störung quittieren, Handfahrt mit Totmann) und Einstellungen des Geräts (Werte mit Grenzen, Vorschläge mit Bestätigung am Display, Einrichtung, Design), siehe [englisches README](../../README.md#commands). Geplant: Benachrichtigungen, vis-2-Widgets. Bisher nur gegen ein nachgebildetes Gerät geprüft, **nicht mit echter Hardware**.
 
 ## Voraussetzungen
 
@@ -37,6 +37,9 @@ Frühe Version in Entwicklung, nicht auf npm veröffentlicht. Vorhanden: Verbind
 Log-Stufen, Tags und das Umschalten der Log-Stufe stehen im [englischen README](../../README.md#logging-and-debugging). Das Token erscheint nie im Log.
 
 ## Changelog
+
+### 0.0.3 (2026-10-02)
+- (ssbingo) Einstellungen des Geräts als Datenpunkte: Werte mit Grenzen, Vorschläge, die am Display auf Bestätigung warten, Einrichtung, Design
 
 ### 0.0.2 (2026-10-02)
 - (ssbingo) Befehle: Automatik ein/aus, flach parken, Störung quittieren und Handfahrt mit Totmann

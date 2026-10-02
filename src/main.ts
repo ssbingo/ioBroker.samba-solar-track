@@ -9,7 +9,7 @@
  *
  * Log tags: [cfg] configuration, [obj] objects, [conn] connection, [rx] received frames,
  * [tx] sent frames, [dev] messages and events of the device, [msg] message handling,
- * [cmd] commands, [jog] manual drive, [unload] shutdown.
+ * [cmd] commands, [jog] manual drive, [par] settings and setup of the device, [unload] shutdown.
  */
 import * as utils from "@iobroker/adapter-core";
 import { DeviceClient } from "./lib/device-client";
@@ -33,6 +33,16 @@ import {
     type LogLine,
     type LostFrame,
 } from "./lib/protocol";
+import {
+    groupName,
+    paramCommon,
+    paramStateId,
+    parseParams,
+    pendingMap,
+    readParamResult,
+    toDeviceValue,
+    type ParamEntry,
+} from "./lib/params";
 import { RemoteControl, reasonText, type Axis, type Command, type CommandResult } from "./lib/remote-control";
 import { NODES, STATES, infoToValues, statusToValues, type StateValue } from "./lib/states";
 
@@ -59,6 +69,10 @@ class SambaSolarTrack extends utils.Adapter {
     private features = new Set<string>();
     /** Reason of the last failure per kind of command; the same reason is reported only once */
     private readonly commandProblems = new Map<string, string>();
+    /** Settings of the device by their key, from GET /api/params */
+    private readonly params = new Map<string, ParamEntry>();
+    /** Setup values chosen in ioBroker that are not saved at the device yet */
+    private stagedSetup: { mode?: number; windSensor?: number } = {};
     private store = new MessageStore(HISTORY_DEFAULT);
     private readonly cache = new Map<string, StateValue>();
     private forwardLevel: ForwardLevel = "W";
@@ -144,9 +158,12 @@ class SambaSolarTrack extends utils.Adapter {
                 onLost: lost => this.onLost(lost),
                 onConnection: connected => this.onConnection(connected),
                 onResult: (id, ok, reason) => this.remote?.handleResult(id, ok, reason),
+                onParams: changed => this.onParams(changed),
             },
         });
         this.subscribeStates("control.*");
+        this.subscribeStates("setup.*");
+        this.subscribeStates("params.*");
         this.client.start();
     }
 
@@ -328,9 +345,121 @@ class SambaSolarTrack extends utils.Adapter {
         this.writeValue("info.connection", connected);
         if (connected) {
             this.lostReported = false;
+            void this.loadParams();
         } else {
             this.flushMessages();
             this.remote?.handleDisconnect();
+        }
+    }
+
+    /** Reads all settings of the device and creates or updates their states */
+    private async loadParams(): Promise<void> {
+        if (!this.client || !this.features.has("params")) {
+            this.log.debug("[par] Settings skipped: the firmware does not offer them");
+            return;
+        }
+        const started = Date.now();
+        let list: unknown;
+        try {
+            const answer = await this.client.getJson("/api/params");
+            list = isObject(answer) ? answer.params : undefined;
+        } catch (error) {
+            this.log.debug(
+                `[par] Reading the settings failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            return;
+        }
+        const { entries, dropped } = parseParams(list);
+        if (dropped > 0) {
+            this.log.debug(`[par] ${dropped} setting(s) of the device ignored: unknown type or name`);
+        }
+        const groups = new Set<string>();
+        const wanted = new Set<string>();
+        try {
+            for (const entry of entries) {
+                if (!groups.has(entry.group)) {
+                    groups.add(entry.group);
+                    await this.extendObject(`params.${entry.group}`, {
+                        type: "channel",
+                        common: { name: groupName(entry.group) },
+                        native: {},
+                    });
+                }
+                const id = paramStateId(entry);
+                wanted.add(`${this.namespace}.${id}`);
+                await this.extendObject(id, {
+                    type: "state",
+                    common: paramCommon(entry) as unknown as ioBroker.StateCommon,
+                    native: { key: entry.key, apply: entry.apply },
+                });
+            }
+            // settings the device no longer offers (other operating mode or wind sensor)
+            const existing = await this.getAdapterObjectsAsync();
+            let removed = 0;
+            for (const [id, object] of Object.entries(existing)) {
+                const local = id.slice(this.namespace.length + 1);
+                const dynamic = local.startsWith("params.") && local.split(".").length === 3;
+                if (dynamic && object.type === "state" && !wanted.has(id)) {
+                    await this.delObjectAsync(local);
+                    this.cache.delete(local);
+                    removed++;
+                }
+            }
+            this.params.clear();
+            for (const entry of entries) {
+                this.params.set(entry.key, entry);
+                this.writeValue(paramStateId(entry), entry.value);
+            }
+            this.writeValue("params.pending", JSON.stringify(pendingMap(this.params.values())));
+            this.log.debug(
+                `[par] ${entries.length} setting(s) in ${groups.size} group(s) read in ${Date.now() - started} ms, ` +
+                    `${removed} outdated state(s) removed`,
+            );
+        } catch (error) {
+            // happens when the adapter stops while the objects are written
+            this.log.debug(
+                `[par] Creating the states failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+        }
+    }
+
+    /**
+     * Settings or proposals have changed at the device.
+     *
+     * @param changed entries like in GET /api/params
+     */
+    private onParams(changed: unknown): void {
+        const { entries, dropped } = parseParams(changed);
+        if (dropped > 0) {
+            this.log.debug(`[par] ${dropped} changed setting(s) ignored: unknown type or name`);
+        }
+        let unknown = false;
+        for (const entry of entries) {
+            const before = this.params.get(entry.key);
+            if (!before) {
+                unknown = true;
+                continue;
+            }
+            this.params.set(entry.key, entry);
+            this.writeValue(paramStateId(entry), entry.value);
+            if (before.pending !== null && entry.pending === null) {
+                this.log.info(
+                    entry.value === before.pending
+                        ? `[par] ${entry.key}: the proposal ${String(before.pending)} was confirmed at the display`
+                        : `[par] ${entry.key}: the proposal ${String(before.pending)} was not accepted, the value stays ${String(entry.value)}`,
+                );
+            } else if (before.value !== entry.value) {
+                this.log.debug(
+                    `[par] ${entry.key}: ${String(before.value)} -> ${String(entry.value)} (reported by the device)`,
+                );
+            }
+        }
+        this.writeValue("params.pending", JSON.stringify(pendingMap(this.params.values())));
+        if (unknown) {
+            this.log.debug(
+                "[par] The device reports a setting this adapter has no state for: reading all settings again",
+            );
+            void this.loadParams();
         }
     }
 
@@ -363,9 +492,248 @@ class SambaSolarTrack extends utils.Adapter {
             case JOG_STATE.azimuth:
                 void this.runJog("azimuth", state.val, source);
                 break;
+            case "control.design":
+                void this.runValue("design", local, state.val, source);
+                break;
+            case "control.endSimulation":
+                void this.runValue("simulation", local, false, source);
+                break;
+            case "setup.mode":
+                this.stageSetup("mode", local, state.val, source);
+                break;
+            case "setup.windSensor":
+                this.stageSetup("windSensor", local, state.val, source);
+                break;
+            case "setup.save":
+                void this.runSetup(local, source);
+                break;
             default:
-                this.log.debug(`[cmd] Write to ${local} from ${source} ignored: this state is not a command`);
+                if (this.paramByStateId(local)) {
+                    void this.runParam(local, state.val, source);
+                } else {
+                    this.log.debug(`[cmd] Write to ${local} from ${source} ignored: this state is not a command`);
+                }
         }
+    }
+
+    /**
+     * Finds the setting that belongs to a state.
+     *
+     * @param local id of the state relative to the instance
+     */
+    private paramByStateId(local: string): ParamEntry | undefined {
+        for (const entry of this.params.values()) {
+            if (paramStateId(entry) === local) {
+                return entry;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Sends values to POST /api/params.
+     *
+     * @param values key => value
+     * @returns the parsed answer, or a reason why the request failed as a whole
+     */
+    private async postValues(values: Record<string, number | boolean>): Promise<{ answer?: unknown; reason?: string }> {
+        const blocked = this.precheck("params");
+        if (blocked || !this.client) {
+            return { reason: blocked ?? "disconnected" };
+        }
+        try {
+            const { status, json } = await this.client.postJson("/api/params", { values });
+            if (isObject(json) && json.ok === true) {
+                return { answer: json };
+            }
+            const reason = isObject(json) && typeof json.reason === "string" ? json.reason : `HTTP ${status}`;
+            return { reason };
+        } catch (error) {
+            this.log.debug(`[par] POST /api/params failed: ${error instanceof Error ? error.message : String(error)}`);
+            return { reason: "timeout" };
+        }
+    }
+
+    /**
+     * Notes the result of a change in `params.lastResult` and in the log.
+     *
+     * @param key key of the setting
+     * @param value value that was written
+     * @param result applied, pending or rejected
+     * @param reason why it was rejected
+     * @param source who wrote the value
+     */
+    private reportParam(key: string, value: unknown, result: string, reason: string | undefined, source: string): void {
+        this.forceValue(
+            "params.lastResult",
+            JSON.stringify({
+                ts: Date.now(),
+                key,
+                value: value as StateValue,
+                result,
+                reason: reason ?? null,
+                text: reasonText(reason),
+                from: source,
+            }),
+        );
+        const kind = `param:${key}`;
+        if (result !== "rejected") {
+            this.commandProblems.delete(kind);
+            return;
+        }
+        const text = `[par] ${key} = ${String(value)} from ${source} was not accepted: ${reason} (${reasonText(reason)})`;
+        if (reason === "same" || this.commandProblems.get(kind) === reason) {
+            // nothing to change, or the same refusal again
+            this.log.debug(text);
+        } else {
+            this.commandProblems.set(kind, reason ?? "unknown");
+            this.log.warn(text);
+        }
+    }
+
+    private async runParam(id: string, value: ioBroker.StateValue, source: string): Promise<void> {
+        const entry = this.paramByStateId(id);
+        if (!entry) {
+            return;
+        }
+        const wanted = toDeviceValue(entry, value);
+        if (wanted === undefined) {
+            this.reportParam(entry.key, value, "rejected", "type", source);
+            this.forceValue(id, entry.value);
+            return;
+        }
+        if (wanted === entry.value && entry.pending === null) {
+            this.log.debug(`[par] ${entry.key} = ${String(wanted)} from ${source}: already valid, nothing sent`);
+            this.forceValue(id, entry.value);
+            return;
+        }
+        const { answer, reason } = await this.postValues({ [entry.key]: wanted });
+        const result = answer === undefined ? undefined : readParamResult(answer, entry.key);
+        const current = this.params.get(entry.key) ?? entry;
+        if (!result) {
+            this.reportParam(entry.key, wanted, "rejected", reason ?? "answer", source);
+            this.forceValue(id, current.value);
+            return;
+        }
+        if (result.result === "applied") {
+            const now = result.value ?? wanted;
+            this.log.info(`[par] ${entry.key}: ${String(entry.value)} -> ${String(now)} (from ${source})`);
+            this.params.set(entry.key, { ...current, value: now, pending: null });
+            this.forceValue(id, now);
+        } else if (result.result === "pending") {
+            this.log.info(
+                `[par] ${entry.key}: ${String(result.pending ?? wanted)} proposed (from ${source}); ` +
+                    `it becomes valid when it is confirmed at the display, until then ${String(current.value)} stays`,
+            );
+            this.params.set(entry.key, { ...current, pending: result.pending ?? wanted });
+            this.forceValue(id, current.value);
+        } else {
+            this.forceValue(id, current.value);
+        }
+        this.writeValue("params.pending", JSON.stringify(pendingMap(this.params.values())));
+        this.reportParam(entry.key, wanted, result.result, result.reason, source);
+    }
+
+    /**
+     * Changes a value that is no setting of the list: the design or the end of the simulation.
+     *
+     * @param key "design" or "simulation"
+     * @param id id of the state
+     * @param value value that was written
+     * @param source who wrote the value
+     */
+    private async runValue(key: "design" | "simulation", id: string, value: unknown, source: string): Promise<void> {
+        const wanted = key === "simulation" ? false : value;
+        const before = this.cache.get(id);
+        if (typeof wanted !== "number" && typeof wanted !== "boolean") {
+            this.reportParam(key, value, "rejected", "type", source);
+            this.forceValue(id, this.cache.get(id) ?? null);
+            return;
+        }
+        const { answer, reason } = await this.postValues({ [key]: wanted });
+        const result = answer === undefined ? undefined : readParamResult(answer, key);
+        const accepted = result?.result === "applied";
+        if (accepted) {
+            this.log.info(
+                key === "simulation"
+                    ? `[par] The simulation is ended (from ${source}); the device restarts`
+                    : `[par] design: ${String(before)} -> ${String(wanted)} (from ${source})`,
+            );
+        }
+        this.reportParam(
+            key,
+            wanted,
+            accepted ? "applied" : "rejected",
+            result?.reason ?? reason ?? (accepted ? undefined : "answer"),
+            source,
+        );
+        if (key === "simulation") {
+            this.forceValue(id, accepted);
+        } else {
+            this.forceValue(id, accepted ? wanted : (this.cache.get(id) ?? null));
+        }
+    }
+
+    /**
+     * Remembers a setup value that will be saved with `setup.save`.
+     *
+     * @param key which value
+     * @param id id of the state
+     * @param value value that was written
+     * @param source who wrote the value
+     */
+    private stageSetup(key: "mode" | "windSensor", id: string, value: unknown, source: string): void {
+        if (value !== 1 && value !== 2) {
+            this.reportParam(key, value, "rejected", "range", source);
+            this.forceValue(id, this.cache.get(id) ?? null);
+            return;
+        }
+        this.stagedSetup[key] = value;
+        this.log.debug(`[par] Setup: ${key} = ${value} chosen by ${source}; it is sent to the device with setup.save`);
+    }
+
+    private async runSetup(id: string, source: string): Promise<void> {
+        const currentMode = this.cache.get("status.mode");
+        const currentWind = this.cache.get("status.windSensor");
+        const mode = this.stagedSetup.mode ?? currentMode;
+        const windSensor = this.stagedSetup.windSensor ?? currentWind;
+        const blocked = this.precheck("setup");
+        let reason = blocked;
+        if (!reason && (typeof mode !== "number" || typeof windSensor !== "number")) {
+            reason = "disconnected";
+        }
+        if (!reason && mode === currentMode && windSensor === currentWind) {
+            reason = "same";
+        }
+        if (!reason && this.client) {
+            try {
+                const { status, json } = await this.client.postJson("/api/setup", { mode, windSensor });
+                if (!(isObject(json) && json.ok === true)) {
+                    reason = isObject(json) && typeof json.reason === "string" ? json.reason : `HTTP ${status}`;
+                }
+            } catch (error) {
+                this.log.debug(
+                    `[par] POST /api/setup failed: ${error instanceof Error ? error.message : String(error)}`,
+                );
+                reason = "timeout";
+            }
+        }
+        const what = `mode ${String(mode)}, windSensor ${String(windSensor)}`;
+        if (reason) {
+            // back to what the device reports
+            this.stagedSetup = {};
+            this.forceValue("setup.mode", currentMode ?? null);
+            this.forceValue("setup.windSensor", currentWind ?? null);
+            this.reportParam("setup", what, "rejected", reason, source);
+        } else {
+            this.stagedSetup = {};
+            this.log.info(
+                `[par] Setup saved (from ${source}): mode ${String(currentMode)} -> ${String(mode)}, ` +
+                    `windSensor ${String(currentWind)} -> ${String(windSensor)}; the device restarts`,
+            );
+            this.reportParam("setup", what, "applied", undefined, source);
+        }
+        this.forceValue(id, !reason);
     }
 
     /**

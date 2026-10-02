@@ -15,7 +15,7 @@ Najważniejsze jest urządzenie. Śledzenie słońca, ochrona przed burzą, wył
 
 ## Stan projektu
 
-Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie z automatycznym ponownym łączeniem, stan sterownika jako stany, komunikaty z godziną i historią, polecenia (automatyka, parkowanie na płasko, potwierdzenie usterki, jazda ręczna z czuwakiem, zob. [angielskie README](../../README.md#commands)). Planowane: ustawienia urządzenia, powiadomienia, widżety vis-2. Dotąd testowane tylko z symulowanym urządzeniem, **nie z prawdziwym sprzętem**.
+Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie z automatycznym ponownym łączeniem, stan sterownika jako stany, komunikaty z godziną i historią, polecenia (automatyka, parkowanie na płasko, potwierdzenie usterki, jazda ręczna z czuwakiem) oraz ustawienia urządzenia (wartości z granicami, propozycje z potwierdzeniem na wyświetlaczu, konfiguracja, wygląd), zob. [angielskie README](../../README.md#commands). Planowane: powiadomienia, widżety vis-2. Dotąd testowane tylko z symulowanym urządzeniem, **nie z prawdziwym sprzętem**.
 
 ## Wymagania
 
@@ -37,6 +37,9 @@ Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie
 Poziomy dziennika, znaczniki i zmiana poziomu są opisane w [angielskim README](../../README.md#logging-and-debugging). Token nigdy nie pojawia się w dzienniku.
 
 ## Changelog
+
+### 0.0.3 (2026-10-02)
+- (ssbingo) ustawienia urządzenia jako stany: wartości z granicami, propozycje czekające na potwierdzenie na wyświetlaczu, konfiguracja, wygląd
 
 ### 0.0.2 (2026-10-02)
 - (ssbingo) polecenia: automatyka wł./wył., parkowanie na płasko, potwierdzenie usterki i jazda ręczna z czuwakiem

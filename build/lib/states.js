@@ -39,7 +39,9 @@ const NODES = [
   { id: "jog", type: "channel", name: { en: "Remote manual drive", de: "Handfahrt aus der Ferne" } },
   { id: "counters", type: "channel", name: { en: "Error counters", de: "Fehlerz\xE4hler" } },
   { id: "messages", type: "channel", name: { en: "Messages of the device", de: "Meldungen des Ger\xE4ts" } },
-  { id: "control", type: "channel", name: { en: "Commands", de: "Befehle" } }
+  { id: "control", type: "channel", name: { en: "Commands", de: "Befehle" } },
+  { id: "setup", type: "channel", name: { en: "Setup of the device", de: "Einrichtung des Ger\xE4ts" } },
+  { id: "params", type: "folder", name: { en: "Settings of the device", de: "Einstellungen des Ger\xE4ts" } }
 ];
 const CONTROLLER_STATES = {
   SETUP: "Setup missing",
@@ -548,8 +550,81 @@ const STATES = [
     states: { "-1": "WEST", 0: "Stop", 1: "EAST" }
   },
   {
+    id: "control.design",
+    name: { en: "Design of the display and the web page", de: "Design von Display und Weboberfl\xE4che" },
+    type: "number",
+    role: "level",
+    write: true,
+    min: 0,
+    status: "design"
+  },
+  {
+    id: "control.endSimulation",
+    name: { en: "End the simulation (the device restarts)", de: "Simulation beenden (das Ger\xE4t startet neu)" },
+    type: "boolean",
+    role: "button",
+    write: true,
+    read: false
+  },
+  {
     id: "control.lastResult",
     name: { en: "Result of the last command", de: "Ergebnis des letzten Befehls" },
+    type: "string",
+    role: "json"
+  },
+  // --- setup: both values are chosen first and then saved together, like at the display ---
+  {
+    id: "setup.mode",
+    name: {
+      en: "Operating mode (takes effect with setup.save)",
+      de: "Betriebsart (gilt erst mit setup.save)"
+    },
+    type: "number",
+    role: "level",
+    write: true,
+    min: 1,
+    max: 2,
+    states: { 1: "Vertical only", 2: "Vertical + horizontal" },
+    status: "mode"
+  },
+  {
+    id: "setup.windSensor",
+    name: {
+      en: "Wind sensor type (takes effect with setup.save)",
+      de: "Windmesser-Typ (gilt erst mit setup.save)"
+    },
+    type: "number",
+    role: "level",
+    write: true,
+    min: 1,
+    max: 2,
+    states: { 1: "Wind speed only", 2: "Wind speed + direction" },
+    status: "windSensor"
+  },
+  {
+    id: "setup.save",
+    name: {
+      en: "Save the setup (drives stop, the device restarts)",
+      de: "Einrichtung speichern (Antriebe stoppen, das Ger\xE4t startet neu)"
+    },
+    type: "boolean",
+    role: "button",
+    write: true,
+    read: false
+  },
+  // --- settings: the states of the single settings are created from GET /api/params ---
+  {
+    id: "params.pending",
+    name: {
+      en: "Proposals waiting for confirmation at the display",
+      de: "Vorschl\xE4ge, die am Display auf Best\xE4tigung warten"
+    },
+    type: "string",
+    role: "json"
+  },
+  {
+    id: "params.lastResult",
+    name: { en: "Result of the last change", de: "Ergebnis der letzten \xC4nderung" },
     type: "string",
     role: "json"
   },

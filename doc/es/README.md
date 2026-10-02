@@ -15,7 +15,7 @@ El dispositivo es el que manda. El seguimiento, la protección contra tormentas,
 
 ## Estado del proyecto
 
-Versión temprana en desarrollo, no publicada en npm. Disponible: conexión con reconexión automática, estado del controlador como estados, mensajes con hora e historial, comandos (automático, aparcar en horizontal, confirmar avería, movimiento manual con hombre muerto, véase el [README en inglés](../../README.md#commands)). Previsto: ajustes del dispositivo, notificaciones, widgets vis-2. Hasta ahora probado solo con un dispositivo simulado, **no con hardware real**.
+Versión temprana en desarrollo, no publicada en npm. Disponible: conexión con reconexión automática, estado del controlador como estados, mensajes con hora e historial, comandos (automático, aparcar en horizontal, confirmar avería, movimiento manual con hombre muerto) y ajustes del dispositivo (valores con límites, propuestas con confirmación en la pantalla, configuración, diseño), véase el [README en inglés](../../README.md#commands). Previsto: notificaciones, widgets vis-2. Hasta ahora probado solo con un dispositivo simulado, **no con hardware real**.
 
 ## Requisitos
 
@@ -37,6 +37,9 @@ Versión temprana en desarrollo, no publicada en npm. Disponible: conexión con 
 Los niveles de registro, las etiquetas y el cambio de nivel se describen en el [README en inglés](../../README.md#logging-and-debugging). El token nunca aparece en el registro.
 
 ## Changelog
+
+### 0.0.3 (2026-10-02)
+- (ssbingo) ajustes del dispositivo como estados: valores con límites, propuestas que esperan confirmación en la pantalla, configuración, diseño
 
 ### 0.0.2 (2026-10-02)
 - (ssbingo) comandos: automático encendido/apagado, aparcar en horizontal, confirmar avería y movimiento manual con hombre muerto

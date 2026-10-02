@@ -75,6 +75,8 @@ nutzt wie bei `ioBroker.pondpump` „Trusted Publishing“ statt eines `NPM_TOKE
 | `src/lib/messages.ts` | Meldungen: Uhrzeit aus der Laufzeit, Verlauf, laufende Nummern, Weitergabe ins Log |
 | `src/lib/device-client.ts` | Verbindung: `GET /api/info`, WebSocket, Wiederverbinden, Überwachung |
 | `src/lib/remote-control.ts` | Befehle und Handfahrt: Nummern, Antworten, Erneuern, Totmann |
+| `src/lib/params.ts` | Einstellungen des Geräts: Liste prüfen, Datenpunkte beschreiben, Ergebnisse lesen |
+| `test/mock-params.js` | Werteliste, wie der Firmware-Code sie ausgibt (`.pio/build/screenshots/program - wertejson 1 2` im Firmware-Projekt) |
 | `src/lib/*.test.ts` | Unit-Tests (mocha) |
 | `test/mock-device.js` | nachgebildetes Gerät nach `PROTOCOL.md` für Unit- und Integrationstest |
 | `test/integration.js` | Adapter im echten js-controller gegen das nachgebildete Gerät |
@@ -92,9 +94,12 @@ Prüfen vor jeder Fertigmeldung: `npm run build`, `npm run check`, `npm run lint
   Quittieren, Handfahrt. Die Handfahrt hat einen Totmann von Ende zu Ende: Der Datenpunkt muss
   mindestens einmal pro Sekunde neu geschrieben werden, sonst stoppt der Adapter die Fahrt.
   Das gilt auch für die Widgets, die später darauf aufbauen.
+- **Erledigt (0.0.3):** Einstellungen des Geräts als Datenpunkte unter `params` (vom Gerät
+  gemeldet, mit Grenzen), Vorschläge mit Bestätigung am Display (`params.pending`),
+  Einrichtung über `setup.mode`, `setup.windSensor` und `setup.save`, Design, Simulation
+  beenden.
 - Alles nur gegen das nachgebildete Gerät geprüft, **nicht mit echter Hardware**.
-- **Offen, in dieser Reihenfolge:** Einstellungen des Geräts lesen und schreiben,
-  Benachrichtigungen über Messaging-Adapter, vis-2-Widgets (Übersicht, Bedienung, Meldungen,
+- **Offen, in dieser Reihenfolge:** Benachrichtigungen über Messaging-Adapter, vis-2-Widgets (Übersicht, Bedienung, Meldungen,
   Werte), Handbuch.
 
 ---

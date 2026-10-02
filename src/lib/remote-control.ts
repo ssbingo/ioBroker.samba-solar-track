@@ -67,6 +67,9 @@ export const REASON_TEXT: Record<string, string> = {
     protocol: "the device speaks a newer protocol, commands are disabled",
     unsupported: "the firmware does not support this command",
     hold: "the drive command was not renewed in time (dead man)",
+    type: "the value has the wrong type",
+    same: "the value is already valid",
+    answer: "the answer of the device could not be read",
     device: "the device ended the drive",
 };
 

@@ -28,6 +28,7 @@ class Recorder implements ClientEvents {
     public readonly lines: LogLine[] = [];
     public readonly losts: LostFrame[] = [];
     public readonly connection: boolean[] = [];
+    public readonly params: unknown[] = [];
     public readonly results: { id: number | null; ok: boolean; reason: string | undefined }[] = [];
     public knownBootId: string | undefined;
     public lastSeq = 0;
@@ -72,6 +73,10 @@ class Recorder implements ClientEvents {
 
     public onResult(id: number | null, ok: boolean, reason: string | undefined): void {
         this.results.push({ id, ok, reason });
+    }
+
+    public onParams(changed: unknown): void {
+        this.params.push(changed);
     }
 
     public count(level: string): number {
@@ -350,6 +355,37 @@ describe("device-client => DeviceClient", function () {
         client?.send({ t: "cmd", id: 1, cmd: "park", on: true });
         await until(() => recorder.results.length === 1, "result");
         expect(recorder.results[0]).to.deep.equal({ id: 1, ok: false, reason: "auth" });
+    });
+
+    it("posts changes with the token in the header and passes on the frame with the changed settings", async () => {
+        createClient().start();
+        await until(() => recorder.connection.length === 1, "connection");
+        const answer = await client!.postJson("/api/params", { values: { trackStartPermille: 100, stormKmh: 45 } });
+        expect(answer.status).to.equal(200);
+        expect(answer.json).to.deep.equal({
+            ok: true,
+            results: {
+                trackStartPermille: { result: "applied", value: 100 },
+                stormKmh: { result: "pending", value: 40, pending: 45 },
+            },
+        });
+        expect(device.posts[0]).to.include({ path: "/api/params", authed: true });
+        await until(() => recorder.params.length === 1, "params frame");
+        const changed = recorder.params[0] as { key: string; value: number; pending: number | null }[];
+        expect(changed.map(entry => entry.key)).to.deep.equal(["trackStartPermille", "stormKmh"]);
+        expect(changed[1]).to.include({ value: 40, pending: 45 });
+        for (const entry of recorder.logs) {
+            expect(entry.text).to.not.contain(TOKEN);
+        }
+    });
+
+    it("gets the refusal of the device as an answer, not as an exception", async () => {
+        createClient("").start();
+        await until(() => recorder.connection.length === 1, "connection");
+        const answer = await client!.postJson("/api/params", { values: { stormKmh: 45 } });
+        expect(answer.status).to.equal(401);
+        expect(answer.json).to.include({ ok: false, reason: "auth" });
+        expect(device.posts[0]).to.include({ authed: false });
     });
 
     it("does not send while there is no connection", async () => {
