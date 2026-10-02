@@ -1,20 +1,20 @@
 {
     "common": {
         "name": "samba-solar-track",
-        "version": "0.0.1",
+        "version": "0.0.2",
         "news": {
-            "0.0.1": {
-                "en": "initial release",
-                "de": "Erstveröffentlichung",
-                "ru": "Начальная версия",
-                "pt": "lançamento inicial",
-                "nl": "Eerste uitgave",
-                "fr": "Première version",
-                "it": "Versione iniziale",
-                "es": "Versión inicial",
-                "pl": "Pierwsze wydanie",
-                "uk": "Початкова версія",
-                "zh-cn": "首次出版"
+            "0.0.2": {
+                "en": "Commands: automatic on/off, park flat, acknowledge fault and manual drive with dead man",
+                "de": "Befehle: Automatik ein/aus, flach parken, Störung quittieren und Handfahrt mit Totmann",
+                "ru": "Команды: автоматика вкл/выкл, парковка в горизонтальное положение, квитирование неисправности и ручной привод с контролем присутствия",
+                "pt": "Comandos: automático ligado/desligado, estacionar na horizontal, confirmar avaria e movimento manual com homem-morto",
+                "nl": "Commando's: automatisch aan/uit, vlak parkeren, storing bevestigen en handmatig rijden met dodemansfunctie",
+                "fr": "Commandes : automatique marche/arrêt, mise à plat, acquittement de défaut et déplacement manuel avec homme mort",
+                "it": "Comandi: automatico on/off, parcheggio in piano, conferma del guasto e movimento manuale con uomo morto",
+                "es": "Comandos: automático encendido/apagado, aparcar en horizontal, confirmar avería y movimiento manual con hombre muerto",
+                "pl": "Polecenia: automatyka wł./wył., parkowanie na płasko, potwierdzenie usterki i jazda ręczna z czuwakiem",
+                "uk": "Команди: автоматика увімк./вимк., паркування в горизонтальне положення, квитування несправності та ручний привід із контролем присутності",
+                "zh-cn": "命令：自动开/关、放平停放、确认故障以及带安全保持功能的手动驱动"
             }
         },
         "titleLang": {

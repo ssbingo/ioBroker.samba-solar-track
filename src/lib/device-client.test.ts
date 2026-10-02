@@ -28,6 +28,7 @@ class Recorder implements ClientEvents {
     public readonly lines: LogLine[] = [];
     public readonly losts: LostFrame[] = [];
     public readonly connection: boolean[] = [];
+    public readonly results: { id: number | null; ok: boolean; reason: string | undefined }[] = [];
     public knownBootId: string | undefined;
     public lastSeq = 0;
 
@@ -67,6 +68,10 @@ class Recorder implements ClientEvents {
 
     public onConnection(connected: boolean): void {
         this.connection.push(connected);
+    }
+
+    public onResult(id: number | null, ok: boolean, reason: string | undefined): void {
+        this.results.push({ id, ok, reason });
     }
 
     public count(level: string): number {
@@ -324,6 +329,36 @@ describe("device-client => DeviceClient", function () {
         await until(() => recorder.lines.length === 1, "message after the broken frames");
         expect(recorder.lines[0].msg).to.equal("danach");
         expect(recorder.connection).to.deep.equal([true]);
+    });
+
+    it("sends commands and reports the answers of the device", async () => {
+        createClient().start();
+        await until(() => recorder.connection.length === 1, "connection");
+        expect(client?.send({ t: "cmd", id: 7, cmd: "auto", on: false })).to.equal(true);
+        expect(client?.send({ t: "cmd", id: 8, cmd: "nonsense" })).to.equal(true);
+        await until(() => recorder.results.length === 2, "two results");
+        expect(recorder.results).to.deep.equal([
+            { id: 7, ok: true, reason: undefined },
+            { id: 8, ok: false, reason: "unknown" },
+        ]);
+        expect(recorder.statuses[recorder.statuses.length - 1]).to.include({ auto: false, state: "MANUAL" });
+    });
+
+    it("gets the reason auth for a command without a valid token", async () => {
+        createClient("").start();
+        await until(() => recorder.connection.length === 1, "connection");
+        client?.send({ t: "cmd", id: 1, cmd: "park", on: true });
+        await until(() => recorder.results.length === 1, "result");
+        expect(recorder.results[0]).to.deep.equal({ id: 1, ok: false, reason: "auth" });
+    });
+
+    it("does not send while there is no connection", async () => {
+        const port = device.port;
+        await device.stop();
+        createClient(TOKEN, port).start();
+        expect(client?.send({ t: "cmd", id: 1, cmd: "ack" })).to.equal(false);
+        device = new MockDevice();
+        await device.start();
     });
 
     it("stops completely: no further attempt and no open connection", async () => {

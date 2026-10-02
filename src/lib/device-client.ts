@@ -83,6 +83,14 @@ export interface ClientEvents {
     onLost(lost: LostFrame): void;
     /** The connection was established (after hello) or lost */
     onConnection(connected: boolean): void;
+    /**
+     * The device answered a command.
+     *
+     * @param id id of the command, null when the device could not read it
+     * @param ok true = accepted
+     * @param reason why not
+     */
+    onResult(id: number | null, ok: boolean, reason: string | undefined): void;
 }
 
 /** Settings of the client */
@@ -352,9 +360,15 @@ export class DeviceClient {
                     log.debug("[rx] lost frame ignored: count or to is missing");
                 }
                 break;
-            case "params":
             case "result":
-                // settings and commands are not part of this version of the adapter
+                events.onResult(
+                    typeof frame.id === "number" ? frame.id : null,
+                    frame.ok === true,
+                    typeof frame.reason === "string" ? frame.reason : undefined,
+                );
+                break;
+            case "params":
+                // settings are not part of this version of the adapter
                 log.debug(`[rx] Frame "${frame.t}" ignored: not used by this version of the adapter`);
                 break;
             default:
@@ -403,11 +417,17 @@ export class DeviceClient {
         events.onConnection(true);
     }
 
-    private send(frame: Record<string, unknown>): void {
+    /**
+     * Sends a frame to the device.
+     *
+     * @param frame the frame
+     * @returns false when there is no connection
+     */
+    public send(frame: Record<string, unknown>): boolean {
         const { log } = this.options;
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            log.debug(`[tx] Frame "${String(frame.t)}" skipped: WebSocket is not open`);
-            return;
+        if (!this.ws || !this.connected || this.ws.readyState !== WebSocket.OPEN) {
+            log.debug(`[tx] Frame "${String(frame.t)}" skipped: not connected`);
+            return false;
         }
         const text = JSON.stringify(frame);
         log.silly(`[tx] ${text}`);
@@ -416,6 +436,7 @@ export class DeviceClient {
                 log.debug(`[tx] Sending "${String(frame.t)}" failed: ${errorText(error)}`);
             }
         });
+        return true;
     }
 
     private schedulePing(session: number): void {

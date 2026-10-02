@@ -15,7 +15,7 @@ O dispositivo é quem comanda. O seguimento, a proteção contra tempestades, os
 
 ## Estado do projeto
 
-Versão inicial em desenvolvimento, não publicada no npm. Disponível: ligação com reconexão automática, estado do controlador como estados, mensagens com hora e histórico. Planeado: comandos, definições do dispositivo, notificações, widgets vis-2. Até agora testado apenas com um dispositivo simulado, **não com hardware real**.
+Versão inicial em desenvolvimento, não publicada no npm. Disponível: ligação com reconexão automática, estado do controlador como estados, mensagens com hora e histórico, comandos (automático, estacionar na horizontal, confirmar avaria, movimento manual com homem-morto, ver o [README em inglês](../../README.md#commands)). Planeado: definições do dispositivo, notificações, widgets vis-2. Até agora testado apenas com um dispositivo simulado, **não com hardware real**.
 
 ## Requisitos
 
@@ -37,6 +37,9 @@ Versão inicial em desenvolvimento, não publicada no npm. Disponível: ligaçã
 Os níveis de registo, as etiquetas e a forma de mudar o nível estão no [README em inglês](../../README.md#logging-and-debugging). O token nunca aparece no registo.
 
 ## Changelog
+
+### 0.0.2 (2026-10-02)
+- (ssbingo) comandos: automático ligado/desligado, estacionar na horizontal, confirmar avaria e movimento manual com homem-morto
 
 ### 0.0.1 (2026-10-02)
 - (ssbingo) versão inicial: ligação ao dispositivo, estado do controlador e mensagens como estados

@@ -2,12 +2,14 @@
  * ioBroker adapter for the Samba Solar Track controller.
  *
  * The device is the head: tracking and storm protection work without this adapter. The adapter
- * connects to the device (HTTP and WebSocket on port 80), mirrors its status into states and
- * receives every message the firmware writes to its log.
+ * connects to the device (HTTP and WebSocket on port 80), mirrors its status into states,
+ * receives every message the firmware writes to its log and passes on commands written to the
+ * states under `control`. The device checks every command itself; storm protection, limit
+ * switches and runtime monitoring cannot be bypassed from here.
  *
  * Log tags: [cfg] configuration, [obj] objects, [conn] connection, [rx] received frames,
  * [tx] sent frames, [dev] messages and events of the device, [msg] message handling,
- * [unload] shutdown.
+ * [cmd] commands, [jog] manual drive, [unload] shutdown.
  */
 import * as utils from "@iobroker/adapter-core";
 import { DeviceClient } from "./lib/device-client";
@@ -23,6 +25,7 @@ import {
     type Message,
 } from "./lib/messages";
 import {
+    isObject,
     resumeSince,
     type DeviceInfo,
     type DeviceStatus,
@@ -30,6 +33,7 @@ import {
     type LogLine,
     type LostFrame,
 } from "./lib/protocol";
+import { RemoteControl, reasonText, type Axis, type Command, type CommandResult } from "./lib/remote-control";
 import { NODES, STATES, infoToValues, statusToValues, type StateValue } from "./lib/states";
 
 /** Values that change constantly (uptime, memory, signal) are written at most this often */
@@ -45,8 +49,16 @@ const HISTORY_DEFAULT = 50;
 
 const VOLATILE_IDS = new Set(STATES.filter(def => def.volatile).map(def => def.id));
 
+/** State of the manual drive for each axis */
+const JOG_STATE: Record<Axis, string> = { elevation: "control.jogElevation", azimuth: "control.jogAzimuth" };
+
 class SambaSolarTrack extends utils.Adapter {
     private client: DeviceClient | undefined;
+    private remote: RemoteControl | undefined;
+    /** What the firmware can do, from GET /api/info */
+    private features = new Set<string>();
+    /** Reason of the last failure per kind of command; the same reason is reported only once */
+    private readonly commandProblems = new Map<string, string>();
     private store = new MessageStore(HISTORY_DEFAULT);
     private readonly cache = new Map<string, StateValue>();
     private forwardLevel: ForwardLevel = "W";
@@ -63,6 +75,7 @@ class SambaSolarTrack extends utils.Adapter {
             name: "samba-solar-track",
         });
         this.on("ready", this.onReady.bind(this));
+        this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
     }
 
@@ -107,15 +120,22 @@ class SambaSolarTrack extends utils.Adapter {
         await this.createObjects();
         await this.restorePosition();
 
+        const timers = {
+            set: (callback: () => void, ms: number): unknown => this.setTimeout(callback, ms),
+            clear: (handle: unknown): void => this.clearTimeout(handle as ioBroker.Timeout),
+        };
+        this.remote = new RemoteControl({
+            send: frame => this.client?.send(frame) ?? false,
+            timers,
+            log: this.log,
+            onJogEnd: (axis, reason) => this.onJogEnd(axis, reason),
+        });
         this.client = new DeviceClient({
             host,
             port,
             token,
             log: this.log,
-            timers: {
-                set: (callback, ms) => this.setTimeout(callback, ms),
-                clear: handle => this.clearTimeout(handle as ioBroker.Timeout),
-            },
+            timers,
             events: {
                 onInfo: info => this.onInfo(info),
                 onHello: hello => this.onHello(hello),
@@ -123,8 +143,10 @@ class SambaSolarTrack extends utils.Adapter {
                 onLog: line => this.onLog(line),
                 onLost: lost => this.onLost(lost),
                 onConnection: connected => this.onConnection(connected),
+                onResult: (id, ok, reason) => this.remote?.handleResult(id, ok, reason),
             },
         });
+        this.subscribeStates("control.*");
         this.client.start();
     }
 
@@ -139,9 +161,15 @@ class SambaSolarTrack extends utils.Adapter {
                 name: def.name,
                 type: def.type,
                 role: def.role,
-                read: true,
-                write: false,
+                read: def.read !== false,
+                write: def.write === true,
             };
+            if (def.min !== undefined) {
+                common.min = def.min;
+            }
+            if (def.max !== undefined) {
+                common.max = def.max;
+            }
             if (def.unit) {
                 common.unit = def.unit;
             }
@@ -209,7 +237,19 @@ class SambaSolarTrack extends utils.Adapter {
         }
     }
 
+    /**
+     * Writes a value in any case, for example to take back a command that was not executed.
+     *
+     * @param id id of the state
+     * @param value new value
+     */
+    private forceValue(id: string, value: StateValue): void {
+        this.cache.delete(id);
+        this.writeValue(id, value);
+    }
+
     private onInfo(info: DeviceInfo): void {
+        this.features = new Set(info.features);
         this.writeValues(infoToValues(info));
         if (info.simulation) {
             this.log.debug("[dev] The device runs its simulation: no value is a real measurement");
@@ -241,6 +281,9 @@ class SambaSolarTrack extends utils.Adapter {
         const after = this.cache.get("status.state");
         if (before !== after) {
             this.log.debug(`[dev] State ${String(before ?? "unknown")} -> ${String(after)}`);
+        }
+        if (isObject(status.jog) && typeof status.jog.active === "boolean") {
+            this.remote?.handleStatus(status.jog.active);
         }
     }
 
@@ -287,7 +330,159 @@ class SambaSolarTrack extends utils.Adapter {
             this.lostReported = false;
         } else {
             this.flushMessages();
+            this.remote?.handleDisconnect();
         }
+    }
+
+    /**
+     * Is called if a subscribed state changes: commands written to the states under `control`.
+     *
+     * @param id full id of the state
+     * @param state new state, null when it was deleted
+     */
+    private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
+        if (!state || state.ack) {
+            // values with ack are confirmations written by this adapter
+            return;
+        }
+        const local = id.slice(this.namespace.length + 1);
+        const source = state.from ?? "unknown";
+        switch (local) {
+            case "control.auto":
+                void this.runSwitch("auto", "command", local, state.val, source);
+                break;
+            case "control.park":
+                void this.runSwitch("park", "park", local, state.val, source);
+                break;
+            case "control.acknowledge":
+                void this.runAcknowledge(local, source);
+                break;
+            case JOG_STATE.elevation:
+                void this.runJog("elevation", state.val, source);
+                break;
+            case JOG_STATE.azimuth:
+                void this.runJog("azimuth", state.val, source);
+                break;
+            default:
+                this.log.debug(`[cmd] Write to ${local} from ${source} ignored: this state is not a command`);
+        }
+    }
+
+    /**
+     * Checks what can be decided without asking the device.
+     *
+     * @param feature what the firmware has to support
+     * @returns the reason why the command cannot be sent, or undefined
+     */
+    private precheck(feature: string): string | undefined {
+        if (!this.remote || !this.client) {
+            return "disconnected";
+        }
+        if (this.client.readOnly) {
+            return "protocol";
+        }
+        if (this.cache.get("info.connection") === true && !this.features.has(feature)) {
+            return "unsupported";
+        }
+        return undefined;
+    }
+
+    /**
+     * Notes the result of a command in `control.lastResult` and in the log. A failure is a
+     * warning; while the same failure repeats it is logged at debug level only.
+     *
+     * @param kind kind of command, failures are remembered per kind
+     * @param what the command in words
+     * @param result result of the command
+     * @param source who gave the command
+     * @param ended true = a running manual drive was ended, false = a command was refused
+     */
+    private report(kind: string, what: string, result: CommandResult, source: string, ended = false): void {
+        this.forceValue(
+            "control.lastResult",
+            JSON.stringify({
+                ts: Date.now(),
+                command: what,
+                ok: result.ok,
+                reason: result.reason ?? null,
+                text: reasonText(result.reason),
+                from: source,
+            }),
+        );
+        if (result.ok) {
+            this.commandProblems.delete(kind);
+            return;
+        }
+        const reason = result.reason ?? "unknown";
+        const text = ended
+            ? `[jog] The manual drive "${what}" was stopped: ${reason} (${reasonText(reason)})`
+            : `[cmd] "${what}" from ${source} was not executed: ${reason} (${reasonText(reason)})`;
+        if (this.commandProblems.get(kind) === reason) {
+            this.log.debug(text);
+        } else {
+            this.commandProblems.set(kind, reason);
+            this.log.warn(text);
+        }
+    }
+
+    private async runSwitch(cmd: Command, feature: string, id: string, value: unknown, source: string): Promise<void> {
+        const on = value === true || value === 1 || value === "true";
+        const blocked = this.precheck(feature);
+        const result =
+            blocked || !this.remote
+                ? { ok: false, reason: blocked ?? "disconnected", durationMs: 0 }
+                : await this.remote.command(cmd, on, source);
+        this.report(cmd, `${cmd} ${on ? "on" : "off"}`, result, source);
+        // accepted: confirm the value; refused: back to what the device reports
+        this.forceValue(id, result.ok ? on : (this.cache.get(id) ?? null));
+    }
+
+    private async runAcknowledge(id: string, source: string): Promise<void> {
+        const blocked = this.precheck("command");
+        const result =
+            blocked || !this.remote
+                ? { ok: false, reason: blocked ?? "disconnected", durationMs: 0 }
+                : await this.remote.command("ack", undefined, source);
+        this.report("ack", "acknowledge", result, source);
+        this.forceValue(id, result.ok);
+    }
+
+    private async runJog(axis: Axis, value: unknown, source: string): Promise<void> {
+        const id = JOG_STATE[axis];
+        const dir = value === 1 || value === -1 || value === 0 ? value : undefined;
+        if (dir === undefined) {
+            this.report("jog", `jog ${axis} ${String(value)}`, { ok: false, reason: "range", durationMs: 0 }, source);
+            this.forceValue(id, 0);
+            return;
+        }
+        const running = this.remote?.jogging;
+        if (dir !== 0 && running?.axis === axis && running.dir === dir) {
+            // the writer keeps the drive alive (dead man); nothing to report
+            await this.remote?.jog(axis, dir, source);
+            return;
+        }
+        const blocked = dir !== 0 ? this.precheck("jog") : undefined;
+        const result =
+            blocked || !this.remote
+                ? { ok: false, reason: blocked ?? "disconnected", durationMs: 0 }
+                : await this.remote.jog(axis, dir, source);
+        this.report("jog", `jog ${axis} ${dir === 0 ? "stop" : dir}`, result, source);
+        if (running && running.axis !== axis && dir !== 0) {
+            // the device drives one axis at a time: the other drive has ended
+            this.forceValue(JOG_STATE[running.axis], 0);
+        }
+        this.forceValue(id, result.ok ? dir : 0);
+    }
+
+    /**
+     * A manual drive ended without a stop command: dead man, the device or a lost connection.
+     *
+     * @param axis axis that was driving
+     * @param reason why it ended
+     */
+    private onJogEnd(axis: Axis, reason: string): void {
+        this.report("jog", `jog ${axis}`, { ok: false, reason, durationMs: 0 }, "the adapter", true);
+        this.forceValue(JOG_STATE[axis], 0);
     }
 
     /** Writes the collected messages to the message states */
@@ -321,6 +516,9 @@ class SambaSolarTrack extends utils.Adapter {
         try {
             this.stopping = true;
             this.log.debug("[unload] Stopping: closing the connection and clearing timers");
+            // a running manual drive gets its stop command before the connection closes
+            this.remote?.stop();
+            this.remote = undefined;
             this.client?.stop();
             this.client = undefined;
             if (this.flushTimer) {

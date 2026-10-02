@@ -76,12 +76,23 @@ function defaultStatus() {
 
 class MockDevice {
     /**
-     * @param {{ device?: string, protocol?: number, ringSize?: number, autoPong?: boolean }} [options]
+     * @param {{ device?: string, protocol?: number, ringSize?: number, autoPong?: boolean, jogTimeoutMs?: number, features?: string[] }} [options]
      */
     constructor(options = {}) {
         this.device = options.device ?? "samba-solar-track";
         this.protocol = options.protocol ?? 1;
         this.ringSize = options.ringSize ?? 300;
+        /** a manual drive stops after this time without renewal (the firmware uses 1000 ms) */
+        this.jogTimeoutMs = options.jogTimeoutMs ?? 1000;
+        this.features = options.features ?? ["status", "log", "command", "jog", "park", "setup", "params"];
+        /** true = someone operates the display: manual drive from remote is refused with "local" */
+        this.localActive = false;
+        /** running manual drive: { ws, axis, dir, renewed } */
+        this.jog = undefined;
+        /** after the device ended a drive itself: { ws, reason } until that connection sends a stop */
+        this.release = undefined;
+        /** number of jog frames received, including renewals */
+        this.jogFrames = 0;
         this.token = TOKEN;
         this.status = defaultStatus();
         /** frames received from clients, parsed */
@@ -125,11 +136,18 @@ class MockDevice {
     async start() {
         await new Promise(resolve => this.server.listen(this.port, "127.0.0.1", resolve));
         this.port = this.server.address().port;
+        // dead man of the manual drive, as in the control loop of the firmware
+        this.jogWatch = setInterval(() => {
+            if (this.jog && Date.now() - this.jog.renewed >= this.jogTimeoutMs) {
+                this.abortJog("state");
+            }
+        }, 20);
         return this.port;
     }
 
     /** Closes all connections and the server */
     async stop() {
+        clearInterval(this.jogWatch);
         for (const ws of this.wss.clients) {
             ws.terminate();
         }
@@ -159,7 +177,7 @@ class MockDevice {
             protocol: this.protocol,
             id: "aa:bb:cc:dd:ee:ff",
             hostname: "samba-solar-track",
-            features: ["status", "log", "command", "jog", "park", "setup", "params"],
+            features: this.features,
             bootId: this.bootId,
             uptimeMs: this.uptimeMs,
             ip: "127.0.0.1",
@@ -219,6 +237,18 @@ class MockDevice {
             }
             if (frame.t === "sub") {
                 this.subscribe(ws, frame.since);
+            } else if (frame.t === "cmd") {
+                this.handleCommand(ws, frame);
+            } else if (frame.t === "jog") {
+                this.handleJog(ws, frame);
+            }
+        });
+        ws.on("close", () => {
+            if (this.release?.ws === ws) {
+                this.release = undefined;
+            }
+            if (this.jog?.ws === ws) {
+                this.endJog();
             }
         });
         ws.send(
@@ -235,6 +265,129 @@ class MockDevice {
             }),
         );
         ws.send(JSON.stringify({ t: "status", ...this.statusBody() }));
+    }
+
+    /** Answers a command like the firmware: {"t":"result","id":…,"ok":…,"reason":…} */
+    result(ws, id, reason) {
+        const frame = { t: "result", id: typeof id === "number" ? id : null, ok: !reason };
+        if (reason) {
+            frame.reason = reason;
+        }
+        ws.send(JSON.stringify(frame));
+    }
+
+    handleCommand(ws, frame) {
+        const locked = this.status.remoteLocked;
+        if (!ws.authed) {
+            return this.result(ws, frame.id, "auth");
+        }
+        switch (frame.cmd) {
+            case "auto":
+                if (locked || !this.status.setupDone) {
+                    return this.result(ws, frame.id, locked ? "locked" : "setup");
+                }
+                this.status.auto = frame.on === true;
+                this.status.state = this.status.auto ? (this.status.park ? "PARK" : "IDLE") : "MANUAL";
+                if (this.status.auto && this.jog) {
+                    this.abortJog("state");
+                }
+                break;
+            case "park":
+                if (locked || !this.status.setupDone) {
+                    return this.result(ws, frame.id, locked ? "locked" : "setup");
+                }
+                this.status.park = frame.on === true;
+                if (this.status.auto) {
+                    this.status.state = this.status.park ? "PARK" : "IDLE";
+                }
+                break;
+            case "ack":
+                if (locked) {
+                    return this.result(ws, frame.id, "locked");
+                }
+                this.status.fault = { ...this.status.fault, motor: false };
+                break;
+            default:
+                return this.result(ws, frame.id, "unknown");
+        }
+        this.result(ws, frame.id);
+        this.broadcast({ t: "status", ...this.statusBody() });
+    }
+
+    handleJog(ws, frame) {
+        this.jogFrames++;
+        if (!ws.authed) {
+            return this.result(ws, frame.id, "auth");
+        }
+        if (frame.dir === 0) {
+            // a stop is always accepted, but only ends the own drive
+            if (this.release?.ws === ws) {
+                this.release = undefined;
+            }
+            if (this.jog?.ws === ws) {
+                this.endJog();
+            }
+            return this.result(ws, frame.id);
+        }
+        const axisKnown =
+            (frame.axis === "elevation" || (frame.axis === "azimuth" && this.status.mode === 2)) &&
+            (frame.dir === 1 || frame.dir === -1);
+        let reason;
+        if (this.status.remoteLocked) {
+            reason = "locked";
+        } else if (!this.status.setupDone) {
+            reason = "setup";
+        } else if (!axisKnown) {
+            reason = "unknown";
+        } else if (this.status.auto || this.status.state !== "MANUAL") {
+            reason = "state";
+        } else if (this.localActive) {
+            reason = "local";
+        } else if (this.jog && this.jog.ws !== ws) {
+            reason = "busy";
+        } else if (this.release?.ws === ws) {
+            reason = this.release.reason;
+        }
+        if (reason) {
+            return this.result(ws, frame.id, reason);
+        }
+        if (this.jog && this.jog.axis === frame.axis && this.jog.dir === frame.dir) {
+            // renewal of a running drive: no answer
+            this.jog.renewed = Date.now();
+            return;
+        }
+        if (this.jog) {
+            this.status.axes[this.jog.axis].out = 0;
+        }
+        this.jog = { ws, axis: frame.axis, dir: frame.dir, renewed: Date.now() };
+        this.status.jog = { active: true, axis: frame.axis, dir: frame.dir };
+        this.status.axes[frame.axis].out = frame.dir;
+        this.result(ws, frame.id);
+        this.broadcast({ t: "status", ...this.statusBody() });
+    }
+
+    endJog() {
+        if (!this.jog) {
+            return;
+        }
+        this.status.axes[this.jog.axis].out = 0;
+        this.status.jog = { active: false, axis: null, dir: 0 };
+        this.jog = undefined;
+        this.broadcast({ t: "status", ...this.statusBody() });
+    }
+
+    /**
+     * The device ends the drive itself (lock, display, state, dead man). Further drive commands
+     * of that connection are refused with the reason until it sends a stop.
+     *
+     * @param {string} reason locked, local or state
+     */
+    abortJog(reason) {
+        if (!this.jog) {
+            return;
+        }
+        this.release = { ws: this.jog.ws, reason };
+        this.endJog();
     }
 
     subscribe(ws, since) {

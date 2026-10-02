@@ -261,8 +261,14 @@ class DeviceClient {
           log.debug("[rx] lost frame ignored: count or to is missing");
         }
         break;
-      case "params":
       case "result":
+        events.onResult(
+          typeof frame.id === "number" ? frame.id : null,
+          frame.ok === true,
+          typeof frame.reason === "string" ? frame.reason : void 0
+        );
+        break;
+      case "params":
         log.debug(`[rx] Frame "${frame.t}" ignored: not used by this version of the adapter`);
         break;
       default:
@@ -305,11 +311,17 @@ class DeviceClient {
     this.send({ t: "sub", since });
     events.onConnection(true);
   }
+  /**
+   * Sends a frame to the device.
+   *
+   * @param frame the frame
+   * @returns false when there is no connection
+   */
   send(frame) {
     const { log } = this.options;
-    if (!this.ws || this.ws.readyState !== import_ws.default.OPEN) {
-      log.debug(`[tx] Frame "${String(frame.t)}" skipped: WebSocket is not open`);
-      return;
+    if (!this.ws || !this.connected || this.ws.readyState !== import_ws.default.OPEN) {
+      log.debug(`[tx] Frame "${String(frame.t)}" skipped: not connected`);
+      return false;
     }
     const text = JSON.stringify(frame);
     log.silly(`[tx] ${text}`);
@@ -318,6 +330,7 @@ class DeviceClient {
         log.debug(`[tx] Sending "${String(frame.t)}" failed: ${errorText(error)}`);
       }
     });
+    return true;
   }
   schedulePing(session) {
     this.pingTimer = this.options.timers.set(() => {

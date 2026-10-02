@@ -15,7 +15,7 @@ Hardware, firmware e manuale del dispositivo: <https://github.com/ssbingo/samba-
 
 ## Stato del progetto
 
-Versione iniziale in sviluppo, non pubblicata su npm. Disponibile: connessione con riconnessione automatica, stato del controllore come stati, messaggi con ora e cronologia. Previsto: comandi, impostazioni del dispositivo, notifiche, widget vis-2. Finora testato solo con un dispositivo simulato, **non con hardware reale**.
+Versione iniziale in sviluppo, non pubblicata su npm. Disponibile: connessione con riconnessione automatica, stato del controllore come stati, messaggi con ora e cronologia, comandi (automatico, parcheggio in piano, conferma del guasto, movimento manuale con uomo morto, vedi il [README inglese](../../README.md#commands)). Previsto: impostazioni del dispositivo, notifiche, widget vis-2. Finora testato solo con un dispositivo simulato, **non con hardware reale**.
 
 ## Requisiti
 
@@ -37,6 +37,9 @@ Versione iniziale in sviluppo, non pubblicata su npm. Disponibile: connessione c
 Livelli di log, tag e cambio del livello sono descritti nel [README inglese](../../README.md#logging-and-debugging). Il token non compare mai nel log.
 
 ## Changelog
+
+### 0.0.2 (2026-10-02)
+- (ssbingo) comandi: automatico on/off, parcheggio in piano, conferma del guasto e movimento manuale con uomo morto
 
 ### 0.0.1 (2026-10-02)
 - (ssbingo) prima versione: connessione al dispositivo, stato del controllore e messaggi come stati

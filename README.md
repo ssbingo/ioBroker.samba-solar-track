@@ -5,9 +5,9 @@
 
 ## samba-solar-track adapter for ioBroker
 
-Monitors the **Samba Solar Track** controller: a sun tracker for solar modules with storm protection, built on an
-ESP32-S3 board with a 7" touch display. The adapter shows the state of the controller in ioBroker and receives every
-message the device writes to its log.
+Monitors and operates the **Samba Solar Track** controller: a sun tracker for solar modules with storm protection, built on an
+ESP32-S3 board with a 7" touch display. The adapter shows the state of the controller in ioBroker, receives every
+message the device writes to its log and passes on commands.
 
 Hardware, firmware and manual of the device: <https://github.com/ssbingo/samba-solar-track> (this repository is
 not public yet)
@@ -30,7 +30,7 @@ This is an early version under development. It is not published on npm.
 | Connection to the device, automatic reconnect | available |
 | State of the controller as states (state machine, axes, sun sensor, wind, supplies, lights) | available |
 | Messages of the device with time of day, history, last warning | available |
-| Commands (automatic on/off, park flat, acknowledge fault, manual drive) | planned |
+| Commands (automatic on/off, park flat, acknowledge fault, manual drive with dead man) | available |
 | Settings of the device | planned |
 | Notifications (Telegram, Pushover, e-mail) | planned |
 | vis-2 widgets (overview, operation, messages, values) | planned |
@@ -53,7 +53,7 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | --- | --- |
 | Address of the device | IP address or host name. The display shows both under setup > network. |
 | Port | The device uses port 80. |
-| Token | Shown at the display under setup > network > remote access. Reading works without a token; the token will be needed for commands. It is stored encrypted. |
+| Token | Shown at the display under setup > network > remote access. Reading works without a token; commands need it. It is stored encrypted. |
 | Write messages of the device to the ioBroker log | From which level on messages of the device also appear in the ioBroker log. Default: warnings and errors. All messages are stored in the states under `messages`, whatever is chosen here. |
 | Messages in the history | Number of messages kept in `messages.history` (1 to 500, default 50). |
 
@@ -70,10 +70,51 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | `jog` | manual drive from remote that is running |
 | `counters` | error counters of the device |
 | `messages` | last message, last warning or error, history as JSON, lost messages |
+| `control` | commands, see below |
 
 If `info.simulation` is `true`, the device runs its built-in simulation: no value is a real measurement.
 
 The device has no clock. The adapter calculates the time of each message from the uptime of the device.
+
+### Commands
+
+Commands are written to the states under `control`. The device checks every command itself. Storm protection, limit
+switches, dead time and runtime monitoring of the device cannot be switched off or shortened from ioBroker.
+
+| State | Effect |
+| --- | --- |
+| `control.auto` | automatic on or off, like the switch at the display. Shows the state of the device. |
+| `control.park` | park request on or off: the module drives flat and stays there until the request is cancelled here or at the display. It survives a restart of the device. |
+| `control.acknowledge` | acknowledge a runtime fault, like the button at the display |
+| `control.jogElevation` | manual drive: `1` = up, `-1` = down, `0` = stop |
+| `control.jogAzimuth` | manual drive: `1` = east, `-1` = west, `0` = stop |
+| `control.lastResult` | result of the last command as JSON: `command`, `ok`, `reason`, `text`, `from`, `ts` |
+
+**Manual drive works with a dead man.** A drive runs only while its state is written again and again: whoever drives
+(a widget, a script) has to write `1` or `-1` at least once per second, best every 300 to 500 ms. If the writes stop,
+the adapter stops the drive after one second and sets the state to `0`. If the adapter or the WLAN fails, the device
+stops by itself. Manual drive needs automatic switched off (`control.auto` = `false`).
+
+**You do not see the module from remote.** Drive by hand only when nobody stands at the tracker. Whoever works at the
+tracker locks the remote control at the display first.
+
+A command the device refuses is taken back: the state returns to what the device reports, the reason is in
+`control.lastResult` and in the log.
+
+| `reason` | Meaning |
+| --- | --- |
+| `auth` | the token is missing or wrong |
+| `locked` | remote control is locked at the display |
+| `setup` | the setup of the device is not completed |
+| `state` | the state of the controller does not allow it, for example manual drive while automatic is on |
+| `local` | someone is operating the display; the display has priority |
+| `busy` | another connection is driving, or the device was busy: try again |
+| `unknown` | unknown command or axis, for example azimuth with a one-axis tracker |
+| `range` | the value is not allowed |
+| `timeout`, `disconnected` | the device did not answer or is not connected |
+| `protocol`, `unsupported` | the firmware is newer than this adapter knows, or too old for this command |
+| `hold` | a manual drive was stopped because its state was not written again in time (dead man) |
+| `device` | the device ended a manual drive, for example because of storm or an operation at the display |
 
 ### Logging and debugging
 
@@ -83,7 +124,7 @@ The log level of the instance is set in the admin under Instances (expert mode) 
 | Level | Content |
 | --- | --- |
 | `error` | The adapter cannot work, for example no address configured |
-| `warn` | Something the user has to act on: device not reachable, token not accepted, messages lost, newer protocol. Each problem is reported once; repetitions follow at `debug` until it is resolved. Warnings and errors of the device are forwarded at this level. |
+| `warn` | Something the user has to act on: device not reachable, token not accepted, messages lost, newer protocol, a command that was not executed, a manual drive that was stopped. Each problem is reported once; repetitions follow at `debug` until it is resolved. Warnings and errors of the device are forwarded at this level. |
 | `info` | Milestones: configuration (without the token), connected, reachable again, device restarted |
 | `debug` | Every step: attempts with their number, durations, decisions, skipped input with the reason |
 | `silly` | Every frame received and sent |
@@ -98,6 +139,8 @@ Every line starts with a tag that names the part of the adapter:
 | `[rx]`, `[tx]` | frames received from and sent to the device |
 | `[dev]` | messages and events of the device |
 | `[msg]` | handling of the messages (sequence numbers, history) |
+| `[cmd]` | commands with their number, result and duration |
+| `[jog]` | manual drive: start, renewals, stop and the reason |
 | `[unload]` | shutdown |
 
 The token never appears in the log.
@@ -107,6 +150,9 @@ The token never appears in the log.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.0.2 (2026-10-02)
+- (ssbingo) commands: automatic on/off, park flat, acknowledge fault and manual drive with dead man
+
 ### 0.0.1 (2026-10-02)
 - (ssbingo) initial version: connection to the device, state of the controller and messages as states
 

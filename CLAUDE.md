@@ -52,12 +52,12 @@ Commit:
 OWN_GITHUB_TOKEN="$(gh auth token)" npx @iobroker/repochecker ssbingo/ioBroker.samba-solar-track main
 ```
 
-**Offene Checker-Meldungen (Stand 2.10.2026, 0.0.1) und ihre Begründung:**
+**Offene Checker-Meldungen (Stand 2.10.2026) und ihre Begründung:**
 
 | Meldung | Begründung |
 | --- | --- |
 | E2000, W3038 (nicht auf npm) | Der Adapter wird ohne Anweisung des Nutzers nicht veröffentlicht |
-| E3032 (0.0.1 nicht getaggt), S8005 (kein GitHub-Release) | Tag und Release nur auf Anweisung des Nutzers |
+| E3032 (Version nicht getaggt), S8005 (kein GitHub-Release) | Tag und Release nur auf Anweisung des Nutzers |
 | W4001 (nicht im ioBroker-Repository) | erledigt sich mit der Aufnahme; vorher ist zu klären, ob das offizielle Repository die Lizenz CC BY-NC-SA annimmt |
 
 Abweichungen vom Skill, die der Checker verlangt (er ist das Tor): Testmatrix mit Node.js 22,
@@ -74,6 +74,7 @@ nutzt wie bei `ioBroker.pondpump` „Trusted Publishing“ statt eines `NPM_TOKE
 | `src/lib/states.ts` | Tabelle aller Datenpunkte und Abbildung des Geräte-Zustands darauf |
 | `src/lib/messages.ts` | Meldungen: Uhrzeit aus der Laufzeit, Verlauf, laufende Nummern, Weitergabe ins Log |
 | `src/lib/device-client.ts` | Verbindung: `GET /api/info`, WebSocket, Wiederverbinden, Überwachung |
+| `src/lib/remote-control.ts` | Befehle und Handfahrt: Nummern, Antworten, Erneuern, Totmann |
 | `src/lib/*.test.ts` | Unit-Tests (mocha) |
 | `test/mock-device.js` | nachgebildetes Gerät nach `PROTOCOL.md` für Unit- und Integrationstest |
 | `test/integration.js` | Adapter im echten js-controller gegen das nachgebildete Gerät |
@@ -86,10 +87,15 @@ Prüfen vor jeder Fertigmeldung: `npm run build`, `npm run check`, `npm run lint
 
 - **Erledigt (0.0.1):** Verbindung zum Gerät mit Wiederverbinden, Zustand als Datenpunkte,
   Meldungen mit Uhrzeit, Verlauf und Nachholen nach einer Unterbrechung, Weitergabe ins
-  ioBroker-Log. Nur gegen das nachgebildete Gerät geprüft, **nicht mit echter Hardware**.
-- **Offen, in dieser Reihenfolge:** Befehle (Automatik, Parken, Quittieren, Handfahrt mit
-  Totmann), Einstellungen des Geräts lesen und schreiben, Benachrichtigungen über
-  Messaging-Adapter, vis-2-Widgets (Übersicht, Bedienung, Meldungen, Werte), Handbuch.
+  ioBroker-Log.
+- **Erledigt (0.0.2):** Befehle über die Datenpunkte unter `control`: Automatik, Parken,
+  Quittieren, Handfahrt. Die Handfahrt hat einen Totmann von Ende zu Ende: Der Datenpunkt muss
+  mindestens einmal pro Sekunde neu geschrieben werden, sonst stoppt der Adapter die Fahrt.
+  Das gilt auch für die Widgets, die später darauf aufbauen.
+- Alles nur gegen das nachgebildete Gerät geprüft, **nicht mit echter Hardware**.
+- **Offen, in dieser Reihenfolge:** Einstellungen des Geräts lesen und schreiben,
+  Benachrichtigungen über Messaging-Adapter, vis-2-Widgets (Übersicht, Bedienung, Meldungen,
+  Werte), Handbuch.
 
 ---
 

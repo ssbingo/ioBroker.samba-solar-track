@@ -38,7 +38,8 @@ const NODES = [
   { id: "leds", type: "channel", name: { en: "Indicator lights", de: "Meldeleuchten" } },
   { id: "jog", type: "channel", name: { en: "Remote manual drive", de: "Handfahrt aus der Ferne" } },
   { id: "counters", type: "channel", name: { en: "Error counters", de: "Fehlerz\xE4hler" } },
-  { id: "messages", type: "channel", name: { en: "Messages of the device", de: "Meldungen des Ger\xE4ts" } }
+  { id: "messages", type: "channel", name: { en: "Messages of the device", de: "Meldungen des Ger\xE4ts" } },
+  { id: "control", type: "channel", name: { en: "Commands", de: "Befehle" } }
 ];
 const CONTROLLER_STATES = {
   SETUP: "Setup missing",
@@ -494,6 +495,63 @@ const STATES = [
     type: "number",
     role: "value",
     status: "logLost"
+  },
+  // --- commands ---
+  {
+    id: "control.auto",
+    name: { en: "Automatic on/off", de: "Automatik ein/aus" },
+    type: "boolean",
+    role: "switch",
+    write: true,
+    status: "auto"
+  },
+  {
+    id: "control.park",
+    name: { en: "Park flat on/off", de: "Flach parken ein/aus" },
+    type: "boolean",
+    role: "switch",
+    write: true,
+    status: "park"
+  },
+  {
+    id: "control.acknowledge",
+    name: { en: "Acknowledge fault", de: "St\xF6rung quittieren" },
+    type: "boolean",
+    role: "button",
+    write: true,
+    read: false
+  },
+  {
+    id: "control.jogElevation",
+    name: {
+      en: "Manual drive elevation (write again at least once per second)",
+      de: "Handfahrt Elevation (mindestens einmal pro Sekunde neu schreiben)"
+    },
+    type: "number",
+    role: "level",
+    write: true,
+    min: -1,
+    max: 1,
+    states: { "-1": "DOWN", 0: "Stop", 1: "UP" }
+  },
+  {
+    id: "control.jogAzimuth",
+    name: {
+      en: "Manual drive azimuth (write again at least once per second)",
+      de: "Handfahrt Azimut (mindestens einmal pro Sekunde neu schreiben)"
+    },
+    type: "number",
+    role: "level",
+    write: true,
+    min: -1,
+    max: 1,
+    states: { "-1": "WEST", 0: "Stop", 1: "EAST" }
+  },
+  {
+    id: "control.lastResult",
+    name: { en: "Result of the last command", de: "Ergebnis des letzten Befehls" },
+    type: "string",
+    role: "json"
   },
   // --- messages ---
   {
