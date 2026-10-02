@@ -97,8 +97,8 @@ tests.integration(path.join(__dirname, ".."), {
                 await until(async () => (await value("messages.lastSeq")) === 3, "messages.lastSeq 3");
 
                 // warnings of the device are forwarded to the ioBroker log, info lines are not
-                expect(harness.hasLog("[dev] #2 [W][wind] Windmesser antwortet nicht", "warn")).to.equal(true);
-                expect(harness.hasLog("[dev] #3 [W][track] Sturm", "warn")).to.equal(true);
+                await until(() => harness.hasLog("[dev] #2 [W][wind] Windmesser antwortet nicht", "warn"), `log line "[dev] #2 [W][wind] Windmesser antwortet nicht"`.replace(/"/g, ""));
+                await until(() => harness.hasLog("[dev] #3 [W][track] Sturm", "warn"), `log line "[dev] #3 [W][track] Sturm"`.replace(/"/g, ""));
                 expect(harness.hasLog("[dev] #1 ")).to.equal(false);
 
                 // the device restarts: connection drops and comes back with new sequence numbers
@@ -107,7 +107,7 @@ tests.integration(path.join(__dirname, ".."), {
                 await until(async () => (await value("info.bootId")) === device.bootId, "new boot id");
                 await until(async () => (await value("messages.lastSeq")) === 1, "messages.lastSeq 1 after restart");
                 await expectState("info.connection", true);
-                expect(harness.hasLog("The device has restarted", "info")).to.equal(true);
+                await until(() => harness.hasLog("The device has restarted", "info"), `log line "The device has restarted"`.replace(/"/g, ""));
 
                 // no secret in the log, even at level silly
                 const logs = harness.getLogs();
@@ -190,7 +190,7 @@ tests.integration(path.join(__dirname, ".."), {
                 await expectState("axes.elevation.output", 0);
                 expect(device.jog).to.equal(undefined);
                 await until(async () => (await lastResult()).reason === "hold", "result of the dead man");
-                expect(harness.hasLog("dead man", "warn")).to.equal(true);
+                await until(() => harness.hasLog("dead man", "warn"), `log line "dead man"`.replace(/"/g, ""));
 
                 // a drive is stopped at once by writing 0
                 await write("control.jogAzimuth", -1);
@@ -209,6 +209,7 @@ tests.integration(path.join(__dirname, ".."), {
                 await write("control.auto", true);
                 await new Promise(resolve => setTimeout(resolve, 500));
                 await expectState("control.auto", false, true);
+                await until(() => harness.hasLog("locked at the display", "warn"), "warning about the lock");
                 const lockedWarnings = harness.getLogs("warn").filter(log => log.message.includes("locked at the display"));
                 expect(lockedWarnings, "the same refusal is a warning only once").to.have.length(1);
 
@@ -294,11 +295,11 @@ tests.integration(path.join(__dirname, ".."), {
                 await expectState("params.safety.stormKmh", 40, true);
                 await expectState("status.pendingConfirm", '["stormKmh"]');
                 expect(param("stormKmh")).to.include({ value: 40, pending: 45 });
-                expect((await lastResult()).result).to.equal("pending");
+                await until(async () => (await lastResult()).result === "pending", "result pending");
                 device.confirmAtDisplay("stormKmh", true);
                 await expectState("params.safety.stormKmh", 45, true);
                 await expectState("params.pending", "{}", true);
-                expect(harness.hasLog("stormKmh: the proposal 45 was confirmed at the display", "info")).to.equal(true);
+                await until(() => harness.hasLog("stormKmh: the proposal 45 was confirmed at the display", "info"), `log line "stormKmh: the proposal 45 was confirmed at the display"`.replace(/"/g, ""));
 
                 // a proposal that is refused at the display
                 await write("params.safety.motorDeadtimeMs", 800);
@@ -306,13 +307,13 @@ tests.integration(path.join(__dirname, ".."), {
                 device.confirmAtDisplay("motorDeadtimeMs", false);
                 await expectState("params.pending", "{}", true);
                 await expectState("params.safety.motorDeadtimeMs", 500, true);
-                expect(harness.hasLog("motorDeadtimeMs: the proposal 800 was not accepted", "info")).to.equal(true);
+                await until(() => harness.hasLog("motorDeadtimeMs: the proposal 800 was not accepted", "info"), `log line "motorDeadtimeMs: the proposal 800 was not accepted"`.replace(/"/g, ""));
 
                 // outside the limits: the device refuses, the old value stays
                 await write("params.safety.stormKmh", 80);
                 await until(async () => (await lastResult()).reason === "range", "result range");
                 await expectState("params.safety.stormKmh", 45, true);
-                expect(harness.hasLog("stormKmh = 80", "warn")).to.equal(true);
+                await until(() => harness.hasLog("stormKmh = 80", "warn"), `log line "stormKmh = 80"`.replace(/"/g, ""));
 
                 // a change made at the display arrives
                 param("nightDelayMs").value = 600000;
@@ -346,11 +347,17 @@ tests.integration(path.join(__dirname, ".."), {
                 await expectState("status.mode", 1);
                 await expectState("setup.mode", 1, true);
                 await expectState("info.connection", true);
-                expect(harness.hasLog("Setup saved", "info")).to.equal(true);
+                await until(() => harness.hasLog("Setup saved", "info"), `log line "Setup saved"`.replace(/"/g, ""));
 
                 // the settings of the second axis are gone, the others are still there
-                await until(async () => (await object("params.safety.motorMaxRunMsAzimuth")) == null, "azimuth setting removed");
-                expect(await object("params.control.nightReturnEast")).to.be.oneOf([null, undefined]);
+                // the adapter deletes them one after the other: wait for each
+                for (const gone of [
+                    "params.safety.motorMaxRunMsAzimuth",
+                    "params.commissioning.limitSwitchesAzimuth",
+                    "params.control.nightReturnEast",
+                ]) {
+                    await until(async () => (await object(gone)) == null, `${gone} removed`);
+                }
                 expect(await object("params.safety.motorMaxRunMsElevation")).to.be.an("object");
                 await expectState("params.control.trackStartPermille", 100, true);
 
@@ -401,7 +408,7 @@ tests.integration(path.join(__dirname, ".."), {
                     return auto?.val === true && auto.ack === true;
                 }, "control.auto back to true");
                 expect(device.status.auto).to.equal(true);
-                expect(harness.hasLog("the token is missing or wrong", "warn")).to.equal(true);
+                await until(() => harness.hasLog("the token is missing or wrong", "warn"), `log line "the token is missing or wrong"`.replace(/"/g, ""));
             });
         });
 
