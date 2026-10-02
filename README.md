@@ -44,17 +44,8 @@ Tested against a simulated device only. **Not yet tested with real hardware.**
 
 ### Installation
 
-The adapter is not on npm and not in the ioBroker repositories. It is installed from GitHub:
-
-- in the admin (expert mode): Adapters > Install from custom source > GitHub, URL
-  `https://github.com/ssbingo/ioBroker.samba-solar-track`
-- or on the command line of the ioBroker host: `iobroker url ssbingo/ioBroker.samba-solar-track`
-
-Then create the instance: `iobroker add samba-solar-track` (or in the admin under Adapters).
-
-Without access to GitHub the adapter can be installed from a package file: `npm run build` and `npm pack` in the
-adapter directory create `iobroker.samba-solar-track-<version>.tgz`; on the ioBroker host
-`iobroker url /path/to/iobroker.samba-solar-track-<version>.tgz` installs it.
+The adapter is not on npm and not in the ioBroker repositories yet. How to get this development version into an
+ioBroker installation is described in [doc/install.md](doc/install.md).
 
 ### Configuration
 
