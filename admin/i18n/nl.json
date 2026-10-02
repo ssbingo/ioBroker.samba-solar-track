@@ -1,12 +1,12 @@
 {
-    "introText": "De Samba Solar Track-besturing werkt zelfstandig. Deze adapter toont de toestand en ontvangt de meldingen.",
+    "introText": "De Samba Solar Track-besturing werkt zelfstandig. Deze adapter toont de toestand, ontvangt de meldingen en geeft commando's en instellingen door.",
     "headerConnection": "Verbinding",
     "ipLabel": "Adres van het apparaat",
     "ipHelp": "IP-adres of hostnaam, te zien op het display onder instellen > netwerk",
     "portLabel": "Poort",
     "portHelp": "Het apparaat gebruikt poort 80",
     "tokenLabel": "Token",
-    "tokenHelp": "Staat op het display onder instellen > netwerk > toegang op afstand. Zonder token leest de adapter alleen.",
+    "tokenHelp": "Staat op het display onder instellen > netwerk > toegang op afstand. Zonder token leest de adapter alleen; commando's en instellingen hebben het nodig.",
     "headerMessages": "Meldingen",
     "forwardLevelLabel": "Meldingen van het apparaat in het ioBroker-log schrijven",
     "forwardLevelHelp": "Alle meldingen staan hoe dan ook in de datapunten onder messages",
@@ -17,5 +17,17 @@
     "forwardD": "ook debug-meldingen",
     "forwardV": "alles (ook ruwe waarden)",
     "historySizeLabel": "Meldingen in de geschiedenis",
-    "historySizeHelp": "Aantal meldingen in messages.history (1 tot 500)"
+    "historySizeHelp": "Aantal meldingen in messages.history (1 tot 500)",
+    "headerNotify": "Meldingen via berichtendienst",
+    "notifyEnabledLabel": "Meldingen versturen",
+    "messagingInstanceLabel": "Versturen via",
+    "messagingInstanceHelp": "Instantie van een berichtenadapter, bijvoorbeeld Telegram, Pushover of e-mail",
+    "notifyStormLabel": "Stormbeveiliging begint en eindigt",
+    "notifyFaultLabel": "Storingen (looptijd van een aandrijving, schakeluitgangen)",
+    "notifyWindLabel": "Windmeter antwoordt niet meer of weer",
+    "notifySensorLabel": "Zonnesensor gestoord of weer in orde",
+    "notifyConnectionLabel": "Apparaat niet bereikbaar of weer bereikbaar",
+    "notifyRestartLabel": "Apparaat is opnieuw gestart",
+    "notifyConnectionMinutesLabel": "Melden na minuten zonder verbinding",
+    "notifyConnectionMinutesHelp": "Een korte onderbreking van het WLAN veroorzaakt geen melding (1 tot 1440)"
 }

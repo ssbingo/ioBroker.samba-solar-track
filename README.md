@@ -32,7 +32,7 @@ This is an early version under development. It is not published on npm.
 | Messages of the device with time of day, history, last warning | available |
 | Commands (automatic on/off, park flat, acknowledge fault, manual drive with dead man) | available |
 | Settings of the device (values with limits, proposals, setup, design) | available |
-| Notifications (Telegram, Pushover, e-mail) | planned |
+| Notifications through a messaging adapter (Telegram, Pushover, e-mail and others) | available |
 | vis-2 widgets (overview, operation, messages, values) | planned |
 
 Tested against a simulated device only. **Not yet tested with real hardware.**
@@ -56,6 +56,7 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | Token | Shown at the display under setup > network > remote access. Reading works without a token; commands need it. It is stored encrypted. |
 | Write messages of the device to the ioBroker log | From which level on messages of the device also appear in the ioBroker log. Default: warnings and errors. All messages are stored in the states under `messages`, whatever is chosen here. |
 | Messages in the history | Number of messages kept in `messages.history` (1 to 500, default 50). |
+| Send notifications, send through | Switches notifications on and chooses the instance of a messaging adapter, see [Notifications](#notifications). |
 
 ### States
 
@@ -146,6 +147,24 @@ The result of the last change is in `params.lastResult`. Changes made at the dis
 
 WLAN, host name and token of the device cannot be changed from ioBroker; a mistake there would lock the adapter out.
 
+### Notifications
+
+The adapter can report important events through a messaging adapter (Telegram, Pushover, e-mail, WhatsApp, Signal,
+Discord, Matrix, Gotify, ntfy). Switch "Send notifications" on in the adapter settings, choose the instance and tick
+the events:
+
+| Event | Notification |
+| --- | --- |
+| Storm protection | when it begins, with gust and threshold, and when it ends |
+| Faults | a drive ran longer than its maximum runtime (with the axis), the component of the switching outputs does not answer, and when the fault is cleared |
+| Wind sensor | when it stops answering and when it answers again |
+| Sun sensor | when it reports a fault and when it works again |
+| Connection | when the device was not reachable for the chosen number of minutes (default 5), and when it is reachable again. A short interruption of the WLAN causes no notification. |
+| Restart | when the device has restarted, with the reason (off by default) |
+
+The texts are written in the language of the ioBroker system. Nothing is sent for the state the device is in when
+the adapter starts; only changes are reported.
+
 ### Logging and debugging
 
 The log level of the instance is set in the admin under Instances (expert mode) or with
@@ -172,6 +191,7 @@ Every line starts with a tag that names the part of the adapter:
 | `[cmd]` | commands with their number, result and duration |
 | `[jog]` | manual drive: start, renewals, stop and the reason |
 | `[par]` | settings and setup of the device: old and new value, proposals, refusals |
+| `[ntf]` | notifications: every event, whether it was sent and to which instance |
 | `[unload]` | shutdown |
 
 The token never appears in the log.
@@ -181,6 +201,9 @@ The token never appears in the log.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.0.4 (2026-10-02)
+- (ssbingo) notifications through a messaging adapter: storm, faults, wind sensor, sun sensor, connection, restart
+
 ### 0.0.3 (2026-10-02)
 - (ssbingo) settings of the device as states: values with limits, proposals that wait for confirmation at the display, setup, design
 

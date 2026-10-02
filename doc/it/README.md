@@ -15,7 +15,7 @@ Hardware, firmware e manuale del dispositivo: <https://github.com/ssbingo/samba-
 
 ## Stato del progetto
 
-Versione iniziale in sviluppo, non pubblicata su npm. Disponibile: connessione con riconnessione automatica, stato del controllore come stati, messaggi con ora e cronologia, comandi (automatico, parcheggio in piano, conferma del guasto, movimento manuale con uomo morto) e impostazioni del dispositivo (valori con limiti, proposte con conferma sul display, configurazione, design), vedi il [README inglese](../../README.md#commands). Previsto: notifiche, widget vis-2. Finora testato solo con un dispositivo simulato, **non con hardware reale**.
+Versione iniziale in sviluppo, non pubblicata su npm. Disponibile: connessione con riconnessione automatica, stato del controllore come stati, messaggi con ora e cronologia, comandi (automatico, parcheggio in piano, conferma del guasto, movimento manuale con uomo morto) e impostazioni del dispositivo (valori con limiti, proposte con conferma sul display, configurazione, design), vedi il [README inglese](../../README.md#commands). Inoltre notifiche tramite un adattatore di messaggistica (tempesta, guasti, anemometro, sensore solare, connessione, riavvio). Previsto: widget vis-2. Finora testato solo con un dispositivo simulato, **non con hardware reale**.
 
 ## Requisiti
 
@@ -37,6 +37,9 @@ Versione iniziale in sviluppo, non pubblicata su npm. Disponibile: connessione c
 Livelli di log, tag e cambio del livello sono descritti nel [README inglese](../../README.md#logging-and-debugging). Il token non compare mai nel log.
 
 ## Changelog
+
+### 0.0.4 (2026-10-02)
+- (ssbingo) notifiche tramite un adattatore di messaggistica: tempesta, guasti, anemometro, sensore solare, connessione, riavvio
 
 ### 0.0.3 (2026-10-02)
 - (ssbingo) impostazioni del dispositivo come stati: valori con limiti, proposte in attesa di conferma sul display, configurazione, design

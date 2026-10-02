@@ -1,12 +1,12 @@
 {
-    "introText": "Die Steuerung Samba Solar Track arbeitet selbstständig. Dieser Adapter zeigt ihren Zustand und empfängt ihre Meldungen.",
+    "introText": "Die Steuerung Samba Solar Track arbeitet selbstständig. Dieser Adapter zeigt ihren Zustand, empfängt ihre Meldungen und gibt Befehle und Einstellungen weiter.",
     "headerConnection": "Verbindung",
     "ipLabel": "Adresse des Geräts",
     "ipHelp": "IP-Adresse oder Gerätename, am Display unter Einrichtung > Netzwerk zu sehen",
     "portLabel": "Port",
     "portHelp": "Das Gerät verwendet Port 80",
     "tokenLabel": "Token",
-    "tokenHelp": "Steht am Display unter Einrichtung > Netzwerk > Fernzugriff. Ohne Token liest der Adapter nur.",
+    "tokenHelp": "Steht am Display unter Einrichtung > Netzwerk > Fernzugriff. Ohne Token liest der Adapter nur; Befehle und Einstellungen brauchen es.",
     "headerMessages": "Meldungen",
     "forwardLevelLabel": "Meldungen des Geräts ins ioBroker-Log schreiben",
     "forwardLevelHelp": "Alle Meldungen stehen unabhängig davon in den Datenpunkten unter messages",
@@ -17,5 +17,17 @@
     "forwardD": "auch Debug-Meldungen",
     "forwardV": "alles (auch Rohwerte)",
     "historySizeLabel": "Meldungen im Verlauf",
-    "historySizeHelp": "Anzahl der Meldungen in messages.history (1 bis 500)"
+    "historySizeHelp": "Anzahl der Meldungen in messages.history (1 bis 500)",
+    "headerNotify": "Benachrichtigungen",
+    "notifyEnabledLabel": "Benachrichtigungen senden",
+    "messagingInstanceLabel": "Senden über",
+    "messagingInstanceHelp": "Instanz eines Messaging-Adapters, zum Beispiel Telegram, Pushover oder E-Mail",
+    "notifyStormLabel": "Sturmschutz beginnt und endet",
+    "notifyFaultLabel": "Störungen (Laufzeit eines Antriebs, Schaltausgänge)",
+    "notifyWindLabel": "Windmesser antwortet nicht mehr oder wieder",
+    "notifySensorLabel": "Sonnensensor gestört oder wieder in Ordnung",
+    "notifyConnectionLabel": "Gerät nicht erreichbar oder wieder erreichbar",
+    "notifyRestartLabel": "Gerät hat neu gestartet",
+    "notifyConnectionMinutesLabel": "Melden nach Minuten ohne Verbindung",
+    "notifyConnectionMinutesHelp": "Eine kurze Unterbrechung des WLAN löst keine Benachrichtigung aus (1 bis 1440)"
 }

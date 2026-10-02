@@ -1,12 +1,12 @@
 {
-    "introText": "Le contrôleur Samba Solar Track fonctionne de manière autonome. Cet adaptateur affiche son état et reçoit ses messages.",
+    "introText": "Le contrôleur Samba Solar Track fonctionne de manière autonome. Cet adaptateur affiche son état, reçoit ses messages et transmet les commandes et les réglages.",
     "headerConnection": "Connexion",
     "ipLabel": "Adresse de l'appareil",
     "ipHelp": "Adresse IP ou nom d'hôte, affiché à l'écran sous configuration > réseau",
     "portLabel": "Port",
     "portHelp": "L'appareil utilise le port 80",
     "tokenLabel": "Jeton",
-    "tokenHelp": "Affiché à l'écran sous configuration > réseau > accès à distance. Sans jeton, l'adaptateur ne fait que lire.",
+    "tokenHelp": "Affiché à l'écran sous configuration > réseau > accès à distance. Sans jeton, l'adaptateur ne fait que lire ; les commandes et les réglages en ont besoin.",
     "headerMessages": "Messages",
     "forwardLevelLabel": "Écrire les messages de l'appareil dans le journal ioBroker",
     "forwardLevelHelp": "Tous les messages sont enregistrés dans les états sous messages, quel que soit ce choix",
@@ -17,5 +17,17 @@
     "forwardD": "aussi les messages de débogage",
     "forwardV": "tout (valeurs brutes comprises)",
     "historySizeLabel": "Messages dans l'historique",
-    "historySizeHelp": "Nombre de messages conservés dans messages.history (1 à 500)"
+    "historySizeHelp": "Nombre de messages conservés dans messages.history (1 à 500)",
+    "headerNotify": "Notifications",
+    "notifyEnabledLabel": "Envoyer des notifications",
+    "messagingInstanceLabel": "Envoyer via",
+    "messagingInstanceHelp": "Instance d'un adaptateur de messagerie, par exemple Telegram, Pushover ou e-mail",
+    "notifyStormLabel": "Début et fin de la protection contre les tempêtes",
+    "notifyFaultLabel": "Défauts (durée de marche d'un entraînement, sorties de commutation)",
+    "notifyWindLabel": "L'anémomètre ne répond plus ou répond de nouveau",
+    "notifySensorLabel": "Le capteur solaire signale un défaut ou fonctionne de nouveau",
+    "notifyConnectionLabel": "Appareil injoignable ou de nouveau joignable",
+    "notifyRestartLabel": "L'appareil a redémarré",
+    "notifyConnectionMinutesLabel": "Notifier après minutes sans connexion",
+    "notifyConnectionMinutesHelp": "Une brève interruption du WLAN ne déclenche pas de notification (1 à 1440)"
 }

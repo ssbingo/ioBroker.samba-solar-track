@@ -1,12 +1,12 @@
 {
-    "introText": "El controlador Samba Solar Track funciona de forma autónoma. Este adaptador muestra su estado y recibe sus mensajes.",
+    "introText": "El controlador Samba Solar Track funciona de forma autónoma. Este adaptador muestra su estado, recibe sus mensajes y transmite comandos y ajustes.",
     "headerConnection": "Conexión",
     "ipLabel": "Dirección del dispositivo",
     "ipHelp": "Dirección IP o nombre de host, visible en la pantalla en configuración > red",
     "portLabel": "Puerto",
     "portHelp": "El dispositivo utiliza el puerto 80",
     "tokenLabel": "Token",
-    "tokenHelp": "Visible en la pantalla en configuración > red > acceso remoto. Sin token, el adaptador solo lee.",
+    "tokenHelp": "Visible en la pantalla en configuración > red > acceso remoto. Sin token, el adaptador solo lee; los comandos y los ajustes lo necesitan.",
     "headerMessages": "Mensajes",
     "forwardLevelLabel": "Escribir los mensajes del dispositivo en el registro de ioBroker",
     "forwardLevelHelp": "Todos los mensajes se guardan en los estados bajo messages, sea cual sea esta elección",
@@ -17,5 +17,17 @@
     "forwardD": "también mensajes de depuración",
     "forwardV": "todo (también valores en bruto)",
     "historySizeLabel": "Mensajes en el historial",
-    "historySizeHelp": "Número de mensajes guardados en messages.history (1 a 500)"
+    "historySizeHelp": "Número de mensajes guardados en messages.history (1 a 500)",
+    "headerNotify": "Notificaciones",
+    "notifyEnabledLabel": "Enviar notificaciones",
+    "messagingInstanceLabel": "Enviar a través de",
+    "messagingInstanceHelp": "Instancia de un adaptador de mensajería, por ejemplo Telegram, Pushover o correo electrónico",
+    "notifyStormLabel": "Inicio y fin de la protección contra tormentas",
+    "notifyFaultLabel": "Averías (tiempo de marcha de un accionamiento, salidas de conmutación)",
+    "notifyWindLabel": "El anemómetro deja de responder o vuelve a responder",
+    "notifySensorLabel": "El sensor solar comunica una avería o vuelve a funcionar",
+    "notifyConnectionLabel": "Dispositivo no accesible o accesible de nuevo",
+    "notifyRestartLabel": "El dispositivo se ha reiniciado",
+    "notifyConnectionMinutesLabel": "Notificar tras minutos sin conexión",
+    "notifyConnectionMinutesHelp": "Una interrupción breve de la WLAN no genera notificación (1 a 1440)"
 }

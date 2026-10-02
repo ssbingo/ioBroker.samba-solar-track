@@ -75,12 +75,30 @@
             "label": "forwardLevelLabel",
             "help": "forwardLevelHelp",
             "options": [
-                { "label": "forwardOff", "value": "off" },
-                { "label": "forwardE", "value": "E" },
-                { "label": "forwardW", "value": "W" },
-                { "label": "forwardI", "value": "I" },
-                { "label": "forwardD", "value": "D" },
-                { "label": "forwardV", "value": "V" }
+                {
+                    "label": "forwardOff",
+                    "value": "off"
+                },
+                {
+                    "label": "forwardE",
+                    "value": "E"
+                },
+                {
+                    "label": "forwardW",
+                    "value": "W"
+                },
+                {
+                    "label": "forwardI",
+                    "value": "I"
+                },
+                {
+                    "label": "forwardD",
+                    "value": "D"
+                },
+                {
+                    "label": "forwardV",
+                    "value": "V"
+                }
             ],
             "newLine": true,
             "xs": 12,
@@ -95,6 +113,121 @@
             "help": "historySizeHelp",
             "min": 1,
             "max": 500,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "_notify": {
+            "type": "header",
+            "text": "headerNotify",
+            "size": 3,
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12
+        },
+        "notifyEnabled": {
+            "type": "checkbox",
+            "label": "notifyEnabledLabel",
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "messagingInstance": {
+            "type": "selectSendTo",
+            "command": "getMessagingInstances",
+            "label": "messagingInstanceLabel",
+            "help": "messagingInstanceHelp",
+            "manual": true,
+            "noTranslation": true,
+            "hidden": "!data.notifyEnabled",
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "notifyStorm": {
+            "type": "checkbox",
+            "label": "notifyStormLabel",
+            "hidden": "!data.notifyEnabled",
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "notifyFault": {
+            "type": "checkbox",
+            "label": "notifyFaultLabel",
+            "hidden": "!data.notifyEnabled",
+            "newLine": false,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "notifyWind": {
+            "type": "checkbox",
+            "label": "notifyWindLabel",
+            "hidden": "!data.notifyEnabled",
+            "newLine": false,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "notifySensor": {
+            "type": "checkbox",
+            "label": "notifySensorLabel",
+            "hidden": "!data.notifyEnabled",
+            "newLine": true,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "notifyConnection": {
+            "type": "checkbox",
+            "label": "notifyConnectionLabel",
+            "hidden": "!data.notifyEnabled",
+            "newLine": false,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "notifyRestart": {
+            "type": "checkbox",
+            "label": "notifyRestartLabel",
+            "hidden": "!data.notifyEnabled",
+            "newLine": false,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
+        "notifyConnectionMinutes": {
+            "type": "number",
+            "label": "notifyConnectionMinutesLabel",
+            "help": "notifyConnectionMinutesHelp",
+            "min": 1,
+            "max": 1440,
+            "hidden": "!data.notifyEnabled || !data.notifyConnection",
+            "newLine": true,
             "xs": 12,
             "sm": 12,
             "md": 6,

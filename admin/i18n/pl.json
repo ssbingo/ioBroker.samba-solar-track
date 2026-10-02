@@ -1,12 +1,12 @@
 {
-    "introText": "Sterownik Samba Solar Track działa samodzielnie. Ten adapter pokazuje jego stan i odbiera jego komunikaty.",
+    "introText": "Sterownik Samba Solar Track działa samodzielnie. Ten adapter pokazuje jego stan, odbiera jego komunikaty oraz przekazuje polecenia i ustawienia.",
     "headerConnection": "Połączenie",
     "ipLabel": "Adres urządzenia",
     "ipHelp": "Adres IP lub nazwa hosta, widoczne na wyświetlaczu w konfiguracja > sieć",
     "portLabel": "Port",
     "portHelp": "Urządzenie używa portu 80",
     "tokenLabel": "Token",
-    "tokenHelp": "Widoczny na wyświetlaczu w konfiguracja > sieć > dostęp zdalny. Bez tokenu adapter tylko odczytuje.",
+    "tokenHelp": "Widoczny na wyświetlaczu w konfiguracja > sieć > dostęp zdalny. Bez tokenu adapter tylko odczytuje; polecenia i ustawienia go wymagają.",
     "headerMessages": "Komunikaty",
     "forwardLevelLabel": "Zapisuj komunikaty urządzenia w dzienniku ioBroker",
     "forwardLevelHelp": "Wszystkie komunikaty są zapisywane w stanach w messages, niezależnie od tego wyboru",
@@ -17,5 +17,17 @@
     "forwardD": "także komunikaty debugowania",
     "forwardV": "wszystko (także wartości surowe)",
     "historySizeLabel": "Komunikaty w historii",
-    "historySizeHelp": "Liczba komunikatów w messages.history (od 1 do 500)"
+    "historySizeHelp": "Liczba komunikatów w messages.history (od 1 do 500)",
+    "headerNotify": "Powiadomienia",
+    "notifyEnabledLabel": "Wysyłaj powiadomienia",
+    "messagingInstanceLabel": "Wysyłaj przez",
+    "messagingInstanceHelp": "Instancja adaptera komunikatów, na przykład Telegram, Pushover lub e-mail",
+    "notifyStormLabel": "Początek i koniec ochrony przed burzą",
+    "notifyFaultLabel": "Usterki (czas pracy napędu, wyjścia przełączające)",
+    "notifyWindLabel": "Wiatromierz przestał odpowiadać lub znów odpowiada",
+    "notifySensorLabel": "Czujnik słońca zgłasza usterkę lub znów działa",
+    "notifyConnectionLabel": "Urządzenie niedostępne lub ponownie dostępne",
+    "notifyRestartLabel": "Urządzenie uruchomiło się ponownie",
+    "notifyConnectionMinutesLabel": "Powiadom po minutach bez połączenia",
+    "notifyConnectionMinutesHelp": "Krótka przerwa w sieci WLAN nie powoduje powiadomienia (od 1 do 1440)"
 }

@@ -76,6 +76,8 @@ nutzt wie bei `ioBroker.pondpump` „Trusted Publishing“ statt eines `NPM_TOKE
 | `src/lib/device-client.ts` | Verbindung: `GET /api/info`, WebSocket, Wiederverbinden, Überwachung |
 | `src/lib/remote-control.ts` | Befehle und Handfahrt: Nummern, Antworten, Erneuern, Totmann |
 | `src/lib/params.ts` | Einstellungen des Geräts: Liste prüfen, Datenpunkte beschreiben, Ergebnisse lesen |
+| `src/lib/events.ts` | Ereignisse für Benachrichtigungen aus dem Vergleich zweier Zustände |
+| `src/lib/notifications.ts` | Texte der Benachrichtigungen in 11 Sprachen, Liste der Messaging-Adapter |
 | `test/mock-params.js` | Werteliste, wie der Firmware-Code sie ausgibt (`.pio/build/screenshots/program - wertejson 1 2` im Firmware-Projekt) |
 | `src/lib/*.test.ts` | Unit-Tests (mocha) |
 | `test/mock-device.js` | nachgebildetes Gerät nach `PROTOCOL.md` für Unit- und Integrationstest |
@@ -83,7 +85,11 @@ nutzt wie bei `ioBroker.pondpump` „Trusted Publishing“ statt eines `NPM_TOKE
 | `build/` | Ergebnis von `npm run build`; wird committet (der Adapter-Checker verlangt es) |
 
 Prüfen vor jeder Fertigmeldung: `npm run build`, `npm run check`, `npm run lint`, `npm test`,
-`npm run test:integration`.
+`npm run test:integration`. Der Integrationstest legt eine ioBroker-Testinstallation im
+Temp-Verzeichnis an (`test-iobroker.samba-solar-track`) und verwendet sie wieder. Nach
+Änderungen an `io-package.json` (neue Einstellungen, `messagebox`) enthält eine alte
+Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis testen:
+`TMPDIR=<leerer Ordner> npm run test:integration`.
 
 ## Stand
 
@@ -98,8 +104,12 @@ Prüfen vor jeder Fertigmeldung: `npm run build`, `npm run check`, `npm run lint
   gemeldet, mit Grenzen), Vorschläge mit Bestätigung am Display (`params.pending`),
   Einrichtung über `setup.mode`, `setup.windSensor` und `setup.save`, Design, Simulation
   beenden.
+- **Erledigt (0.0.4):** Benachrichtigungen über einen Messaging-Adapter (`sendTo(instanz,
+  "send", { text, message })`) für Sturm, Störungen, Windmesser, Sonnensensor, Verbindung und
+  Neustart, in der Sprache des Systems. Die Einstellungsseite fragt den Adapter nach den
+  vorhandenen Messaging-Instanzen (`getMessagingInstances`, deshalb `common.messagebox`).
 - Alles nur gegen das nachgebildete Gerät geprüft, **nicht mit echter Hardware**.
-- **Offen, in dieser Reihenfolge:** Benachrichtigungen über Messaging-Adapter, vis-2-Widgets (Übersicht, Bedienung, Meldungen,
+- **Offen, in dieser Reihenfolge:** vis-2-Widgets (Übersicht, Bedienung, Meldungen,
   Werte), Handbuch.
 
 ---

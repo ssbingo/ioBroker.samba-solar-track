@@ -1,12 +1,12 @@
 {
-    "introText": "The Samba Solar Track controller works on its own. This adapter shows its state and receives its messages.",
+    "introText": "The Samba Solar Track controller works on its own. This adapter shows its state, receives its messages and passes on commands and settings.",
     "headerConnection": "Connection",
     "ipLabel": "Address of the device",
     "ipHelp": "IP address or host name, shown at the display under setup > network",
     "portLabel": "Port",
     "portHelp": "The device uses port 80",
     "tokenLabel": "Token",
-    "tokenHelp": "Shown at the display under setup > network > remote access. Without a token the adapter only reads.",
+    "tokenHelp": "Shown at the display under setup > network > remote access. Without a token the adapter only reads; commands and settings need it.",
     "headerMessages": "Messages",
     "forwardLevelLabel": "Write messages of the device to the ioBroker log",
     "forwardLevelHelp": "All messages are stored in the states under messages, whatever is chosen here",
@@ -17,5 +17,17 @@
     "forwardD": "also debug messages",
     "forwardV": "everything (raw values too)",
     "historySizeLabel": "Messages in the history",
-    "historySizeHelp": "Number of messages kept in messages.history (1 to 500)"
+    "historySizeHelp": "Number of messages kept in messages.history (1 to 500)",
+    "headerNotify": "Notifications",
+    "notifyEnabledLabel": "Send notifications",
+    "messagingInstanceLabel": "Send through",
+    "messagingInstanceHelp": "Instance of a messaging adapter, for example Telegram, Pushover or e-mail",
+    "notifyStormLabel": "Storm protection begins and ends",
+    "notifyFaultLabel": "Faults (runtime of a drive, switching outputs)",
+    "notifyWindLabel": "Wind sensor stops answering or answers again",
+    "notifySensorLabel": "Sun sensor reports a fault or works again",
+    "notifyConnectionLabel": "Device not reachable or reachable again",
+    "notifyRestartLabel": "Device has restarted",
+    "notifyConnectionMinutesLabel": "Notify after minutes without connection",
+    "notifyConnectionMinutesHelp": "A short interruption of the WLAN causes no notification (1 to 1440)"
 }

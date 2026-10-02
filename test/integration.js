@@ -374,6 +374,86 @@ tests.integration(path.join(__dirname, ".."), {
             });
         });
 
+        suite("Notifications (mock device)", getHarness => {
+            /** @type {MockDevice} */
+            let device;
+
+            before(async () => {
+                device = new MockDevice();
+                await device.start();
+            });
+
+            after(async () => {
+                await device.stop();
+            });
+
+            it("sends the selected events to the messaging instance and lists messaging instances for the settings page", async function () {
+                this.timeout(90000);
+                const harness = getHarness();
+                const state = async id => harness.states.getStateAsync(`${NAMESPACE}.${id}`);
+                await harness.changeAdapterConfig("samba-solar-track", {
+                    common: { loglevel: "debug" },
+                    native: {
+                        ip: "127.0.0.1",
+                        port: device.port,
+                        token: TOKEN,
+                        notifyEnabled: true,
+                        messagingInstance: "telegram.0",
+                        notifyStorm: true,
+                        notifyFault: true,
+                        notifyWind: false,
+                        notifySensor: true,
+                        notifyConnection: true,
+                        notifyRestart: true,
+                    },
+                });
+                await harness.startAdapterAndWait(true);
+                await until(async () => (await state("status.state"))?.val === "IDLE", "status.state IDLE");
+                await until(() => harness.hasLog("[ntf] Notifications to telegram.0 for: storm, fault, sensor, connection, restart", "info"), "summary of the notifications");
+
+                // storm begins and ends
+                device.setStatus({
+                    state: "STORM",
+                    storm: { active: true, remainingMs: 600000 },
+                    wind: { ...device.status.wind, gustKmh: 44 },
+                });
+                await until(
+                    () => harness.hasLog("[ntf] storm/stormStarted sent to telegram.0: samba-solar-track: storm protection active. Gust 44.0 km/h, threshold 40.0 km/h.", "debug"),
+                    "notification about the storm",
+                );
+                device.setStatus({ state: "IDLE", storm: { active: false, remainingMs: 0 } });
+                await until(() => harness.hasLog("[ntf] storm/stormEnded sent to telegram.0", "debug"), "notification about the end of the storm");
+
+                // an event that is not selected is not sent
+                device.setStatus({ wind: { ...device.status.wind, ok: false } });
+                await until(() => harness.hasLog("[ntf] wind/windLost not sent: this kind of event is not selected", "debug"), "skipped notification");
+                expect(harness.hasLog("windLost sent to")).to.equal(false);
+
+                // a runtime fault names the axis
+                device.setStatus({
+                    fault: { io: false, motor: true },
+                    axes: { ...device.status.axes, azimuth: { ...device.status.axes.azimuth, fault: true } },
+                });
+                await until(() => harness.hasLog("[ntf] fault/faultMotor sent to telegram.0", "debug"), "notification about the fault");
+                expect(harness.getLogs("debug").find(log => log.message.includes("fault/faultMotor sent")).message).to.contain("(azimuth)");
+
+                // restart of the device
+                device.restart();
+                await until(() => harness.hasLog("[ntf] restart/deviceRestarted sent to telegram.0", "debug"), "notification about the restart");
+
+                // the settings page asks for the messaging instances; this test system has none
+                const options = await new Promise(resolve =>
+                    harness.sendTo("samba-solar-track.0", "getMessagingInstances", {}, answer => resolve(answer)),
+                );
+                expect(options).to.deep.equal([]);
+
+                for (const log of harness.getLogs()) {
+                    expect(log.message).to.not.contain(TOKEN);
+                }
+                expect(harness.getLogs("error")).to.deep.equal([]);
+            });
+        });
+
         suite("Commands without a token (mock device)", getHarness => {
             /** @type {MockDevice} */
             let device;

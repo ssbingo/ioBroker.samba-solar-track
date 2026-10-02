@@ -1,12 +1,12 @@
 {
-    "introText": "Samba Solar Track 控制器可独立工作。此适配器显示其状态并接收其消息。",
+    "introText": "Samba Solar Track 控制器可独立工作。此适配器显示其状态、接收其消息，并转发命令和设置。",
     "headerConnection": "连接",
     "ipLabel": "设备地址",
     "ipHelp": "IP 地址或主机名，可在显示屏的 设置 > 网络 中查看",
     "portLabel": "端口",
     "portHelp": "设备使用端口 80",
     "tokenLabel": "令牌",
-    "tokenHelp": "显示在显示屏的 设置 > 网络 > 远程访问 中。没有令牌时，适配器只能读取。",
+    "tokenHelp": "显示在显示屏的 设置 > 网络 > 远程访问 中。没有令牌时，适配器只能读取；发送命令和修改设置需要令牌。",
     "headerMessages": "消息",
     "forwardLevelLabel": "将设备消息写入 ioBroker 日志",
     "forwardLevelHelp": "无论此处如何选择，所有消息都会保存在 messages 下的状态中",
@@ -17,5 +17,17 @@
     "forwardD": "也包括调试消息",
     "forwardV": "全部（包括原始值）",
     "historySizeLabel": "历史记录中的消息数",
-    "historySizeHelp": "messages.history 中保留的消息数（1 到 500）"
+    "historySizeHelp": "messages.history 中保留的消息数（1 到 500）",
+    "headerNotify": "通知",
+    "notifyEnabledLabel": "发送通知",
+    "messagingInstanceLabel": "发送方式",
+    "messagingInstanceHelp": "消息适配器的实例，例如 Telegram、Pushover 或电子邮件",
+    "notifyStormLabel": "风暴保护开始和结束",
+    "notifyFaultLabel": "故障（驱动器运行时间、开关输出）",
+    "notifyWindLabel": "风速计停止响应或恢复响应",
+    "notifySensorLabel": "太阳传感器报告故障或恢复工作",
+    "notifyConnectionLabel": "设备无法访问或恢复访问",
+    "notifyRestartLabel": "设备已重新启动",
+    "notifyConnectionMinutesLabel": "无连接多少分钟后通知",
+    "notifyConnectionMinutesHelp": "WLAN 短暂中断不会触发通知（1 到 1440）"
 }

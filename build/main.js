@@ -23,14 +23,19 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_device_client = require("./lib/device-client");
+var import_events = require("./lib/events");
 var import_messages = require("./lib/messages");
 var import_protocol = require("./lib/protocol");
+var import_notifications = require("./lib/notifications");
 var import_params = require("./lib/params");
 var import_remote_control = require("./lib/remote-control");
 var import_states = require("./lib/states");
 const VOLATILE_INTERVAL_MS = 3e4;
 const MESSAGE_FLUSH_MS = 1e3;
 const MESSAGE_AGE_HINT_MS = 5e3;
+const CONNECTION_MINUTES_MIN = 1;
+const CONNECTION_MINUTES_MAX = 1440;
+const CONNECTION_MINUTES_DEFAULT = 5;
 const HISTORY_MIN = 1;
 const HISTORY_MAX = 500;
 const HISTORY_DEFAULT = 50;
@@ -43,6 +48,15 @@ class SambaSolarTrack extends utils.Adapter {
   features = /* @__PURE__ */ new Set();
   /** Reason of the last failure per kind of command; the same reason is reported only once */
   commandProblems = /* @__PURE__ */ new Map();
+  events = new import_events.EventDetector();
+  /** Messaging instance for notifications, empty = notifications are off */
+  messagingInstance = "";
+  notifyCategories = /* @__PURE__ */ new Set();
+  /** Language of the notifications: the language of the system */
+  notifyLanguage = "en";
+  connectionMinutes = CONNECTION_MINUTES_DEFAULT;
+  connectionTimer;
+  connectionLostNotified = false;
   /** Settings of the device by their key, from GET /api/params */
   params = /* @__PURE__ */ new Map();
   /** Setup values chosen in ioBroker that are not saved at the device yet */
@@ -63,6 +77,7 @@ class SambaSolarTrack extends utils.Adapter {
     });
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
+    this.on("message", this.onMessage.bind(this));
     this.on("unload", this.onUnload.bind(this));
   }
   /**
@@ -101,6 +116,7 @@ class SambaSolarTrack extends utils.Adapter {
     this.log.info(
       `[cfg] Device ${host}:${port}, token ${token ? `set (${token.length} characters)` : "not set (read only)"}, messages forwarded to this log from level "${this.forwardLevel}", history ${historySize} messages`
     );
+    this.setupNotifications();
     await this.createObjects();
     await this.restorePosition();
     const timers = {
@@ -139,7 +155,100 @@ class SambaSolarTrack extends utils.Adapter {
     this.subscribeStates("control.*");
     this.subscribeStates("setup.*");
     this.subscribeStates("params.*");
+    this.armConnectionTimer();
     this.client.start();
+  }
+  /** Reads the settings for notifications and the language of the system */
+  setupNotifications() {
+    const config = this.config;
+    const instance = typeof config.messagingInstance === "string" ? config.messagingInstance.trim() : "";
+    this.messagingInstance = config.notifyEnabled === true ? instance : "";
+    for (const category of import_events.EVENT_CATEGORIES) {
+      const key = `notify${category.charAt(0).toUpperCase()}${category.slice(1)}`;
+      if (config[key] === true) {
+        this.notifyCategories.add(category);
+      }
+    }
+    const minutes = Math.round(Number(config.notifyConnectionMinutes));
+    this.connectionMinutes = Number.isFinite(minutes) ? Math.min(CONNECTION_MINUTES_MAX, Math.max(CONNECTION_MINUTES_MIN, minutes)) : CONNECTION_MINUTES_DEFAULT;
+    this.notifyLanguage = (0, import_notifications.supportedLanguage)(this.language);
+    if (config.notifyEnabled === true && !instance) {
+      this.log.warn(
+        "[ntf] Notifications are switched on, but no messaging instance is chosen in the adapter settings."
+      );
+    }
+    this.log.info(
+      this.messagingInstance ? `[ntf] Notifications to ${this.messagingInstance} for: ${[...this.notifyCategories].join(", ") || "nothing"} (language ${this.notifyLanguage}, connection after ${this.connectionMinutes} min)` : "[ntf] Notifications are switched off"
+    );
+  }
+  /**
+   * Sends a notification through the chosen messaging adapter, if this kind of event is wanted.
+   *
+   * @param category kind of event
+   * @param key key of the text
+   * @param params values for the placeholders
+   */
+  notify(category, key, params) {
+    if (!this.messagingInstance) {
+      this.log.silly(`[ntf] ${category}/${key} not sent: notifications are switched off`);
+      return;
+    }
+    if (!this.notifyCategories.has(category)) {
+      this.log.debug(`[ntf] ${category}/${key} not sent: this kind of event is not selected`);
+      return;
+    }
+    const name = this.cache.get("info.hostname");
+    const text = (0, import_notifications.translate)(key, this.notifyLanguage, {
+      name: typeof name === "string" && name ? name : "Samba Solar Track",
+      ...params
+    });
+    try {
+      this.sendTo(this.messagingInstance, "send", { text, message: text });
+      this.log.debug(`[ntf] ${category}/${key} sent to ${this.messagingInstance}: ${text}`);
+    } catch (error) {
+      this.log.warn(
+        `[ntf] Notification to ${this.messagingInstance} failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+  /**
+   * Answers questions of the settings page: the list of messaging instances.
+   *
+   * @param obj the message
+   */
+  async onMessage(obj) {
+    if (obj.command !== "getMessagingInstances") {
+      this.log.debug(`[cfg] Message "${obj.command}" from ${obj.from} ignored: unknown command`);
+      return;
+    }
+    this.log.debug(`[cfg] Message "${obj.command}" from ${obj.from} received`);
+    let options = [];
+    try {
+      const view = await this.getObjectViewAsync("system", "instance", {
+        startkey: "system.adapter.",
+        endkey: "system.adapter.\u9999"
+      });
+      options = (0, import_notifications.messagingOptions)(view.rows.map((row) => row.id));
+    } catch (error) {
+      this.log.debug(
+        `[cfg] Reading the instances failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+    this.log.debug(`[cfg] ${options.length} messaging instance(s) reported to ${obj.from}`);
+    if (obj.callback) {
+      this.sendTo(obj.from, obj.command, options, obj.callback);
+    }
+  }
+  /** Starts the time after which a missing connection is worth a notification */
+  armConnectionTimer() {
+    if (this.connectionTimer || this.stopping) {
+      return;
+    }
+    this.connectionTimer = this.setTimeout(() => {
+      this.connectionTimer = void 0;
+      this.connectionLostNotified = true;
+      this.notify("connection", "connectionLost", { minutes: this.connectionMinutes });
+    }, this.connectionMinutes * 6e4);
   }
   /** Creates or updates all channels and states. Settings made by the user are kept. */
   async createObjects() {
@@ -246,6 +355,8 @@ class SambaSolarTrack extends utils.Adapter {
       this.log.info(
         `[dev] The device has restarted (boot id ${previous} -> ${hello.bootId}); its messages are fetched from the beginning`
       );
+      const reason = this.cache.get("info.resetReason");
+      this.notify("restart", "deviceRestarted", { reason: typeof reason === "string" && reason ? reason : "?" });
     }
     this.bootEpoch = Date.now() - hello.uptimeMs;
     this.volatileWritten = 0;
@@ -267,6 +378,10 @@ class SambaSolarTrack extends utils.Adapter {
     }
     if ((0, import_protocol.isObject)(status.jog) && typeof status.jog.active === "boolean") {
       (_a = this.remote) == null ? void 0 : _a.handleStatus(status.jog.active);
+    }
+    for (const event of this.events.update(status)) {
+      this.log.debug(`[ntf] Event ${event.category}/${event.key} ${JSON.stringify(event.params)}`);
+      this.notify(event.category, event.key, event.params);
     }
   }
   onLog(line) {
@@ -307,10 +422,19 @@ class SambaSolarTrack extends utils.Adapter {
     this.writeValue("info.connection", connected);
     if (connected) {
       this.lostReported = false;
+      if (this.connectionTimer) {
+        this.clearTimeout(this.connectionTimer);
+        this.connectionTimer = void 0;
+      }
+      if (this.connectionLostNotified) {
+        this.connectionLostNotified = false;
+        this.notify("connection", "connectionRestored", {});
+      }
       void this.loadParams();
     } else {
       this.flushMessages();
       (_a = this.remote) == null ? void 0 : _a.handleDisconnect();
+      this.armConnectionTimer();
     }
   }
   /** Reads all settings of the device and creates or updates their states */
@@ -818,6 +942,10 @@ class SambaSolarTrack extends utils.Adapter {
       if (this.flushTimer) {
         this.clearTimeout(this.flushTimer);
         this.flushTimer = void 0;
+      }
+      if (this.connectionTimer) {
+        this.clearTimeout(this.connectionTimer);
+        this.connectionTimer = void 0;
       }
       this.flushMessages();
       this.writeValue("info.connection", false);
