@@ -53,7 +53,8 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | --- | --- |
 | Address of the device | IP address or host name. The display shows both under setup > network. |
 | Port | The device uses port 80. |
-| Token | Shown at the display under setup > network > remote access. Reading works without a token; commands need it. It is stored encrypted. |
+| Token block 1 to 4 | The token of the device, one block per field. The display shows it under the gear > NETZWERK, heading "TOKEN FUER DEN ADAPTER", as 4 blocks of 8 characters in two lines: blocks 1 and 2 in the first line, blocks 3 and 4 in the second. The fields are arranged the same way. Upper or lower case does not matter. Reading works without a token; commands and settings need it. The fields are stored encrypted. A wrong block (not 8 characters 0-9 and a-f, or empty while others are filled) is marked red, and the settings cannot be saved until it is corrected or all four fields are empty. If a wrong token reaches the adapter anyway, the log names the wrong block and the adapter only reads. The entry is hidden like a password; the eye in each field shows it. |
+| Token (old field) | Appears only if a token was entered with version 0.0.4 or older. It is used only while the four fields are empty and can be deleted after entering the four blocks. |
 | Write messages of the device to the ioBroker log | From which level on messages of the device also appear in the ioBroker log. Default: warnings and errors. All messages are stored in the states under `messages`, whatever is chosen here. |
 | Messages in the history | Number of messages kept in `messages.history` (1 to 500, default 50). |
 | Send notifications, send through | Switches notifications on and chooses the instance of a messaging adapter, see [Notifications](#notifications). |
@@ -172,9 +173,9 @@ The log level of the instance is set in the admin under Instances (expert mode) 
 
 | Level | Content |
 | --- | --- |
-| `error` | The adapter cannot work, for example no address configured |
+| `error` | A wrong configuration: no address configured (the adapter cannot work), or a token in the settings that cannot be used (the message names the wrong block, the adapter only reads) |
 | `warn` | Something the user has to act on: device not reachable, token not accepted, messages lost, newer protocol, a command that was not executed, a manual drive that was stopped, a setting that was not accepted. Each problem is reported once; repetitions follow at `debug` until it is resolved. Warnings and errors of the device are forwarded at this level. |
-| `info` | Milestones: configuration (without the token), connected, reachable again, device restarted |
+| `info` | Milestones: configuration (where the token comes from and whether it is complete, never the token itself), connected, reachable again, device restarted |
 | `debug` | Every step: attempts with their number, durations, decisions, skipped input with the reason |
 | `silly` | Every frame received and sent |
 
@@ -201,6 +202,9 @@ The token never appears in the log.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.0.5 (2026-10-03)
+- (ssbingo) token entry in four fields, one per block of 8 characters as shown at the display; a token entered earlier with spaces works too; a wrong block is named in the log; the texts name the right place of the token (gear > NETZWERK); the four fields are hidden like a password, the eye shows the entry
+
 ### 0.0.4 (2026-10-02)
 - (ssbingo) notifications through a messaging adapter: storm, faults, wind sensor, sun sensor, connection, restart
 

@@ -27,8 +27,11 @@ import {
     type Message,
 } from "./lib/messages";
 import {
+    TOKEN_HINT,
+    assembleToken,
     isObject,
     resumeSince,
+    tokenSummary,
     type DeviceInfo,
     type DeviceStatus,
     type HelloFrame,
@@ -118,7 +121,6 @@ class SambaSolarTrack extends utils.Adapter {
 
         const host = String(this.config.ip ?? "").trim();
         const port = Number(this.config.port);
-        const token = String(this.config.token ?? "").trim();
         if (!host) {
             this.log.error(
                 "[cfg] No address of the device configured. Enter the IP address or host name in the adapter settings.",
@@ -131,6 +133,26 @@ class SambaSolarTrack extends utils.Adapter {
             );
             return;
         }
+        // the four fields of the settings, as the display shows the token; the old single field
+        // of version 0.0.4 and older counts only while the four fields are empty
+        const tokenSetting = assembleToken(
+            [this.config.tokenBlock1, this.config.tokenBlock2, this.config.tokenBlock3, this.config.tokenBlock4],
+            this.config.token,
+        );
+        this.log.debug(
+            `[cfg] Token: four fields with ${tokenSetting.blockLengths.join("/")} characters, ` +
+                `old token field with ${tokenSetting.oldLength} characters (whitespace removed) -> ${tokenSummary(tokenSetting)}`,
+        );
+        if (tokenSetting.source === "blocks" && tokenSetting.oldLength > 0) {
+            this.log.debug("[cfg] Token: the four fields are used, the old token field is ignored");
+        }
+        if (tokenSetting.problem) {
+            this.log.error(
+                `[cfg] The token in the adapter settings cannot be used: ${tokenSetting.problem}. ${TOKEN_HINT} ` +
+                    "Until then the adapter only reads.",
+            );
+        }
+        const token = tokenSetting.token;
         const configuredLevel = String(this.config.forwardLevel ?? "W");
         if (configuredLevel === "off" || (DEVICE_LEVELS as readonly string[]).includes(configuredLevel)) {
             this.forwardLevel = configuredLevel as ForwardLevel;
@@ -144,7 +166,7 @@ class SambaSolarTrack extends utils.Adapter {
         historySize = Math.min(HISTORY_MAX, Math.max(HISTORY_MIN, historySize));
         this.store = new MessageStore(historySize);
         this.log.info(
-            `[cfg] Device ${host}:${port}, token ${token ? `set (${token.length} characters)` : "not set (read only)"}, ` +
+            `[cfg] Device ${host}:${port}, ${tokenSummary(tokenSetting)}, ` +
                 `messages forwarded to this log from level "${this.forwardLevel}", history ${historySize} messages`,
         );
 

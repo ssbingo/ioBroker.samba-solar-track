@@ -20,16 +20,26 @@ var protocol_exports = {};
 __export(protocol_exports, {
   DEVICE_NAME: () => DEVICE_NAME,
   PROTOCOL_VERSION: () => PROTOCOL_VERSION,
+  TOKEN_BLOCKS: () => TOKEN_BLOCKS,
+  TOKEN_BLOCK_LENGTH: () => TOKEN_BLOCK_LENGTH,
+  TOKEN_HINT: () => TOKEN_HINT,
+  TOKEN_LENGTH: () => TOKEN_LENGTH,
+  assembleToken: () => assembleToken,
   isObject: () => isObject,
   parseHello: () => parseHello,
   parseInfo: () => parseInfo,
   parseLogLine: () => parseLogLine,
   readPath: () => readPath,
-  resumeSince: () => resumeSince
+  resumeSince: () => resumeSince,
+  tokenSummary: () => tokenSummary
 });
 module.exports = __toCommonJS(protocol_exports);
 const DEVICE_NAME = "samba-solar-track";
 const PROTOCOL_VERSION = 1;
+const TOKEN_LENGTH = 32;
+const TOKEN_BLOCKS = 4;
+const TOKEN_BLOCK_LENGTH = TOKEN_LENGTH / TOKEN_BLOCKS;
+const TOKEN_HINT = 'The display shows it under the gear > NETZWERK > "TOKEN FUER DEN ADAPTER" as 4 blocks of 8 characters (0-9, a-f); enter one block per field in the adapter settings.';
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -93,15 +103,80 @@ function readPath(source, path) {
   }
   return current;
 }
+function normalizeToken(value) {
+  if (typeof value !== "string" && typeof value !== "number") {
+    return "";
+  }
+  return String(value).replace(/\s+/g, "").toLowerCase();
+}
+function tokenProblems(value, length) {
+  const characters = [...value];
+  const problems = [];
+  if (characters.length !== length) {
+    problems.push(`${characters.length} characters instead of ${length}`);
+  }
+  const positions = [];
+  characters.forEach((character, index) => {
+    if (!/^[0-9a-f]$/.test(character)) {
+      positions.push(index + 1);
+    }
+  });
+  if (positions.length === 1) {
+    problems.push(`a character other than 0-9 and a-f at position ${positions[0]}`);
+  } else if (positions.length > 1) {
+    problems.push(`characters other than 0-9 and a-f at positions ${positions.join(", ")}`);
+  }
+  return problems;
+}
+function assembleToken(blocks, old) {
+  const parts = [];
+  for (let i = 0; i < TOKEN_BLOCKS; i++) {
+    parts.push(normalizeToken(blocks[i]));
+  }
+  const single = normalizeToken(old);
+  const lengths = { blockLengths: parts.map((part) => [...part].length), oldLength: [...single].length };
+  if (parts.every((part) => part === "")) {
+    if (!single) {
+      return { token: "", source: "none", ...lengths };
+    }
+    const problems2 = tokenProblems(single, TOKEN_LENGTH);
+    return problems2.length ? { token: "", source: "old", problem: `the old token field has ${problems2.join(" and ")}`, ...lengths } : { token: single, source: "old", ...lengths };
+  }
+  const problems = [];
+  parts.forEach((part, index) => {
+    if (!part) {
+      problems.push(`block ${index + 1} is empty`);
+      return;
+    }
+    const found = tokenProblems(part, TOKEN_BLOCK_LENGTH);
+    if (found.length) {
+      problems.push(`block ${index + 1} has ${found.join(" and ")}`);
+    }
+  });
+  return problems.length ? { token: "", source: "blocks", problem: problems.join(", "), ...lengths } : { token: parts.join(""), source: "blocks", ...lengths };
+}
+function tokenSummary(setting) {
+  if (setting.source === "none") {
+    return "token not set (read only)";
+  }
+  const from = setting.source === "blocks" ? "from the four fields" : "from the old token field";
+  return setting.problem ? `token ${from} incomplete or wrong (read only)` : `token ${from} complete (${setting.token.length} characters)`;
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   DEVICE_NAME,
   PROTOCOL_VERSION,
+  TOKEN_BLOCKS,
+  TOKEN_BLOCK_LENGTH,
+  TOKEN_HINT,
+  TOKEN_LENGTH,
+  assembleToken,
   isObject,
   parseHello,
   parseInfo,
   parseLogLine,
   readPath,
-  resumeSince
+  resumeSince,
+  tokenSummary
 });
 //# sourceMappingURL=protocol.js.map

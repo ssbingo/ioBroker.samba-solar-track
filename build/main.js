@@ -84,11 +84,10 @@ class SambaSolarTrack extends utils.Adapter {
    * Is called when databases are connected and adapter received configuration.
    */
   async onReady() {
-    var _a, _b, _c;
+    var _a, _b;
     await this.setState("info.connection", false, true);
     const host = String((_a = this.config.ip) != null ? _a : "").trim();
     const port = Number(this.config.port);
-    const token = String((_b = this.config.token) != null ? _b : "").trim();
     if (!host) {
       this.log.error(
         "[cfg] No address of the device configured. Enter the IP address or host name in the adapter settings."
@@ -101,7 +100,23 @@ class SambaSolarTrack extends utils.Adapter {
       );
       return;
     }
-    const configuredLevel = String((_c = this.config.forwardLevel) != null ? _c : "W");
+    const tokenSetting = (0, import_protocol.assembleToken)(
+      [this.config.tokenBlock1, this.config.tokenBlock2, this.config.tokenBlock3, this.config.tokenBlock4],
+      this.config.token
+    );
+    this.log.debug(
+      `[cfg] Token: four fields with ${tokenSetting.blockLengths.join("/")} characters, old token field with ${tokenSetting.oldLength} characters (whitespace removed) -> ${(0, import_protocol.tokenSummary)(tokenSetting)}`
+    );
+    if (tokenSetting.source === "blocks" && tokenSetting.oldLength > 0) {
+      this.log.debug("[cfg] Token: the four fields are used, the old token field is ignored");
+    }
+    if (tokenSetting.problem) {
+      this.log.error(
+        `[cfg] The token in the adapter settings cannot be used: ${tokenSetting.problem}. ${import_protocol.TOKEN_HINT} Until then the adapter only reads.`
+      );
+    }
+    const token = tokenSetting.token;
+    const configuredLevel = String((_b = this.config.forwardLevel) != null ? _b : "W");
     if (configuredLevel === "off" || import_messages.DEVICE_LEVELS.includes(configuredLevel)) {
       this.forwardLevel = configuredLevel;
     } else {
@@ -114,7 +129,7 @@ class SambaSolarTrack extends utils.Adapter {
     historySize = Math.min(HISTORY_MAX, Math.max(HISTORY_MIN, historySize));
     this.store = new import_messages.MessageStore(historySize);
     this.log.info(
-      `[cfg] Device ${host}:${port}, token ${token ? `set (${token.length} characters)` : "not set (read only)"}, messages forwarded to this log from level "${this.forwardLevel}", history ${historySize} messages`
+      `[cfg] Device ${host}:${port}, ${(0, import_protocol.tokenSummary)(tokenSetting)}, messages forwarded to this log from level "${this.forwardLevel}", history ${historySize} messages`
     );
     this.setupNotifications();
     await this.createObjects();

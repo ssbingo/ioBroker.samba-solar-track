@@ -329,7 +329,7 @@ class DeviceClient {
       if (!this.tokenProblemReported) {
         this.tokenProblemReported = true;
         log.warn(
-          "[conn] The device did not accept the token. Reading works, commands will be rejected. Enter the token shown at the display (setup > network > remote access) in the adapter settings."
+          `[conn] The device did not accept the token. Reading works, commands will be rejected. ${import_protocol.TOKEN_HINT}`
         );
       }
     } else {

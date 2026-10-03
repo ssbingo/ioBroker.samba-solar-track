@@ -28,7 +28,8 @@ Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie
 | --- | --- |
 | Adres urządzenia | Adres IP lub nazwa hosta; wyświetlacz pokazuje je w konfiguracja > sieć. |
 | Port | Urządzenie używa portu 80. |
-| Token | Widoczny na wyświetlaczu w konfiguracja > sieć > dostęp zdalny. Odczyt działa bez tokenu; będzie potrzebny do poleceń. Jest zapisywany w postaci zaszyfrowanej. |
+| Bloki tokenu 1–4 | Token urządzenia, jeden blok na pole. Wyświetlacz pokazuje go w menu koło zębate > NETZWERK, pod nagłówkiem „TOKEN FUER DEN ADAPTER”, jako 4 bloki po 8 znaków w dwóch wierszach: bloki 1 i 2 w pierwszym wierszu, bloki 3 i 4 w drugim. Pola są ułożone tak samo. Wielkość liter nie ma znaczenia. Odczyt działa bez tokenu; polecenia i ustawienia go wymagają. Pola są zapisywane w postaci zaszyfrowanej. Błędny blok (nie 8 znaków 0-9 i a-f albo pusty, gdy inne są wypełnione) jest oznaczany na czerwono, a ustawienia można zapisać dopiero po jego poprawieniu lub wyczyszczeniu wszystkich czterech pól. Jeśli mimo to błędny token trafi do adaptera, dziennik wskazuje błędny blok, a adapter tylko odczytuje. Wpis jest ukryty jak hasło; oko w każdym polu go pokazuje. |
+| Token (stare pole) | Pojawia się tylko wtedy, gdy token wpisano w wersji 0.0.4 lub starszej. Jest używany tylko wtedy, gdy cztery pola są puste, i można go usunąć po wpisaniu czterech bloków. |
 | Zapisuj komunikaty urządzenia w dzienniku ioBroker | Od którego poziomu komunikaty urządzenia pojawiają się także w dzienniku ioBroker. Wszystkie komunikaty są i tak zapisywane w stanach w `messages`. |
 | Komunikaty w historii | Liczba komunikatów w `messages.history` (od 1 do 500). |
 
@@ -37,6 +38,9 @@ Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie
 Poziomy dziennika, znaczniki i zmiana poziomu są opisane w [angielskim README](../../README.md#logging-and-debugging). Token nigdy nie pojawia się w dzienniku.
 
 ## Changelog
+
+### 0.0.5 (2026-10-03)
+- (ssbingo) wpisywanie tokenu w czterech polach, po jednym bloku 8 znaków, jak na wyświetlaczu; token wpisany wcześniej ze spacjami też działa; błędny blok jest wskazywany w dzienniku; teksty podają właściwe miejsce tokenu (koło zębate > NETZWERK); cztery pola są ukryte jak hasło, oko pokazuje wpis
 
 ### 0.0.4 (2026-10-02)
 - (ssbingo) powiadomienia przez adapter komunikatów: burza, usterki, wiatromierz, czujnik słońca, połączenie, ponowne uruchomienie

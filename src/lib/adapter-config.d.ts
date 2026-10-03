@@ -8,7 +8,15 @@ declare global {
             ip: string;
             /** Port of the device */
             port: number;
-            /** Token shown at the display of the device; empty = read only */
+            /** Token as the display shows it, block 1 (line 1, left); all four empty = old field `token`, or read only */
+            tokenBlock1: string;
+            /** Token, block 2 (line 1, right) */
+            tokenBlock2: string;
+            /** Token, block 3 (line 2, left) */
+            tokenBlock3: string;
+            /** Token, block 4 (line 2, right) */
+            tokenBlock4: string;
+            /** Token in one field (version 0.0.4 and older); used only while the four blocks are empty */
             token: string;
             /** Messages of the device are forwarded to the ioBroker log from this level: E, W, I, D, V or off */
             forwardLevel: string;

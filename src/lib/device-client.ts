@@ -8,6 +8,7 @@
 import WebSocket from "ws";
 import {
     PROTOCOL_VERSION,
+    TOKEN_HINT,
     isObject,
     parseHello,
     parseInfo,
@@ -105,7 +106,7 @@ export interface ClientOptions {
     host: string;
     /** Port of the device */
     port: number;
-    /** Token shown at the display; empty = read only */
+    /** Token shown at the display (32 characters 0-9, a-f, without spaces); empty = read only */
     token: string;
     /** Logger */
     log: ClientLogger;
@@ -437,8 +438,7 @@ export class DeviceClient {
             if (!this.tokenProblemReported) {
                 this.tokenProblemReported = true;
                 log.warn(
-                    "[conn] The device did not accept the token. Reading works, commands will be rejected. " +
-                        "Enter the token shown at the display (setup > network > remote access) in the adapter settings.",
+                    `[conn] The device did not accept the token. Reading works, commands will be rejected. ${TOKEN_HINT}`,
                 );
             }
         } else {

@@ -190,6 +190,10 @@ describe("device-client => DeviceClient", function () {
             l => l.level === "warn" && l.text.includes("did not accept the token"),
         );
         expect(tokenWarnings).to.have.length(1);
+        // the warning leads to the right place at the display and names the form of the token
+        expect(tokenWarnings[0].text).to.contain('gear > NETZWERK > "TOKEN FUER DEN ADAPTER"');
+        expect(tokenWarnings[0].text).to.contain("4 blocks of 8 characters");
+        expect(tokenWarnings[0].text).to.not.contain("remote access");
         for (const entry of recorder.logs) {
             expect(entry.text).to.not.contain("wrong-token");
         }

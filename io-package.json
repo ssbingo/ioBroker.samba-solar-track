@@ -1,20 +1,20 @@
 {
     "common": {
         "name": "samba-solar-track",
-        "version": "0.0.4",
+        "version": "0.0.5",
         "news": {
-            "0.0.4": {
-                "en": "Notifications through a messaging adapter: storm, faults, wind sensor, sun sensor, connection and restart of the device",
-                "de": "Benachrichtigungen über einen Messaging-Adapter: Sturm, Störungen, Windmesser, Sonnensensor, Verbindung und Neustart des Geräts",
-                "ru": "Уведомления через адаптер сообщений: шторм, неисправности, датчик ветра, датчик солнца, соединение и перезапуск устройства",
-                "pt": "Notificações através de um adaptador de mensagens: tempestade, avarias, sensor de vento, sensor solar, ligação e reinício do dispositivo",
-                "nl": "Meldingen via een berichtenadapter: storm, storingen, windmeter, zonnesensor, verbinding en herstart van het apparaat",
-                "fr": "Notifications via un adaptateur de messagerie : tempête, défauts, anémomètre, capteur solaire, connexion et redémarrage de l'appareil",
-                "it": "Notifiche tramite un adattatore di messaggistica: tempesta, guasti, anemometro, sensore solare, connessione e riavvio del dispositivo",
-                "es": "Notificaciones a través de un adaptador de mensajería: tormenta, averías, anemómetro, sensor solar, conexión y reinicio del dispositivo",
-                "pl": "Powiadomienia przez adapter komunikatów: burza, usterki, wiatromierz, czujnik słońca, połączenie i ponowne uruchomienie urządzenia",
-                "uk": "Сповіщення через адаптер повідомлень: шторм, несправності, датчик вітру, датчик сонця, з'єднання та перезапуск пристрою",
-                "zh-cn": "通过消息适配器发送通知：风暴、故障、风速计、太阳传感器、连接以及设备重启"
+            "0.0.5": {
+                "en": "Token entry in four fields, one per block of 8 characters as shown at the display; a token entered earlier with spaces works too; a wrong block is named in the log; the texts name the right place of the token (gear > NETZWERK); the four fields are hidden like a password, the eye shows the entry",
+                "de": "Eingabe des Tokens in vier Feldern, je ein Block zu 8 Zeichen wie am Display; ein früher mit Leerzeichen eingegebenes Token funktioniert jetzt auch; ein falscher Block wird im Log genannt; die Texte nennen den richtigen Ort des Tokens (Zahnrad > NETZWERK); die vier Felder sind verdeckt wie ein Passwort, das Auge zeigt die Eingabe",
+                "ru": "Ввод токена в четыре поля, по одному блоку из 8 символов, как на дисплее; токен, ранее введённый с пробелами, теперь тоже работает; неверный блок называется в журнале; тексты указывают правильное место токена (шестерёнка > NETZWERK); четыре поля скрыты, как пароль, значок глаза показывает ввод",
+                "pt": "Introdução do token em quatro campos, um bloco de 8 caracteres cada, como no ecrã; um token introduzido antes com espaços também funciona; um bloco errado é indicado no registo; os textos indicam o local correto do token (roda dentada > NETZWERK); os quatro campos estão ocultos como uma palavra-passe, o olho mostra o que foi escrito",
+                "nl": "Invoer van het token in vier velden, één blok van 8 tekens per veld zoals op het display; een eerder met spaties ingevoerd token werkt nu ook; een fout blok wordt in het log genoemd; de teksten noemen de juiste plek van het token (tandwiel > NETZWERK); de vier velden zijn verborgen zoals een wachtwoord, het oog toont de invoer",
+                "fr": "Saisie du jeton dans quatre champs, un bloc de 8 caractères chacun comme à l'écran ; un jeton saisi auparavant avec des espaces fonctionne aussi ; un bloc erroné est signalé dans le journal ; les textes indiquent le bon emplacement du jeton (roue dentée > NETZWERK); les quatre champs sont masqués comme un mot de passe, l'œil affiche la saisie",
+                "it": "Inserimento del token in quattro campi, un blocco di 8 caratteri ciascuno come sul display; anche un token inserito in precedenza con spazi ora funziona; un blocco errato viene indicato nel log; i testi indicano il punto corretto del token (ingranaggio > NETZWERK); i quattro campi sono nascosti come una password, l'occhio mostra quanto inserito",
+                "es": "Introducción del token en cuatro campos, un bloque de 8 caracteres cada uno como en la pantalla; un token introducido antes con espacios también funciona; un bloque erróneo se indica en el registro; los textos indican el lugar correcto del token (engranaje > NETZWERK); los cuatro campos están ocultos como una contraseña, el ojo muestra lo escrito",
+                "pl": "Wpisywanie tokenu w czterech polach, po jednym bloku 8 znaków, jak na wyświetlaczu; token wpisany wcześniej ze spacjami też działa; błędny blok jest wskazywany w dzienniku; teksty podają właściwe miejsce tokenu (koło zębate > NETZWERK); cztery pola są ukryte jak hasło, oko pokazuje wpis",
+                "uk": "Введення токена в чотири поля, по одному блоку з 8 символів, як на дисплеї; токен, раніше введений із пробілами, тепер теж працює; хибний блок називається в журналі; тексти вказують правильне місце токена (шестірня > NETZWERK); чотири поля приховані, як пароль, значок ока показує введення",
+                "zh-cn": "令牌分四个字段输入，每个字段一个 8 字符的块，与显示屏上一致；以前带空格输入的令牌现在也可以使用；日志会指出错误的块；文本中给出令牌在显示屏上的正确位置（齿轮 > NETZWERK）；四个字段像密码一样隐藏，点击眼睛图标可显示输入"
             }
         },
         "titleLang": {
@@ -88,6 +88,10 @@
     "native": {
         "ip": "",
         "port": 80,
+        "tokenBlock1": "",
+        "tokenBlock2": "",
+        "tokenBlock3": "",
+        "tokenBlock4": "",
         "token": "",
         "forwardLevel": "W",
         "historySize": 50,
@@ -102,10 +106,18 @@
         "notifyConnectionMinutes": 5
     },
     "encryptedNative": [
-        "token"
+        "token",
+        "tokenBlock1",
+        "tokenBlock2",
+        "tokenBlock3",
+        "tokenBlock4"
     ],
     "protectedNative": [
-        "token"
+        "token",
+        "tokenBlock1",
+        "tokenBlock2",
+        "tokenBlock3",
+        "tokenBlock4"
     ],
     "objects": [],
     "instanceObjects": [

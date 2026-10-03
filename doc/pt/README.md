@@ -28,7 +28,8 @@ Versão inicial em desenvolvimento, não publicada no npm. Disponível: ligaçã
 | --- | --- |
 | Endereço do dispositivo | Endereço IP ou nome do anfitrião; o ecrã mostra ambos em configuração > rede. |
 | Porta | O dispositivo utiliza a porta 80. |
-| Token | Mostrado no ecrã em configuração > rede > acesso remoto. A leitura funciona sem token; será necessário para comandos. É guardado de forma encriptada. |
+| Blocos 1 a 4 do token | O token do dispositivo, um bloco por campo. O ecrã mostra-o em roda dentada > NETZWERK, sob o título «TOKEN FUER DEN ADAPTER», como 4 blocos de 8 caracteres em duas linhas: blocos 1 e 2 na primeira linha, blocos 3 e 4 na segunda. Os campos estão dispostos da mesma forma. Maiúsculas e minúsculas não importam. A leitura funciona sem token; os comandos e as definições precisam dele. Os campos são guardados de forma encriptada. Um bloco errado (não tem 8 caracteres 0-9 e a-f, ou está vazio enquanto outros estão preenchidos) é marcado a vermelho, e as definições só podem ser guardadas depois de o corrigir ou de esvaziar os quatro campos. Se mesmo assim um token errado chegar ao adaptador, o registo indica o bloco errado e o adaptador apenas lê. A entrada fica oculta como uma palavra-passe; o olho em cada campo mostra-a. |
+| Token (campo antigo) | Só aparece se foi introduzido um token na versão 0.0.4 ou anterior. Só é usado enquanto os quatro campos estiverem vazios e pode ser apagado depois de introduzir os quatro blocos. |
 | Escrever as mensagens do dispositivo no registo do ioBroker | A partir de que nível as mensagens do dispositivo aparecem também no registo do ioBroker. Todas as mensagens ficam, em qualquer caso, nos estados em `messages`. |
 | Mensagens no histórico | Número de mensagens em `messages.history` (1 a 500). |
 
@@ -37,6 +38,9 @@ Versão inicial em desenvolvimento, não publicada no npm. Disponível: ligaçã
 Os níveis de registo, as etiquetas e a forma de mudar o nível estão no [README em inglês](../../README.md#logging-and-debugging). O token nunca aparece no registo.
 
 ## Changelog
+
+### 0.0.5 (2026-10-03)
+- (ssbingo) introdução do token em quatro campos, um bloco de 8 caracteres cada, como no ecrã; um token introduzido antes com espaços também funciona; um bloco errado é indicado no registo; os textos indicam o local correto do token (roda dentada > NETZWERK); os quatro campos estão ocultos como uma palavra-passe, o olho mostra o que foi escrito
 
 ### 0.0.4 (2026-10-02)
 - (ssbingo) notificações através de um adaptador de mensagens: tempestade, avarias, sensor de vento, sensor solar, ligação, reinício

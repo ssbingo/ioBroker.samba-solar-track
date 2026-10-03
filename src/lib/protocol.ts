@@ -10,6 +10,23 @@ export const DEVICE_NAME = "samba-solar-track";
 /** Highest protocol version this adapter knows */
 export const PROTOCOL_VERSION = 1;
 
+/**
+ * The token: exactly 32 hex characters in lower case, as the firmware creates and checks it.
+ * PROTOCOL.md (section 3) describes its use, but not its form.
+ */
+export const TOKEN_LENGTH = 32;
+
+/** The display shows the token as 4 blocks of 8 characters, two blocks per line */
+export const TOKEN_BLOCKS = 4;
+
+/** Characters per block */
+export const TOKEN_BLOCK_LENGTH = TOKEN_LENGTH / TOKEN_BLOCKS;
+
+/** Where the user finds the token, for log texts */
+export const TOKEN_HINT =
+    'The display shows it under the gear > NETZWERK > "TOKEN FUER DEN ADAPTER" as 4 blocks of 8 characters ' +
+    "(0-9, a-f); enter one block per field in the adapter settings.";
+
 /** Answer of GET /api/info (only the fixed contract is mandatory) */
 export interface DeviceInfo {
     /** Always "samba-solar-track" */
@@ -200,4 +217,118 @@ export function readPath(source: unknown, path: string): unknown {
         current = current[key];
     }
     return current;
+}
+
+/** Where the token of the adapter settings comes from */
+export type TokenSource = "blocks" | "old" | "none";
+
+/** Token of the adapter settings, checked */
+export interface TokenSetting {
+    /** The token as the device expects it; empty = read only */
+    token: string;
+    /** The four fields, the old single field of version 0.0.4 and older, or no token at all */
+    source: TokenSource;
+    /** What is wrong, in words and without the token itself; undefined = the token can be used */
+    problem?: string;
+    /** Characters in each of the four fields after removing whitespace (for the log) */
+    blockLengths: number[];
+    /** Characters in the old single field after removing whitespace (for the log) */
+    oldLength: number;
+}
+
+/**
+ * Removes all whitespace and converts to lower case, like the web page of the device does.
+ *
+ * @param value value of a field of the adapter settings
+ */
+function normalizeToken(value: unknown): string {
+    if (typeof value !== "string" && typeof value !== "number") {
+        return "";
+    }
+    return String(value).replace(/\s+/g, "").toLowerCase();
+}
+
+/**
+ * Describes what is wrong with a token or a block, without showing its content.
+ *
+ * @param value token or block without whitespace, in lower case
+ * @param length expected number of characters
+ * @returns the problems, each fitting after "has"; empty when the value is fine
+ */
+function tokenProblems(value: string, length: number): string[] {
+    const characters = [...value];
+    const problems: string[] = [];
+    if (characters.length !== length) {
+        problems.push(`${characters.length} characters instead of ${length}`);
+    }
+    const positions: number[] = [];
+    characters.forEach((character, index) => {
+        if (!/^[0-9a-f]$/.test(character)) {
+            positions.push(index + 1);
+        }
+    });
+    if (positions.length === 1) {
+        problems.push(`a character other than 0-9 and a-f at position ${positions[0]}`);
+    } else if (positions.length > 1) {
+        problems.push(`characters other than 0-9 and a-f at positions ${positions.join(", ")}`);
+    }
+    return problems;
+}
+
+/**
+ * Puts the token together from the adapter settings. The display shows it as 4 blocks of
+ * 8 characters, and the settings have one field per block. In each block whitespace is removed
+ * and upper case is converted, like the web page of the device does; then every block must have
+ * exactly 8 characters 0-9 and a-f. While the four fields are empty, the old single field of
+ * version 0.0.4 and older is used after the same treatment.
+ *
+ * @param blocks values of the four fields, in the order of the display
+ * @param old value of the old single field
+ * @returns the token, or an empty token (read only) with the reason
+ */
+export function assembleToken(blocks: readonly unknown[], old: unknown): TokenSetting {
+    const parts: string[] = [];
+    for (let i = 0; i < TOKEN_BLOCKS; i++) {
+        parts.push(normalizeToken(blocks[i]));
+    }
+    const single = normalizeToken(old);
+    const lengths = { blockLengths: parts.map(part => [...part].length), oldLength: [...single].length };
+    if (parts.every(part => part === "")) {
+        if (!single) {
+            return { token: "", source: "none", ...lengths };
+        }
+        const problems = tokenProblems(single, TOKEN_LENGTH);
+        return problems.length
+            ? { token: "", source: "old", problem: `the old token field has ${problems.join(" and ")}`, ...lengths }
+            : { token: single, source: "old", ...lengths };
+    }
+    const problems: string[] = [];
+    parts.forEach((part, index) => {
+        if (!part) {
+            problems.push(`block ${index + 1} is empty`);
+            return;
+        }
+        const found = tokenProblems(part, TOKEN_BLOCK_LENGTH);
+        if (found.length) {
+            problems.push(`block ${index + 1} has ${found.join(" and ")}`);
+        }
+    });
+    return problems.length
+        ? { token: "", source: "blocks", problem: problems.join(", "), ...lengths }
+        : { token: parts.join(""), source: "blocks", ...lengths };
+}
+
+/**
+ * Describes the token for the log, without showing it.
+ *
+ * @param setting result of assembleToken
+ */
+export function tokenSummary(setting: TokenSetting): string {
+    if (setting.source === "none") {
+        return "token not set (read only)";
+    }
+    const from = setting.source === "blocks" ? "from the four fields" : "from the old token field";
+    return setting.problem
+        ? `token ${from} incomplete or wrong (read only)`
+        : `token ${from} complete (${setting.token.length} characters)`;
 }

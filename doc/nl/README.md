@@ -28,7 +28,8 @@ Vroege versie in ontwikkeling, niet op npm gepubliceerd. Beschikbaar: verbinding
 | --- | --- |
 | Adres van het apparaat | IP-adres of hostnaam; het display toont beide onder instellen > netwerk. |
 | Poort | Het apparaat gebruikt poort 80. |
-| Token | Staat op het display onder instellen > netwerk > toegang op afstand. Lezen werkt zonder token; voor commando's is het nodig. Het wordt versleuteld opgeslagen. |
+| Tokenblok 1 tot 4 | Het token van het apparaat, één blok per veld. Het display toont het onder tandwiel > NETZWERK, kop "TOKEN FUER DEN ADAPTER", als 4 blokken van 8 tekens in twee regels: blok 1 en 2 in de eerste regel, blok 3 en 4 in de tweede. De velden zijn op dezelfde manier gerangschikt. Hoofdletters of kleine letters maken niet uit. Lezen werkt zonder token; commando's en instellingen hebben het nodig. De velden worden versleuteld opgeslagen. Een fout blok (geen 8 tekens 0-9 en a-f, of leeg terwijl andere zijn ingevuld) wordt rood gemarkeerd, en de instellingen kunnen pas worden opgeslagen als het is verbeterd of alle vier velden leeg zijn. Komt er toch een fout token bij de adapter aan, dan noemt het log het foute blok en leest de adapter alleen. De invoer is verborgen zoals een wachtwoord; het oog in elk veld toont hem. |
+| Token (oud veld) | Verschijnt alleen als met versie 0.0.4 of ouder een token is ingevoerd. Het wordt alleen gebruikt zolang de vier velden leeg zijn en kan na het invullen van de vier blokken worden verwijderd. |
 | Meldingen van het apparaat in het ioBroker-log schrijven | Vanaf welk niveau meldingen van het apparaat ook in het ioBroker-log verschijnen. Alle meldingen staan hoe dan ook in de datapunten onder `messages`. |
 | Meldingen in de geschiedenis | Aantal meldingen in `messages.history` (1 tot 500). |
 
@@ -37,6 +38,9 @@ Vroege versie in ontwikkeling, niet op npm gepubliceerd. Beschikbaar: verbinding
 Logniveaus, tags en het omschakelen van het logniveau staan in de [Engelse README](../../README.md#logging-and-debugging). Het token verschijnt nooit in het log.
 
 ## Changelog
+
+### 0.0.5 (2026-10-03)
+- (ssbingo) invoer van het token in vier velden, één blok van 8 tekens per veld zoals op het display; een eerder met spaties ingevoerd token werkt nu ook; een fout blok wordt in het log genoemd; de teksten noemen de juiste plek van het token (tandwiel > NETZWERK); de vier velden zijn verborgen zoals een wachtwoord, het oog toont de invoer
 
 ### 0.0.4 (2026-10-02)
 - (ssbingo) meldingen via een berichtenadapter: storm, storingen, windmeter, zonnesensor, verbinding, herstart

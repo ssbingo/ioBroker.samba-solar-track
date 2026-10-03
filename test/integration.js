@@ -1,9 +1,32 @@
 const path = require("path");
 const { tests } = require("@iobroker/testing");
 const { expect } = require("chai");
-const { MockDevice, TOKEN } = require("./mock-device");
+const { MockDevice, TOKEN, TOKEN_BLOCKS } = require("./mock-device");
 
 const NAMESPACE = "samba-solar-track.0";
+
+/**
+ * The four token fields of the adapter settings.
+ *
+ * @param {string[]} [blocks] values of the fields, in the order of the display
+ */
+function tokenFields(blocks = TOKEN_BLOCKS) {
+    return { tokenBlock1: blocks[0], tokenBlock2: blocks[1], tokenBlock3: blocks[2], tokenBlock4: blocks[3] };
+}
+
+/**
+ * Checks that neither the token nor a block of it appears in a log line.
+ *
+ * @param {{ message: string }[]} logs the captured log lines
+ * @param {string[]} [more] other secrets, e.g. a block as it was entered
+ */
+function expectNoSecret(logs, more = []) {
+    for (const log of logs) {
+        for (const secret of [TOKEN, ...TOKEN_BLOCKS, ...more]) {
+            expect(log.message).to.not.contain(secret);
+        }
+    }
+}
 
 /**
  * Waits until a condition is true.
@@ -55,9 +78,11 @@ tests.integration(path.join(__dirname, ".."), {
                     });
                 };
 
+                // the blocks as a user may type them: upper case, a space before or after
+                const typed = [TOKEN_BLOCKS[0].toUpperCase(), ` ${TOKEN_BLOCKS[1]}`, `${TOKEN_BLOCKS[2]} `, TOKEN_BLOCKS[3]];
                 await harness.changeAdapterConfig("samba-solar-track", {
                     common: { loglevel: "silly" },
-                    native: { ip: "127.0.0.1", port: device.port, token: TOKEN, forwardLevel: "W", historySize: 5 },
+                    native: { ip: "127.0.0.1", port: device.port, ...tokenFields(typed), forwardLevel: "W", historySize: 5 },
                 });
                 await harness.startAdapterAndWait(true);
 
@@ -67,7 +92,9 @@ tests.integration(path.join(__dirname, ".."), {
                 await expectState("info.firmware", "0.0.1");
                 await expectState("info.protocol", 1);
                 await expectState("info.deviceId", "aa:bb:cc:dd:ee:ff");
+                // the device accepts the token put together from the four fields
                 await expectState("info.authorized", true);
+                await until(() => harness.hasLog("token from the four fields complete (32 characters)", "info"), "summary of the token");
                 await expectState("info.bootId", device.bootId);
                 await until(async () => typeof (await value("info.bootTime")) === "number", "info.bootTime");
                 expect(await value("info.bootTime")).to.be.closeTo(device.bootedAt, 2000);
@@ -112,9 +139,7 @@ tests.integration(path.join(__dirname, ".."), {
                 // no secret in the log, even at level silly
                 const logs = harness.getLogs();
                 expect(logs.length).to.be.greaterThan(20);
-                for (const log of logs) {
-                    expect(log.message).to.not.contain(TOKEN);
-                }
+                expectNoSecret(logs, typed.map(block => block.trim()));
                 expect(harness.getLogs("error")).to.deep.equal([]);
             });
         });
@@ -150,7 +175,7 @@ tests.integration(path.join(__dirname, ".."), {
 
                 await harness.changeAdapterConfig("samba-solar-track", {
                     common: { loglevel: "debug" },
-                    native: { ip: "127.0.0.1", port: device.port, token: TOKEN },
+                    native: { ip: "127.0.0.1", port: device.port, ...tokenFields() },
                 });
                 await harness.startAdapterAndWait(true);
                 await expectState("control.auto", true, true);
@@ -224,9 +249,7 @@ tests.integration(path.join(__dirname, ".."), {
                 await until(async () => (await lastResult()).reason === "range", "result range");
                 await expectState("control.jogElevation", 0, true);
 
-                for (const log of harness.getLogs()) {
-                    expect(log.message).to.not.contain(TOKEN);
-                }
+                expectNoSecret(harness.getLogs());
                 expect(harness.getLogs("error")).to.deep.equal([]);
             });
         });
@@ -264,7 +287,7 @@ tests.integration(path.join(__dirname, ".."), {
 
                 await harness.changeAdapterConfig("samba-solar-track", {
                     common: { loglevel: "debug" },
-                    native: { ip: "127.0.0.1", port: device.port, token: TOKEN },
+                    native: { ip: "127.0.0.1", port: device.port, ...tokenFields() },
                 });
                 await harness.startAdapterAndWait(true);
 
@@ -367,9 +390,7 @@ tests.integration(path.join(__dirname, ".."), {
                 await until(async () => (await lastResult()).reason === "same", "result same");
                 expect(device.bootId).to.equal(bootAfter);
 
-                for (const log of harness.getLogs()) {
-                    expect(log.message).to.not.contain(TOKEN);
-                }
+                expectNoSecret(harness.getLogs());
                 expect(harness.getLogs("error")).to.deep.equal([]);
             });
         });
@@ -396,7 +417,7 @@ tests.integration(path.join(__dirname, ".."), {
                     native: {
                         ip: "127.0.0.1",
                         port: device.port,
-                        token: TOKEN,
+                        ...tokenFields(),
                         notifyEnabled: true,
                         messagingInstance: "telegram.0",
                         notifyStorm: true,
@@ -447,9 +468,7 @@ tests.integration(path.join(__dirname, ".."), {
                 );
                 expect(options).to.deep.equal([]);
 
-                for (const log of harness.getLogs()) {
-                    expect(log.message).to.not.contain(TOKEN);
-                }
+                expectNoSecret(harness.getLogs());
                 expect(harness.getLogs("error")).to.deep.equal([]);
             });
         });
@@ -472,11 +491,12 @@ tests.integration(path.join(__dirname, ".."), {
                 const harness = getHarness();
                 const state = async id => harness.states.getStateAsync(`${NAMESPACE}.${id}`);
                 await harness.changeAdapterConfig("samba-solar-track", {
-                    native: { ip: "127.0.0.1", port: device.port, token: "" },
+                    native: { ip: "127.0.0.1", port: device.port, ...tokenFields(["", "", "", ""]), token: "" },
                 });
                 await harness.startAdapterAndWait(true);
                 await until(async () => (await state("control.auto"))?.val === true, "control.auto");
                 expect((await state("info.authorized"))?.val).to.equal(false);
+                await until(() => harness.hasLog("token not set (read only)", "info"), "summary of the token");
 
                 await harness.states.setStateAsync(`${NAMESPACE}.control.auto`, { val: false, ack: false });
                 await until(
@@ -489,6 +509,94 @@ tests.integration(path.join(__dirname, ".."), {
                 }, "control.auto back to true");
                 expect(device.status.auto).to.equal(true);
                 await until(() => harness.hasLog("the token is missing or wrong", "warn"), `log line "the token is missing or wrong"`.replace(/"/g, ""));
+                // no token is no mistake: neither an error nor a warning about the token
+                expect(harness.getLogs("error")).to.deep.equal([]);
+                expect(harness.hasLog("did not accept the token")).to.equal(false);
+            });
+        });
+
+        suite("Token of version 0.0.4 and older (mock device)", getHarness => {
+            /** @type {MockDevice} */
+            let device;
+
+            before(async () => {
+                device = new MockDevice();
+                await device.start();
+            });
+
+            after(async () => {
+                await device.stop();
+            });
+
+            it("uses the old single field, typed with spaces like the display shows it, while the four fields are empty", async function () {
+                this.timeout(60000);
+                const harness = getHarness();
+                const state = async id => harness.states.getStateAsync(`${NAMESPACE}.${id}`);
+                const typed = `${TOKEN_BLOCKS[0]} ${TOKEN_BLOCKS[1]}\n${TOKEN_BLOCKS[2]} ${TOKEN_BLOCKS[3].toUpperCase()}`;
+                await harness.changeAdapterConfig("samba-solar-track", {
+                    common: { loglevel: "debug" },
+                    native: { ip: "127.0.0.1", port: device.port, ...tokenFields(["", "", "", ""]), token: typed },
+                });
+                await harness.startAdapterAndWait(true);
+                await until(async () => (await state("info.authorized"))?.val === true, "info.authorized");
+                await until(() => harness.hasLog("token from the old token field complete (32 characters)", "info"), "summary of the token");
+
+                // the device takes commands with this token
+                await harness.states.setStateAsync(`${NAMESPACE}.control.auto`, { val: false, ack: false });
+                await until(async () => (await state("status.auto"))?.val === false, "status.auto false");
+                expect(device.status.auto).to.equal(false);
+
+                expectNoSecret(harness.getLogs(), [typed, TOKEN_BLOCKS[3].toUpperCase()]);
+                expect(harness.getLogs("error")).to.deep.equal([]);
+            });
+        });
+
+        suite("Wrong token block (mock device)", getHarness => {
+            /** @type {MockDevice} */
+            let device;
+
+            before(async () => {
+                device = new MockDevice();
+                await device.start();
+            });
+
+            after(async () => {
+                await device.stop();
+            });
+
+            it("names the wrong block once, reads everything and sends no token", async function () {
+                this.timeout(60000);
+                const harness = getHarness();
+                const state = async id => harness.states.getStateAsync(`${NAMESPACE}.${id}`);
+                // block 2 lacks its last character; the old field must not be used instead
+                const blocks = [TOKEN_BLOCKS[0], TOKEN_BLOCKS[1].slice(0, 7), TOKEN_BLOCKS[2], TOKEN_BLOCKS[3]];
+                await harness.changeAdapterConfig("samba-solar-track", {
+                    common: { loglevel: "debug" },
+                    native: { ip: "127.0.0.1", port: device.port, ...tokenFields(blocks), token: TOKEN },
+                });
+                await harness.startAdapterAndWait(true);
+                await until(async () => (await state("status.state"))?.val === "IDLE", "status.state IDLE");
+                await until(async () => (await state("info.connection"))?.val === true, "info.connection");
+                expect((await state("info.authorized"))?.val).to.equal(false);
+
+                const errors = harness.getLogs("error");
+                expect(errors).to.have.length(1);
+                expect(errors[0].message).to.contain("[cfg] The token in the adapter settings cannot be used: block 2 has 7 characters instead of 8.");
+                expect(errors[0].message).to.contain('gear > NETZWERK > "TOKEN FUER DEN ADAPTER" as 4 blocks of 8 characters');
+                expect(harness.hasLog("token from the four fields incomplete or wrong (read only)", "info")).to.equal(true);
+                // no token was sent, so the device has nothing to refuse
+                expect(harness.hasLog("did not accept the token")).to.equal(false);
+
+                // commands are refused by the device
+                await harness.states.setStateAsync(`${NAMESPACE}.control.auto`, { val: false, ack: false });
+                await until(
+                    async () => JSON.parse((await state("control.lastResult"))?.val ?? "{}").reason === "auth",
+                    "result auth",
+                );
+                expect(device.status.auto).to.equal(true);
+
+                expectNoSecret(harness.getLogs(), [blocks[1]]);
+                expect(harness.getLogs("error")).to.have.length(1);
             });
         });
 

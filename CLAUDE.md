@@ -108,9 +108,18 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   "send", { text, message })`) für Sturm, Störungen, Windmesser, Sonnensensor, Verbindung und
   Neustart, in der Sprache des Systems. Die Einstellungsseite fragt den Adapter nach den
   vorhandenen Messaging-Instanzen (`getMessagingInstances`, deshalb `common.messagebox`).
-- Alles nur gegen das nachgebildete Gerät geprüft, **nicht mit echter Hardware**.
+- **Erledigt (0.0.5):** Eingabe des Tokens in vier Feldern `tokenBlock1` bis `tokenBlock4`,
+  verdeckt wie ein Passwort, mit Auge zum Anzeigen (Wunsch des Nutzers vom 3.10.2026),
+  angeordnet wie am Display (Zahnrad → NETZWERK, „TOKEN FUER DEN ADAPTER“);
+  Leerzeichen und Großbuchstaben werden aufbereitet, ein falscher Block wird im Log genannt.
+  Das alte Feld `token` gilt nur, solange die vier Felder leer sind, und ist nur sichtbar,
+  solange es einen Wert hat. Alle Texte nennen den richtigen Ort des Tokens.
+- Mit dem echten Gerät verbunden (3.10.2026, Firmware 0.0.3): Verbindung und Lesen gehen; das
+  Token wurde nicht angenommen. Die Ursache ist nicht bestätigt; möglich sind Leerzeichen in der
+  Eingabe (die 0.0.5 entfernt) oder ein Tippfehler. Alles Übrige nur gegen das nachgebildete
+  Gerät geprüft.
 - **Offen, in dieser Reihenfolge:** vis-2-Widgets (Übersicht, Bedienung, Meldungen,
-  Werte), Handbuch.
+  Werte), Handbuch, Uhrzeit des Geräts (`time` in `GET /api/info`, ab Firmware 0.0.4).
 
 ---
 

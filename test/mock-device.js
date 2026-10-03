@@ -13,7 +13,10 @@ const FIRMWARE_PARAMS = require("./mock-params");
 const AZIMUTH_ONLY = ["motorMaxRunMsAzimuth", "limitSwitchesAzimuth", "nightReturnEast"];
 const DIRECTION_ONLY = ["windDirAddr", "windDirFunction", "windDirRegister", "windDirScale"];
 
-const TOKEN = "0123456789abcdef0123456789abcdef";
+/** Token of the device: 32 hex characters in lower case, as the firmware expects it (invented example) */
+const TOKEN = "3f9a1c2077b4e1d20a5c9e314b6f8d02";
+/** The same token as the display shows it: 4 blocks of 8 characters, one field each in the settings */
+const TOKEN_BLOCKS = [TOKEN.slice(0, 8), TOKEN.slice(8, 16), TOKEN.slice(16, 24), TOKEN.slice(24, 32)];
 
 /** Status as in the example of PROTOCOL.md */
 function defaultStatus() {
@@ -607,4 +610,4 @@ class MockDevice {
     }
 }
 
-module.exports = { MockDevice, TOKEN };
+module.exports = { MockDevice, TOKEN, TOKEN_BLOCKS };

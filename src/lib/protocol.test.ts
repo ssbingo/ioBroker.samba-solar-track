@@ -1,5 +1,15 @@
 import { expect } from "chai";
-import { parseHello, parseInfo, parseLogLine, readPath, resumeSince, type HelloFrame } from "./protocol";
+import {
+    TOKEN_HINT,
+    assembleToken,
+    parseHello,
+    parseInfo,
+    parseLogLine,
+    readPath,
+    resumeSince,
+    tokenSummary,
+    type HelloFrame,
+} from "./protocol";
 
 const INFO = {
     device: "samba-solar-track",
@@ -107,5 +117,141 @@ describe("protocol => readPath", () => {
         expect(readPath(source, "wind.dirDeg")).to.equal(null);
         expect(readPath(source, "axes.azimuth.out")).to.equal(undefined);
         expect(readPath(source, "axes.elevation.out.deeper")).to.equal(undefined);
+    });
+});
+
+/** A token as the display shows it: two lines with two blocks each */
+const BLOCKS = ["3f9a1c20", "77b4e1d2", "0a5c9e31", "4b6f8d02"];
+const TOKEN = BLOCKS.join("");
+
+describe("protocol => assembleToken", () => {
+    it("puts the four blocks together", () => {
+        expect(assembleToken(BLOCKS, "")).to.deep.equal({
+            token: TOKEN,
+            source: "blocks",
+            blockLengths: [8, 8, 8, 8],
+            oldLength: 0,
+        });
+    });
+
+    it("removes whitespace and converts upper case in every block", () => {
+        const setting = assembleToken([" 3F9A1C20", "77b4 e1d2 ", "\t0a5c9e31\n", "4B6F8D02"], "");
+        expect(setting).to.include({ token: TOKEN, source: "blocks" });
+        expect(setting.problem).to.equal(undefined);
+    });
+
+    it("names a block with the wrong number of characters and reads only", () => {
+        const setting = assembleToken(["3f9a1c20", "77b4e1d", "0a5c9e31", "4b6f8d02"], "");
+        expect(setting).to.include({ token: "", source: "blocks", problem: "block 2 has 7 characters instead of 8" });
+        expect(setting.blockLengths).to.deep.equal([8, 7, 8, 8]);
+    });
+
+    it("names a block with a character other than 0-9 and a-f and its position", () => {
+        expect(assembleToken(["3f9a1c2o", "77b4e1d2", "0a5c9e31", "4b6f8d02"], "").problem).to.equal(
+            "block 1 has a character other than 0-9 and a-f at position 8",
+        );
+        expect(assembleToken(["3f9a1c20", "77b4e1d2", "0a5c9e31", "4b6g8d0z"], "").problem).to.equal(
+            "block 4 has characters other than 0-9 and a-f at positions 4, 8",
+        );
+    });
+
+    it("names every wrong block in one text", () => {
+        const setting = assembleToken(["3f9a1c20", "", "0a5c9e31", "4b6f8d02x"], "");
+        expect(setting.token).to.equal("");
+        expect(setting.problem).to.equal(
+            "block 2 is empty, block 4 has 9 characters instead of 8 and a character other than 0-9 and a-f at position 9",
+        );
+    });
+
+    it("reads only when only some of the four fields are filled", () => {
+        const setting = assembleToken(["3f9a1c20", "77b4e1d2"], "");
+        expect(setting).to.include({ token: "", source: "blocks", problem: "block 3 is empty, block 4 is empty" });
+    });
+
+    it("uses the old single field with spaces and upper case while the four fields are empty", () => {
+        const setting = assembleToken(["", " ", undefined, null], "3f9a1c20 77b4e1d2\n0a5c9e31 4B6F8D02");
+        expect(setting).to.deep.equal({
+            token: TOKEN,
+            source: "old",
+            blockLengths: [0, 0, 0, 0],
+            oldLength: 32,
+        });
+    });
+
+    it("reports a wrong old single field and reads only", () => {
+        const setting = assembleToken(["", "", "", ""], "3f9a1c20 77b4e1d2 0a5c9e31 4b6f8d0");
+        expect(setting).to.include({
+            token: "",
+            source: "old",
+            problem: "the old token field has 31 characters instead of 32",
+        });
+    });
+
+    it("prefers the four fields to the old single field", () => {
+        expect(assembleToken(BLOCKS, "0123456789abcdef0123456789abcdef")).to.include({
+            token: TOKEN,
+            source: "blocks",
+            oldLength: 32,
+        });
+        // a wrong block is not replaced by the old field
+        expect(assembleToken(["3f9a1c20", "", "", ""], TOKEN)).to.include({ token: "", source: "blocks" });
+    });
+
+    it("reads only without any token", () => {
+        expect(assembleToken(["", "", "", ""], "")).to.deep.equal({
+            token: "",
+            source: "none",
+            blockLengths: [0, 0, 0, 0],
+            oldLength: 0,
+        });
+        expect(assembleToken([], undefined)).to.include({ token: "", source: "none" });
+    });
+
+    it("takes numbers as text and ignores other values", () => {
+        expect(assembleToken([12345678, "77b4e1d2", "0a5c9e31", "4b6f8d02"], "")).to.include({
+            token: "1234567877b4e1d20a5c9e314b6f8d02",
+            source: "blocks",
+        });
+        expect(assembleToken([true, {}, [], 0.5], undefined).problem).to.equal(
+            "block 1 is empty, block 2 is empty, block 3 is empty, block 4 has 3 characters instead of 8 and a character other than 0-9 and a-f at position 2",
+        );
+    });
+
+    it("never puts the token or a part of it into the problem text", () => {
+        const wrong = [
+            assembleToken(["3F9A1C20", "77b4e1d", "0a5c9e3l", "4b6f8d02"], ""),
+            assembleToken([], "3f9a1c20 77b4e1d2 0a5c9e31 4b6f8d0"),
+        ];
+        for (const setting of wrong) {
+            expect(setting.problem).to.be.a("string");
+            for (const part of [...BLOCKS, "3F9A1C20", "77b4e1d", "0a5c9e3l", "4b6f8d0"]) {
+                expect(setting.problem).to.not.contain(part);
+                expect(tokenSummary(setting)).to.not.contain(part);
+            }
+        }
+    });
+});
+
+describe("protocol => tokenSummary", () => {
+    it("names the source and whether the token is complete, without the token", () => {
+        expect(tokenSummary(assembleToken(BLOCKS, ""))).to.equal("token from the four fields complete (32 characters)");
+        expect(tokenSummary(assembleToken(["3f9a1c20"], ""))).to.equal(
+            "token from the four fields incomplete or wrong (read only)",
+        );
+        expect(tokenSummary(assembleToken([], TOKEN))).to.equal(
+            "token from the old token field complete (32 characters)",
+        );
+        expect(tokenSummary(assembleToken([], "3f9a"))).to.equal(
+            "token from the old token field incomplete or wrong (read only)",
+        );
+        expect(tokenSummary(assembleToken([], ""))).to.equal("token not set (read only)");
+    });
+});
+
+describe("protocol => TOKEN_HINT", () => {
+    it("names the place of the token at the display and its form", () => {
+        expect(TOKEN_HINT).to.contain('gear > NETZWERK > "TOKEN FUER DEN ADAPTER"');
+        expect(TOKEN_HINT).to.contain("4 blocks of 8 characters");
+        expect(TOKEN_HINT).to.not.contain("remote access");
     });
 });
