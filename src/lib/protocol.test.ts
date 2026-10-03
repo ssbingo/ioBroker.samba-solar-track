@@ -184,7 +184,9 @@ describe("protocol => assembleToken", () => {
         expect(setting).to.include({
             token: "",
             source: "old",
-            problem: "the old token field has 31 characters instead of 32",
+            problem:
+                "the token saved by version 0.0.4 or older (no longer shown in the settings) has 31 characters " +
+                "instead of 32; enter the token in the four fields, then it is removed",
         });
     });
 
@@ -245,6 +247,15 @@ describe("protocol => migrateOldToken", () => {
     it("empties the old field once the four fields are in use, even with a wrong block", () => {
         expect(migrateOldToken(BLOCKS, TOKEN)).to.deep.equal({ clearOld: true });
         expect(migrateOldToken(["3f9a1c20", "77b4e1d", "", ""], "anything")).to.deep.equal({ clearOld: true });
+    });
+
+    it("the start after the move uses the four fields and moves nothing again", () => {
+        // js-controller restarts the adapter after updateConfig; the old field is then empty
+        const moved = migrateOldToken(["", "", "", ""], TOKEN);
+        const blocks = moved?.blocks ?? [];
+        expect(migrateOldToken(blocks, "")).to.equal(null);
+        expect(assembleToken(blocks, "")).to.include({ token: TOKEN, source: "blocks" });
+        expect(tokenSummary(assembleToken(blocks, ""))).to.equal("token from the four fields complete (32 characters)");
     });
 
     it("does nothing without an old value or with an old value that is no token", () => {

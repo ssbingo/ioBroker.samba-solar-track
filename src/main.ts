@@ -149,8 +149,9 @@ class SambaSolarTrack extends utils.Adapter {
         }
         // Since 0.0.6 the settings show only the four fields: move a token of the old single field
         // there once, or empty the old field when the four fields are in use. The settings are
-        // written encrypted, and js-controller restarts the adapter; until then this run goes on
-        // with the token assembled above.
+        // written encrypted. js-controller then stops this run and starts the adapter again with
+        // the new settings; this run therefore ends before it connects (check before the start of
+        // the connection below). Without a restart it goes on with the token assembled above.
         const migration = migrateOldToken(
             [this.config.tokenBlock1, this.config.tokenBlock2, this.config.tokenBlock3, this.config.tokenBlock4],
             this.config.token,
@@ -162,13 +163,19 @@ class SambaSolarTrack extends utils.Adapter {
                 await this.updateConfig(update);
                 this.log.info(
                     migration.blocks
-                        ? "[cfg] Token: moved from the old token field into the four fields (the settings show only these since 0.0.6)"
-                        : "[cfg] Token: the old token field was emptied, the four fields are used",
+                        ? "[cfg] Token: moved from the old token field into the four fields (the settings show only these since 0.0.6); js-controller restarts the adapter"
+                        : "[cfg] Token: the old token field was emptied, the four fields are used; js-controller restarts the adapter",
                 );
-            } catch (e) {
+            } catch (error) {
+                const reason = error instanceof Error ? error.message : String(error);
                 this.log.warn(
-                    `[cfg] Token: the old token field could not be moved into the four fields (${(e as Error).message}); it is still used`,
+                    migration.blocks
+                        ? `[cfg] Token: the old token field could not be moved into the four fields (${reason}); this run uses it, the next start tries again`
+                        : `[cfg] Token: the old token field could not be emptied (${reason}); the four fields are used, the next start tries again`,
                 );
+                if (error instanceof Error && error.stack) {
+                    this.log.debug(`[cfg] Token: ${error.stack}`);
+                }
             }
         }
         if (tokenSetting.problem) {
@@ -198,6 +205,12 @@ class SambaSolarTrack extends utils.Adapter {
         this.setupNotifications();
         await this.createObjects();
         await this.restorePosition();
+        if (this.stopping) {
+            // js-controller stopped this run meanwhile (for example after moving the token above):
+            // no connection, otherwise it would stay open after the end of this run
+            this.log.debug("[cfg] Start not continued: the adapter is stopping");
+            return;
+        }
 
         const timers = {
             set: (callback: () => void, ms: number): unknown => this.setTimeout(callback, ms),

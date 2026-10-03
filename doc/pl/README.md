@@ -15,7 +15,7 @@ Najważniejsze jest urządzenie. Śledzenie słońca, ochrona przed burzą, wył
 
 ## Stan projektu
 
-Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie z automatycznym ponownym łączeniem, stan sterownika jako stany, komunikaty z godziną i historią, polecenia (automatyka, parkowanie na płasko, potwierdzenie usterki, jazda ręczna z czuwakiem) oraz ustawienia urządzenia (wartości z granicami, propozycje z potwierdzeniem na wyświetlaczu, konfiguracja, wygląd), zob. [angielskie README](../../README.md#commands). Ponadto powiadomienia przez adapter komunikatów (burza, usterki, wiatromierz, czujnik słońca, połączenie, ponowne uruchomienie). Planowane: widżety vis-2. Dotąd testowane tylko z symulowanym urządzeniem, **nie z prawdziwym sprzętem**.
+Wczesna wersja w trakcie rozwoju, opublikowana w npm, ale jeszcze nie w repozytoriach ioBroker. Dostępne: połączenie z automatycznym ponownym łączeniem, stan sterownika jako stany, komunikaty z godziną i historią, polecenia (automatyka, parkowanie na płasko, potwierdzenie usterki, jazda ręczna z czuwakiem) oraz ustawienia urządzenia (wartości z granicami, propozycje z potwierdzeniem na wyświetlaczu, konfiguracja, wygląd), zob. [angielskie README](../../README.md#commands). Ponadto powiadomienia przez adapter komunikatów (burza, usterki, wiatromierz, czujnik słońca, połączenie, ponowne uruchomienie). Planowane: widżety vis-2. Połączenie i odczyt przetestowano z prawdziwym urządzeniem (firmware 0.0.3, 03.10.2026); polecenia, ustawienia i powiadomienia tylko z symulowanym urządzeniem.
 
 ## Wymagania
 
@@ -28,7 +28,7 @@ Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie
 | --- | --- |
 | Adres urządzenia | Adres IP lub nazwa hosta; wyświetlacz pokazuje je w konfiguracja > sieć. |
 | Port | Urządzenie używa portu 80. |
-| Token, blok 1 do 4 | Token urządzenia: cztery pola obok siebie, w każdym blok 8 znaków (0-9, a-f). Wyświetlacz pokazuje go w zębatka > NETZWERK, nagłówek „TOKEN FUER DEN ADAPTER”: bloki 1 i 2 w pierwszym wierszu, 3 i 4 w drugim; wpisuj od lewej do prawej. Wpis jest ukryty jak hasło, oko go pokazuje; pola są zapisywane w postaci zaszyfrowanej. Bez tokenu adapter tylko odczytuje. Błędny blok jest oznaczany na czerwono i uniemożliwia zapisanie; jeśli mimo to do adaptera trafi błędny token, dziennik wskaże blok. Token z dawnego pojedynczego pola (wersja 0.0.4 lub starsza) wersja 0.0.6 przenosi przy pierwszym uruchomieniu do czterech pól. |
+| Token, blok 1 do 4 | Token urządzenia: cztery pola obok siebie, w każdym blok 8 znaków (0-9, a-f). Wyświetlacz pokazuje go w zębatka > NETZWERK, nagłówek „TOKEN FUER DEN ADAPTER”: bloki 1 i 2 w pierwszym wierszu, 3 i 4 w drugim; wpisuj od lewej do prawej. Wpis jest ukryty jak hasło; podczas wpisywania oko go pokazuje. Pola są zapisywane w postaci zaszyfrowanej, a zapisany blok pozostaje ukryty: aby go zmienić, usuń go całkowicie i wpisz ponownie. Bez tokenu adapter tylko odczytuje. Błędny lub niepełny blok jest oznaczany na czerwono, czerwony wiersz pod polami podaje przyczynę, a zapisanie jest zablokowane; jeśli mimo to do adaptera trafi błędny token, dziennik wskaże blok. Token z dawnego pojedynczego pola (wersja 0.0.4 lub starsza) wersja 0.0.6 lub nowsza przenosi przy pierwszym uruchomieniu do czterech pól, po czym adapter uruchamia się ponownie jeden raz; nieużyteczna stara wartość nie jest przenoszona i jest zgłaszana jako błąd, dopóki cztery pola nie zostaną wypełnione. |
 | Zapisuj komunikaty urządzenia w dzienniku ioBroker | Od którego poziomu komunikaty urządzenia pojawiają się także w dzienniku ioBroker. Wszystkie komunikaty są i tak zapisywane w stanach w `messages`. |
 | Komunikaty w historii | Liczba komunikatów w `messages.history` (od 1 do 500). |
 
@@ -37,6 +37,9 @@ Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie
 Poziomy dziennika, znaczniki i zmiana poziomu są opisane w [angielskim README](../../README.md#logging-and-debugging). Token nigdy nie pojawia się w dzienniku.
 
 ## Changelog
+
+### 0.0.7 (2026-10-03)
+- (ssbingo) wpisywanie tokenu: czerwony wiersz pod czterema polami podaje przyczynę, gdy blok jest niepełny lub błędny; zapisany blok można znowu zmienić (usunąć go całkowicie i wpisać ponownie); na telefonie każde pole zajmuje pełną szerokość; po przeniesieniu starego tokenu pierwsze uruchomienie kończy się poprawnie, zanim js-controller uruchomi adapter ponownie (brak drugiego połączenia w trybie compact); jaśniejsze teksty dziennika o starym polu tokenu
 
 ### 0.0.6 (2026-10-03)
 - (ssbingo) wpisywanie tokenu: cztery pola obok siebie (blok 1 do 4) bez linii pomocy; dawne pojedyncze pole nie jest już pokazywane: token wpisany tam w wersji 0.0.4 lub starszej jest przy pierwszym uruchomieniu przenoszony do czterech pól (zaszyfrowany), a stare pole jest czyszczone

@@ -120,12 +120,16 @@ class SambaSolarTrack extends utils.Adapter {
       try {
         await this.updateConfig(update);
         this.log.info(
-          migration.blocks ? "[cfg] Token: moved from the old token field into the four fields (the settings show only these since 0.0.6)" : "[cfg] Token: the old token field was emptied, the four fields are used"
+          migration.blocks ? "[cfg] Token: moved from the old token field into the four fields (the settings show only these since 0.0.6); js-controller restarts the adapter" : "[cfg] Token: the old token field was emptied, the four fields are used; js-controller restarts the adapter"
         );
-      } catch (e) {
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
         this.log.warn(
-          `[cfg] Token: the old token field could not be moved into the four fields (${e.message}); it is still used`
+          migration.blocks ? `[cfg] Token: the old token field could not be moved into the four fields (${reason}); this run uses it, the next start tries again` : `[cfg] Token: the old token field could not be emptied (${reason}); the four fields are used, the next start tries again`
         );
+        if (error instanceof Error && error.stack) {
+          this.log.debug(`[cfg] Token: ${error.stack}`);
+        }
       }
     }
     if (tokenSetting.problem) {
@@ -152,6 +156,10 @@ class SambaSolarTrack extends utils.Adapter {
     this.setupNotifications();
     await this.createObjects();
     await this.restorePosition();
+    if (this.stopping) {
+      this.log.debug("[cfg] Start not continued: the adapter is stopping");
+      return;
+    }
     const timers = {
       set: (callback, ms) => this.setTimeout(callback, ms),
       clear: (handle) => this.clearTimeout(handle)

@@ -141,7 +141,12 @@ function assembleToken(blocks, old) {
       return { token: "", source: "none", ...lengths };
     }
     const problems2 = tokenProblems(single, TOKEN_LENGTH);
-    return problems2.length ? { token: "", source: "old", problem: `the old token field has ${problems2.join(" and ")}`, ...lengths } : { token: single, source: "old", ...lengths };
+    return problems2.length ? {
+      token: "",
+      source: "old",
+      problem: `the token saved by version 0.0.4 or older (no longer shown in the settings) has ${problems2.join(" and ")}; enter the token in the four fields, then it is removed`,
+      ...lengths
+    } : { token: single, source: "old", ...lengths };
   }
   const problems = [];
   parts.forEach((part, index) => {

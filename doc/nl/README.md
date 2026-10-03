@@ -15,7 +15,7 @@ Het apparaat heeft de leiding. Volgen, stormbeveiliging, eindschakelaars en loop
 
 ## Stand van het project
 
-Vroege versie in ontwikkeling, niet op npm gepubliceerd. Beschikbaar: verbinding met automatisch opnieuw verbinden, toestand van de besturing als datapunten, meldingen met tijdstip en geschiedenis, commando's (automatisch, vlak parkeren, storing bevestigen, handmatig rijden met dodemansfunctie) en instellingen van het apparaat (waarden met grenzen, voorstellen met bevestiging op het display, inrichting, design), zie de [Engelse README](../../README.md#commands). Daarnaast meldingen via een berichtenadapter (storm, storingen, windmeter, zonnesensor, verbinding, herstart). Gepland: vis-2-widgets. Tot nu toe alleen getest met een gesimuleerd apparaat, **niet met echte hardware**.
+Vroege versie in ontwikkeling, op npm gepubliceerd, maar nog niet in de ioBroker-repositories. Beschikbaar: verbinding met automatisch opnieuw verbinden, toestand van de besturing als datapunten, meldingen met tijdstip en geschiedenis, commando's (automatisch, vlak parkeren, storing bevestigen, handmatig rijden met dodemansfunctie) en instellingen van het apparaat (waarden met grenzen, voorstellen met bevestiging op het display, inrichting, design), zie de [Engelse README](../../README.md#commands). Daarnaast meldingen via een berichtenadapter (storm, storingen, windmeter, zonnesensor, verbinding, herstart). Gepland: vis-2-widgets. Verbinding en uitlezen zijn getest met een echt apparaat (firmware 0.0.3, 03-10-2026); opdrachten, instellingen en meldingen alleen met een gesimuleerd apparaat.
 
 ## Vereisten
 
@@ -28,7 +28,7 @@ Vroege versie in ontwikkeling, niet op npm gepubliceerd. Beschikbaar: verbinding
 | --- | --- |
 | Adres van het apparaat | IP-adres of hostnaam; het display toont beide onder instellen > netwerk. |
 | Poort | Het apparaat gebruikt poort 80. |
-| Token, blok 1 tot 4 | Het token van het apparaat: vier velden naast elkaar, elk met een blok van 8 tekens (0-9, a-f). Het display toont het onder tandwiel > NETZWERK, kop „TOKEN FUER DEN ADAPTER”: blok 1 en 2 op de eerste regel, 3 en 4 op de tweede; van links naar rechts invoeren. De invoer is verborgen zoals een wachtwoord, het oog toont hem; de velden worden versleuteld opgeslagen. Zonder token leest de adapter alleen. Een fout blok wordt rood gemarkeerd en verhindert het opslaan; komt er toch een fout token bij de adapter aan, dan noemt het log het blok. Een token uit het vroegere enkele veld (versie 0.0.4 of ouder) zet 0.0.6 bij de eerste start in de vier velden. |
+| Token, blok 1 tot 4 | Het token van het apparaat: vier velden naast elkaar, elk met een blok van 8 tekens (0-9, a-f). Het display toont het onder tandwiel > NETZWERK, kop „TOKEN FUER DEN ADAPTER”: blok 1 en 2 op de eerste regel, 3 en 4 op de tweede; van links naar rechts invoeren. De invoer is verborgen zoals een wachtwoord; tijdens het typen toont het oog hem. De velden worden versleuteld opgeslagen en een opgeslagen blok blijft verborgen: om het te wijzigen, wis het volledig en voer het opnieuw in. Zonder token leest de adapter alleen. Een fout of onvolledig blok wordt rood gemarkeerd, een rode regel onder de velden noemt de reden en opslaan is geblokkeerd; komt er toch een fout token bij de adapter aan, dan noemt het log het blok. Een token uit het vroegere enkele veld (versie 0.0.4 of ouder) zet 0.0.6 of nieuwer bij de eerste start in de vier velden, daarna start de adapter één keer opnieuw; een onbruikbare oude waarde wordt niet overgenomen en als fout gemeld tot de vier velden zijn ingevuld. |
 | Meldingen van het apparaat in het ioBroker-log schrijven | Vanaf welk niveau meldingen van het apparaat ook in het ioBroker-log verschijnen. Alle meldingen staan hoe dan ook in de datapunten onder `messages`. |
 | Meldingen in de geschiedenis | Aantal meldingen in `messages.history` (1 tot 500). |
 
@@ -37,6 +37,9 @@ Vroege versie in ontwikkeling, niet op npm gepubliceerd. Beschikbaar: verbinding
 Logniveaus, tags en het omschakelen van het logniveau staan in de [Engelse README](../../README.md#logging-and-debugging). Het token verschijnt nooit in het log.
 
 ## Changelog
+
+### 0.0.7 (2026-10-03)
+- (ssbingo) invoer van het token: een rode regel onder de vier velden noemt de reden als een blok onvolledig of fout is; een opgeslagen blok kan weer worden gewijzigd (volledig wissen en opnieuw invoeren); op de telefoon neemt elk veld de volle breedte in; na het overnemen van het oude token eindigt de eerste start netjes voordat js-controller de adapter opnieuw start (geen tweede verbinding in compacte modus); duidelijkere logteksten over het oude tokenveld
 
 ### 0.0.6 (2026-10-03)
 - (ssbingo) invoer van het token: vier velden naast elkaar (blok 1 tot 4) zonder hulpregels; het oude enkele veld wordt niet meer getoond: een daar met 0.0.4 of ouder ingevoerd token wordt bij de eerste start in de vier velden gezet (versleuteld) en het oude veld wordt leeggemaakt

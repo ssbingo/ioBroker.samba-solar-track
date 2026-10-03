@@ -5,7 +5,7 @@
     "ipHelp": "Dirección IP o nombre de host, visible en la pantalla en configuración > red",
     "portLabel": "Puerto",
     "portHelp": "El dispositivo utiliza el puerto 80",
-    "tokenText": "Token para el adaptador: la pantalla lo muestra en rueda dentada > NETZWERK, título «TOKEN FUER DEN ADAPTER», como 4 bloques de 8 caracteres (0-9, a-f): bloques 1 y 2 en la primera línea, 3 y 4 en la segunda. Introdúzcalos de izquierda a derecha. La entrada está oculta; el ojo la muestra. Sin token el adaptador solo lee; los comandos y los ajustes lo necesitan.",
+    "tokenText": "Token para el adaptador: la pantalla lo muestra en rueda dentada > NETZWERK, título «TOKEN FUER DEN ADAPTER», como 4 bloques de 8 caracteres (0-9, a-f): bloques 1 y 2 en la primera línea, 3 y 4 en la segunda. Introdúzcalos de izquierda a derecha. La entrada está oculta; al escribir, el ojo la muestra. Los bloques guardados permanecen ocultos; para cambiar uno, bórrelo por completo e introdúzcalo de nuevo. Sin token el adaptador solo lee; los comandos y los ajustes lo necesitan.",
     "tokenBlock1Label": "Bloque 1",
     "tokenBlock2Label": "Bloque 2",
     "tokenBlock3Label": "Bloque 3",

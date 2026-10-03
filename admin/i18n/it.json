@@ -5,7 +5,7 @@
     "ipHelp": "Indirizzo IP o nome host, visibile sul display in configurazione > rete",
     "portLabel": "Porta",
     "portHelp": "Il dispositivo usa la porta 80",
-    "tokenText": "Token per l'adattatore: il display lo mostra in ingranaggio > NETZWERK, titolo «TOKEN FUER DEN ADAPTER», come 4 blocchi di 8 caratteri (0-9, a-f): blocchi 1 e 2 nella prima riga, 3 e 4 nella seconda. Inserirli da sinistra a destra. L'inserimento è nascosto; l'occhio lo mostra. Senza token l'adattatore legge soltanto; comandi e impostazioni ne hanno bisogno.",
+    "tokenText": "Token per l'adattatore: il display lo mostra in ingranaggio > NETZWERK, titolo «TOKEN FUER DEN ADAPTER», come 4 blocchi di 8 caratteri (0-9, a-f): blocchi 1 e 2 nella prima riga, 3 e 4 nella seconda. Inserirli da sinistra a destra. L'inserimento è nascosto; durante la digitazione l'occhio lo mostra. I blocchi salvati restano nascosti; per modificarne uno, cancellarlo completamente e inserirlo di nuovo. Senza token l'adattatore legge soltanto; comandi e impostazioni ne hanno bisogno.",
     "tokenBlock1Label": "Blocco 1",
     "tokenBlock2Label": "Blocco 2",
     "tokenBlock3Label": "Blocco 3",

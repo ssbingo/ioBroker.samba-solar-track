@@ -5,7 +5,7 @@
     "ipHelp": "Adresse IP ou nom d'hôte, affiché à l'écran sous configuration > réseau",
     "portLabel": "Port",
     "portHelp": "L'appareil utilise le port 80",
-    "tokenText": "Jeton pour l'adaptateur : l'écran l'affiche sous roue dentée > NETZWERK, titre « TOKEN FUER DEN ADAPTER », en 4 blocs de 8 caractères (0-9, a-f) : blocs 1 et 2 sur la première ligne, 3 et 4 sur la deuxième. Saisissez-les de gauche à droite. La saisie est masquée ; l'œil l'affiche. Sans jeton, l'adaptateur ne fait que lire ; les commandes et les réglages en ont besoin.",
+    "tokenText": "Jeton pour l'adaptateur : l'écran l'affiche sous roue dentée > NETZWERK, titre « TOKEN FUER DEN ADAPTER », en 4 blocs de 8 caractères (0-9, a-f) : blocs 1 et 2 sur la première ligne, 3 et 4 sur la deuxième. Saisissez-les de gauche à droite. La saisie est masquée ; pendant la saisie, l'œil l'affiche. Les blocs enregistrés restent masqués ; pour en modifier un, effacez-le entièrement et saisissez-le de nouveau. Sans jeton, l'adaptateur ne fait que lire ; les commandes et les réglages en ont besoin.",
     "tokenBlock1Label": "Bloc 1",
     "tokenBlock2Label": "Bloc 2",
     "tokenBlock3Label": "Bloc 3",

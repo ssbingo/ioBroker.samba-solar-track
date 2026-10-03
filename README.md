@@ -23,7 +23,7 @@ tracker.
 
 ### Project status
 
-This is an early version under development. It is not published on npm.
+This is an early version under development. It is published on npm but not yet in the ioBroker repositories.
 
 | Part | Status |
 | --- | --- |
@@ -35,7 +35,7 @@ This is an early version under development. It is not published on npm.
 | Notifications through a messaging adapter (Telegram, Pushover, e-mail and others) | available |
 | vis-2 widgets (overview, operation, messages, values) | planned |
 
-Tested against a simulated device only. **Not yet tested with real hardware.**
+Connection and reading were tested with a real device (firmware 0.0.3, 2026-10-03); commands, settings and notifications only against a simulated device.
 
 ### Requirements
 
@@ -44,7 +44,7 @@ Tested against a simulated device only. **Not yet tested with real hardware.**
 
 ### Installation
 
-The adapter is not on npm and not in the ioBroker repositories yet. How to get this development version into an
+The adapter is on npm but not yet in the ioBroker repositories. How to get this development version into an
 ioBroker installation is described in [doc/install.md](doc/install.md).
 
 ### Configuration
@@ -53,7 +53,7 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | --- | --- |
 | Address of the device | IP address or host name. The display shows both under setup > network. |
 | Port | The device uses port 80. |
-| Token, block 1 to 4 | The token of the device: four fields side by side, one block of 8 characters (0-9, a-f) each. The display shows it under the gear > NETZWERK, heading "TOKEN FUER DEN ADAPTER": blocks 1 and 2 in the first line, 3 and 4 in the second; enter them from left to right. The entry is hidden like a password, the eye shows it; the fields are stored encrypted. Without a token the adapter only reads. A wrong block is marked red and blocks saving; if a wrong token reaches the adapter anyway, the log names the block. A token from the former single field (version 0.0.4 or older) is moved into the four fields at the first start of 0.0.6. |
+| Token, block 1 to 4 | The token of the device: four fields side by side, one block of 8 characters (0-9, a-f) each. The display shows it under the gear > NETZWERK, heading "TOKEN FUER DEN ADAPTER": blocks 1 and 2 in the first line, 3 and 4 in the second; enter them from left to right. The entry is hidden like a password; while typing, the eye shows it. The fields are stored encrypted, and a saved block stays hidden: to change it, delete it completely and enter it again. Without a token the adapter only reads. A wrong or incomplete block is marked red, a red line under the fields names the reason, and saving is blocked; if a wrong token reaches the adapter anyway, the log names the block. A token from the former single field (version 0.0.4 or older) is moved into the four fields at the first start of 0.0.6 or newer, then the adapter restarts once; an unusable old value is not moved and is reported as an error until the four fields are filled in. |
 | Write messages of the device to the ioBroker log | From which level on messages of the device also appear in the ioBroker log. Default: warnings and errors. All messages are stored in the states under `messages`, whatever is chosen here. |
 | Messages in the history | Number of messages kept in `messages.history` (1 to 500, default 50). |
 | Send notifications, send through | Switches notifications on and chooses the instance of a messaging adapter, see [Notifications](#notifications). |
@@ -172,9 +172,9 @@ The log level of the instance is set in the admin under Instances (expert mode) 
 
 | Level | Content |
 | --- | --- |
-| `error` | A wrong configuration: no address configured (the adapter cannot work), or a token in the settings that cannot be used (the message names the wrong block, the adapter only reads) |
-| `warn` | Something the user has to act on: device not reachable, token not accepted, messages lost, newer protocol, a command that was not executed, a manual drive that was stopped, a setting that was not accepted. Each problem is reported once; repetitions follow at `debug` until it is resolved. Warnings and errors of the device are forwarded at this level. |
-| `info` | Milestones: configuration (where the token comes from and whether it is complete, never the token itself), connected, reachable again, device restarted |
+| `error` | A wrong configuration: no address configured (the adapter cannot work), or a token in the settings that cannot be used (the message names the wrong block, or an unusable token saved by version 0.0.4 or older; the adapter only reads) |
+| `warn` | Something the user has to act on: device not reachable, token not accepted, messages lost, newer protocol, a command that was not executed, a manual drive that was stopped, a setting that was not accepted, an old token field that could not be moved or emptied. Each problem is reported once; repetitions follow at `debug` until it is resolved. Warnings and errors of the device are forwarded at this level. |
+| `info` | Milestones: configuration (where the token comes from and whether it is complete, never the token itself; a token moved from the old field, after which the adapter restarts once), connected, reachable again, device restarted |
 | `debug` | Every step: attempts with their number, durations, decisions, skipped input with the reason |
 | `silly` | Every frame received and sent |
 
@@ -201,6 +201,9 @@ The token never appears in the log.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.0.7 (2026-10-03)
+- (ssbingo) token entry: a red line under the four fields names the reason when a block is incomplete or wrong; a saved block can be changed again (delete it completely and enter it again); on phones each field takes the full width; after moving the old token the first start ends cleanly before js-controller restarts the adapter (no second connection in compact mode); clearer log texts about the old token field
+
 ### 0.0.6 (2026-10-03)
 - (ssbingo) token entry: four fields side by side (Block 1 to 4) without help lines; the old single token field is no longer shown: a token entered there with 0.0.4 or older is moved into the four fields at the first start (encrypted), and the old field is emptied
 

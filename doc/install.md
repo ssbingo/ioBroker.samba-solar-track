@@ -1,6 +1,6 @@
 # Installing the development version
 
-The adapter is not on npm and not in the ioBroker repositories yet. Until then it is installed from its GitHub
+The adapter is on npm but not yet in the ioBroker repositories. Until it is there, it is installed from its GitHub
 repository. This way of installing is meant for development versions only.
 
 ## From GitHub

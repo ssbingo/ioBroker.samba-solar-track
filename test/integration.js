@@ -577,6 +577,9 @@ tests.integration(path.join(__dirname, ".."), {
 
                 expectNoSecret(harness.getLogs(), [typed, TOKEN_BLOCKS[3].toUpperCase()]);
                 expect(harness.getLogs("error")).to.deep.equal([]);
+                // The restart by js-controller after the move cannot be tested here: the test harness
+                // starts the adapter only once per suite. The next start is covered by the unit test
+                // "protocol => migrateOldToken: the start after the move ...".
             });
         });
 
@@ -615,6 +618,13 @@ tests.integration(path.join(__dirname, ".."), {
                 expect(harness.hasLog("token from the four fields incomplete or wrong (read only)", "info")).to.equal(true);
                 // no token was sent, so the device has nothing to refuse
                 expect(harness.hasLog("did not accept the token")).to.equal(false);
+
+                // the four fields are in use: the old field is only emptied (stored encrypted), nothing is moved
+                await until(() => harness.hasLog("the old token field was emptied, the four fields are used", "info"), "old field emptied");
+                expect(harness.hasLog("moved from the old token field")).to.equal(false);
+                const instance = await harness.objects.getObjectAsync(`system.adapter.${NAMESPACE}`);
+                const secret = (await harness.objects.getObjectAsync("system.config"))?.native.secret;
+                expect(decryptSetting(secret, instance?.native.token), "old field").to.equal("");
 
                 // commands are refused by the device
                 await harness.states.setStateAsync(`${NAMESPACE}.control.auto`, { val: false, ack: false });

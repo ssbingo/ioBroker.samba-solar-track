@@ -1,6 +1,6 @@
 {
   "name": "iobroker.samba-solar-track",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Monitor the Samba Solar Track sun tracker with storm protection (ESP32 controller, not the Samba file sharing service)",
   "author": {
     "name": "ssbingo",

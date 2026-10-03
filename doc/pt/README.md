@@ -15,7 +15,7 @@ O dispositivo é quem comanda. O seguimento, a proteção contra tempestades, os
 
 ## Estado do projeto
 
-Versão inicial em desenvolvimento, não publicada no npm. Disponível: ligação com reconexão automática, estado do controlador como estados, mensagens com hora e histórico, comandos (automático, estacionar na horizontal, confirmar avaria, movimento manual com homem-morto) e definições do dispositivo (valores com limites, propostas com confirmação no ecrã, configuração inicial, design), ver o [README em inglês](../../README.md#commands). Além disso, notificações através de um adaptador de mensagens (tempestade, avarias, sensor de vento, sensor solar, ligação, reinício). Planeado: widgets vis-2. Até agora testado apenas com um dispositivo simulado, **não com hardware real**.
+Versão inicial em desenvolvimento, publicada no npm, mas ainda não nos repositórios do ioBroker. Disponível: ligação com reconexão automática, estado do controlador como estados, mensagens com hora e histórico, comandos (automático, estacionar na horizontal, confirmar avaria, movimento manual com homem-morto) e definições do dispositivo (valores com limites, propostas com confirmação no ecrã, configuração inicial, design), ver o [README em inglês](../../README.md#commands). Além disso, notificações através de um adaptador de mensagens (tempestade, avarias, sensor de vento, sensor solar, ligação, reinício). Planeado: widgets vis-2. A ligação e a leitura foram testadas com um dispositivo real (firmware 0.0.3, 03/10/2026); comandos, definições e notificações apenas com um dispositivo simulado.
 
 ## Requisitos
 
@@ -28,7 +28,7 @@ Versão inicial em desenvolvimento, não publicada no npm. Disponível: ligaçã
 | --- | --- |
 | Endereço do dispositivo | Endereço IP ou nome do anfitrião; o ecrã mostra ambos em configuração > rede. |
 | Porta | O dispositivo utiliza a porta 80. |
-| Token, bloco 1 a 4 | O token do dispositivo: quatro campos lado a lado, cada um com um bloco de 8 caracteres (0-9, a-f). O ecrã mostra-o em roda dentada > NETZWERK, título «TOKEN FUER DEN ADAPTER»: blocos 1 e 2 na primeira linha, 3 e 4 na segunda; introduza-os da esquerda para a direita. A entrada fica oculta como uma palavra-passe, o olho mostra-a; os campos são guardados encriptados. Sem token o adaptador apenas lê. Um bloco errado é marcado a vermelho e impede guardar; se mesmo assim chegar um token errado ao adaptador, o registo indica o bloco. Um token do antigo campo único (versão 0.0.4 ou anterior) é passado para os quatro campos no primeiro arranque da 0.0.6. |
+| Token, bloco 1 a 4 | O token do dispositivo: quatro campos lado a lado, cada um com um bloco de 8 caracteres (0-9, a-f). O ecrã mostra-o em roda dentada > NETZWERK, título «TOKEN FUER DEN ADAPTER»: blocos 1 e 2 na primeira linha, 3 e 4 na segunda; introduza-os da esquerda para a direita. A entrada fica oculta como uma palavra-passe; durante a escrita, o olho mostra-a. Os campos são guardados encriptados e um bloco guardado permanece oculto: para o alterar, apague-o por completo e introduza-o de novo. Sem token o adaptador apenas lê. Um bloco errado ou incompleto é marcado a vermelho, uma linha vermelha por baixo dos campos indica o motivo e não é possível guardar; se mesmo assim chegar um token errado ao adaptador, o registo indica o bloco. Um token do antigo campo único (versão 0.0.4 ou anterior) é passado para os quatro campos no primeiro arranque da 0.0.6 ou posterior e o adaptador reinicia uma vez; um valor antigo inutilizável não é passado e é comunicado como erro até os quatro campos estarem preenchidos. |
 | Escrever as mensagens do dispositivo no registo do ioBroker | A partir de que nível as mensagens do dispositivo aparecem também no registo do ioBroker. Todas as mensagens ficam, em qualquer caso, nos estados em `messages`. |
 | Mensagens no histórico | Número de mensagens em `messages.history` (1 a 500). |
 
@@ -37,6 +37,9 @@ Versão inicial em desenvolvimento, não publicada no npm. Disponível: ligaçã
 Os níveis de registo, as etiquetas e a forma de mudar o nível estão no [README em inglês](../../README.md#logging-and-debugging). O token nunca aparece no registo.
 
 ## Changelog
+
+### 0.0.7 (2026-10-03)
+- (ssbingo) introdução do token: uma linha vermelha por baixo dos quatro campos indica o motivo quando um bloco está incompleto ou errado; um bloco guardado pode voltar a ser alterado (apagar por completo e introduzir de novo); no telemóvel cada campo ocupa a largura total; depois de passar o token antigo, o primeiro arranque termina corretamente antes de o js-controller reiniciar o adaptador (sem segunda ligação no modo compacto); textos de registo mais claros sobre o antigo campo do token
 
 ### 0.0.6 (2026-10-03)
 - (ssbingo) introdução do token: quatro campos lado a lado (bloco 1 a 4) sem linhas de ajuda; o antigo campo único já não é mostrado: um token aí introduzido com a 0.0.4 ou anterior é passado para os quatro campos no primeiro arranque (encriptado) e o campo antigo é esvaziado

@@ -15,7 +15,7 @@ C'est l'appareil qui décide. Le suivi, la protection contre les tempêtes, les 
 
 ## État du projet
 
-Version précoce en cours de développement, non publiée sur npm. Disponible : connexion avec reconnexion automatique, état du contrôleur sous forme d'états, messages avec heure et historique, commandes (automatique, mise à plat, acquittement de défaut, déplacement manuel avec homme mort) et réglages de l'appareil (valeurs avec limites, propositions avec confirmation à l'écran, configuration, design), voir le [README anglais](../../README.md#commands). S'y ajoutent des notifications via un adaptateur de messagerie (tempête, défauts, anémomètre, capteur solaire, connexion, redémarrage). Prévu : widgets vis-2. Testé jusqu'ici uniquement avec un appareil simulé, **pas avec du matériel réel**.
+Version précoce en cours de développement, publiée sur npm, mais pas encore dans les dépôts ioBroker. Disponible : connexion avec reconnexion automatique, état du contrôleur sous forme d'états, messages avec heure et historique, commandes (automatique, mise à plat, acquittement de défaut, déplacement manuel avec homme mort) et réglages de l'appareil (valeurs avec limites, propositions avec confirmation à l'écran, configuration, design), voir le [README anglais](../../README.md#commands). S'y ajoutent des notifications via un adaptateur de messagerie (tempête, défauts, anémomètre, capteur solaire, connexion, redémarrage). Prévu : widgets vis-2. La connexion et la lecture ont été testées avec un appareil réel (firmware 0.0.3, 03/10/2026) ; les commandes, les réglages et les notifications uniquement avec un appareil simulé.
 
 ## Prérequis
 
@@ -28,7 +28,7 @@ Version précoce en cours de développement, non publiée sur npm. Disponible : 
 | --- | --- |
 | Adresse de l'appareil | Adresse IP ou nom d'hôte ; l'écran affiche les deux sous configuration > réseau. |
 | Port | L'appareil utilise le port 80. |
-| Jeton, bloc 1 à 4 | Le jeton de l'appareil : quatre champs côte à côte, chacun avec un bloc de 8 caractères (0-9, a-f). L'écran l'affiche sous roue dentée > NETZWERK, titre « TOKEN FUER DEN ADAPTER » : blocs 1 et 2 sur la première ligne, 3 et 4 sur la deuxième ; saisissez-les de gauche à droite. La saisie est masquée comme un mot de passe, l'œil l'affiche ; les champs sont enregistrés chiffrés. Sans jeton, l'adaptateur ne fait que lire. Un bloc erroné est marqué en rouge et empêche l'enregistrement ; si un jeton erroné parvient malgré tout à l'adaptateur, le journal indique le bloc. Un jeton de l'ancien champ unique (version 0.0.4 ou antérieure) est transféré dans les quatre champs au premier démarrage de la 0.0.6. |
+| Jeton, bloc 1 à 4 | Le jeton de l'appareil : quatre champs côte à côte, chacun avec un bloc de 8 caractères (0-9, a-f). L'écran l'affiche sous roue dentée > NETZWERK, titre « TOKEN FUER DEN ADAPTER » : blocs 1 et 2 sur la première ligne, 3 et 4 sur la deuxième ; saisissez-les de gauche à droite. La saisie est masquée comme un mot de passe ; pendant la saisie, l'œil l'affiche. Les champs sont enregistrés chiffrés et un bloc enregistré reste masqué : pour le modifier, effacez-le entièrement et saisissez-le de nouveau. Sans jeton, l'adaptateur ne fait que lire. Un bloc erroné ou incomplet est marqué en rouge, une ligne rouge sous les champs en indique la raison et l'enregistrement est bloqué ; si un jeton erroné parvient malgré tout à l'adaptateur, le journal indique le bloc. Un jeton de l'ancien champ unique (version 0.0.4 ou antérieure) est transféré dans les quatre champs au premier démarrage de la 0.0.6 ou plus récente, puis l'adaptateur redémarre une fois ; une ancienne valeur inutilisable n'est pas transférée et est signalée comme erreur jusqu'à ce que les quatre champs soient remplis. |
 | Écrire les messages de l'appareil dans le journal ioBroker | À partir de quel niveau les messages de l'appareil apparaissent aussi dans le journal ioBroker. Tous les messages sont de toute façon enregistrés dans les états sous `messages`. |
 | Messages dans l'historique | Nombre de messages dans `messages.history` (1 à 500). |
 
@@ -37,6 +37,9 @@ Version précoce en cours de développement, non publiée sur npm. Disponible : 
 Les niveaux de journalisation, les balises et le changement de niveau sont décrits dans le [README anglais](../../README.md#logging-and-debugging). Le jeton n'apparaît jamais dans le journal.
 
 ## Changelog
+
+### 0.0.7 (2026-10-03)
+- (ssbingo) saisie du jeton : une ligne rouge sous les quatre champs indique la raison quand un bloc est incomplet ou erroné ; un bloc enregistré peut de nouveau être modifié (l'effacer entièrement et le saisir de nouveau) ; sur téléphone chaque champ occupe toute la largeur ; après le transfert de l'ancien jeton, le premier démarrage se termine proprement avant que js-controller ne redémarre l'adaptateur (pas de seconde connexion en mode compact) ; textes de journal plus clairs sur l'ancien champ du jeton
 
 ### 0.0.6 (2026-10-03)
 - (ssbingo) saisie du jeton : quatre champs côte à côte (bloc 1 à 4) sans lignes d'aide ; l'ancien champ unique n'est plus affiché : un jeton qui y a été saisi avec la 0.0.4 ou antérieure est transféré dans les quatre champs au premier démarrage (chiffré), et l'ancien champ est vidé

@@ -299,7 +299,14 @@ export function assembleToken(blocks: readonly unknown[], old: unknown): TokenSe
         }
         const problems = tokenProblems(single, TOKEN_LENGTH);
         return problems.length
-            ? { token: "", source: "old", problem: `the old token field has ${problems.join(" and ")}`, ...lengths }
+            ? {
+                  token: "",
+                  source: "old",
+                  problem:
+                      `the token saved by version 0.0.4 or older (no longer shown in the settings) has ${problems.join(" and ")}; ` +
+                      "enter the token in the four fields, then it is removed",
+                  ...lengths,
+              }
             : { token: single, source: "old", ...lengths };
     }
     const problems: string[] = [];

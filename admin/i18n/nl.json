@@ -5,7 +5,7 @@
     "ipHelp": "IP-adres of hostnaam, te zien op het display onder instellen > netwerk",
     "portLabel": "Poort",
     "portHelp": "Het apparaat gebruikt poort 80",
-    "tokenText": "Token voor de adapter: het display toont het onder tandwiel > NETZWERK, kop „TOKEN FUER DEN ADAPTER”, als 4 blokken van 8 tekens (0-9, a-f): blok 1 en 2 op de eerste regel, 3 en 4 op de tweede. Van links naar rechts invoeren. De invoer is verborgen; het oog toont hem. Zonder token leest de adapter alleen; opdrachten en instellingen hebben het nodig.",
+    "tokenText": "Token voor de adapter: het display toont het onder tandwiel > NETZWERK, kop „TOKEN FUER DEN ADAPTER”, als 4 blokken van 8 tekens (0-9, a-f): blok 1 en 2 op de eerste regel, 3 en 4 op de tweede. Van links naar rechts invoeren. De invoer is verborgen; tijdens het typen toont het oog hem. Opgeslagen blokken blijven verborgen; om een blok te wijzigen, wis het volledig en voer het opnieuw in. Zonder token leest de adapter alleen; opdrachten en instellingen hebben het nodig.",
     "tokenBlock1Label": "Blok 1",
     "tokenBlock2Label": "Blok 2",
     "tokenBlock3Label": "Blok 3",

@@ -5,7 +5,7 @@
     "ipHelp": "IP address or host name, shown at the display under setup > network",
     "portLabel": "Port",
     "portHelp": "The device uses port 80",
-    "tokenText": "Token for the adapter: the display shows it under gear > NETZWERK, heading \"TOKEN FUER DEN ADAPTER\", as 4 blocks of 8 characters (0-9, a-f): blocks 1 and 2 in the first line, 3 and 4 in the second. Enter them from left to right. The entry is hidden; the eye shows it. Without a token the adapter only reads; commands and settings need it.",
+    "tokenText": "Token for the adapter: the display shows it under gear > NETZWERK, heading \"TOKEN FUER DEN ADAPTER\", as 4 blocks of 8 characters (0-9, a-f): blocks 1 and 2 in the first line, 3 and 4 in the second. Enter them from left to right. The entry is hidden; while typing, the eye shows it. Saved blocks stay hidden; to change one, delete it completely and enter it again. Without a token the adapter only reads; commands and settings need it.",
     "tokenBlock1Label": "Block 1",
     "tokenBlock2Label": "Block 2",
     "tokenBlock3Label": "Block 3",
