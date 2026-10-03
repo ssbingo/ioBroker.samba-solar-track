@@ -55,21 +55,21 @@ OWN_GITHUB_TOKEN="$(gh auth token)" npx @iobroker/repochecker ssbingo/ioBroker.s
 Der Checker liest den Stand auf GitHub, nicht die Arbeitskopie: Meldungen zu einer neuen
 Änderung zeigen sich erst nach dem Push. Deshalb nach dem Push noch einmal laufen lassen.
 
-**Offene Checker-Meldungen (Stand 3.10.2026, nach 0.0.6) und ihre Begründung:**
+**Offene Checker-Meldungen (Stand 3.10.2026, nach 0.0.7) und ihre Begründung:**
 
 | Meldung | Begründung |
 | --- | --- |
 | E2001 (`bluefox` nicht Mitinhaber auf npm) | nur für die Aufnahme ins ioBroker-Repository nötig (`npm owner add bluefox iobroker.samba-solar-track`); vorher die Lizenzfrage klären |
 | W4001 (nicht im ioBroker-Repository) | erledigt sich mit der Aufnahme; vorher ist zu klären, ob das offizielle Repository die Lizenz CC BY-NC-SA annimmt |
-| W5508 (Passwortfelder `tokenBlock1` bis `tokenBlock4` ohne `xs: 12`) | in 0.0.6 standen auf dem Handy zwei Felder je Zeile (`xs: 6`); mit 0.0.7 `xs: 12` (auf dem Handy ein Feld je Zeile, ab `sm` weiter vier nebeneinander). Erledigt, sobald 0.0.7 auf GitHub liegt |
-| W3052 (Log eines Testjobs nicht abrufbar) | vorübergehend, der Lauf selbst war erfolgreich |
 
 Tag `v0.0.5` und GitHub-Release v0.0.5 gibt es seit dem 3.10.2026 (auf Anweisung des Nutzers);
 den Release hat Claude von Hand angelegt, weil `deploy` vor dem Anlegen abbrach. Auf npm liegt
 0.0.5 seit dem 3.10.2026 (vom Nutzer von Hand veröffentlicht, davor ein Platzhalter
 `0.0.0-stage` für „staged publishing“). **0.0.6** (Tag `v0.0.6`, 3.10.2026) hat der Workflow
 vollständig veröffentlicht: npm über Trusted Publishing mit Herkunftsnachweis, dazu den
-GitHub-Release „Release v0.0.6“. Damit sind E2008 und E3032 erledigt. npm meldet weiter, dass
+GitHub-Release „Release v0.0.6“. Damit sind E2008 und E3032 erledigt. **0.0.7** (Tag `v0.0.7`,
+3.10.2026) ebenso über den Workflow; danach meldet der Checker nur noch E2001 und W4001 (W5508
+ist mit 0.0.7 behoben). npm meldet weiter, dass
 es `repository.url` in `package.json` selbst berichtigt (`git+https://…`); behoben werden kann
 das mit `npm pkg fix` (offen).
 
@@ -132,7 +132,7 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   nicht mehr angezeigt. Beim Start übernimmt der Adapter ein gültiges Token daraus einmalig in
   die vier Felder (`updateConfig`, verschlüsselt) und leert es; sind die vier Felder belegt,
   wird es nur geleert. Ein unbrauchbarer alter Wert bleibt, damit das Log den Fehler nennt.
-- **Erledigt (0.0.7, freigegeben am 3.10.2026, Commit und Release erst nach Freigabe):**
+- **Erledigt (0.0.7, veröffentlicht am 3.10.2026):**
   Korrekturen aus der Prüfung von 0.0.6 im echten Admin (8.0.22) und mit echtem js-controller.
   Unter den vier Feldern erscheint nur bei falscher oder unvollständiger Eingabe eine rote Zeile
   (`_tokenError`, Text `tokenBlockError`), weil Admin den `validatorErrorText` eines Passwortfelds
