@@ -2,6 +2,7 @@ import { expect } from "chai";
 import {
     TOKEN_HINT,
     assembleToken,
+    migrateOldToken,
     parseHello,
     parseInfo,
     parseLogLine,
@@ -229,6 +230,30 @@ describe("protocol => assembleToken", () => {
                 expect(tokenSummary(setting)).to.not.contain(part);
             }
         }
+    });
+});
+
+describe("protocol => migrateOldToken", () => {
+    it("moves a usable token of the old field into the four empty fields", () => {
+        expect(migrateOldToken(["", "", "", ""], TOKEN)).to.deep.equal({ blocks: BLOCKS, clearOld: true });
+        // typed with spaces and upper case like the display shows it
+        const typed = `${BLOCKS[0]} ${BLOCKS[1]}\n${BLOCKS[2]} ${BLOCKS[3].toUpperCase()}`;
+        expect(migrateOldToken([undefined, null, " ", ""], typed)).to.deep.equal({ blocks: BLOCKS, clearOld: true });
+        expect(migrateOldToken([], TOKEN)).to.deep.equal({ blocks: BLOCKS, clearOld: true });
+    });
+
+    it("empties the old field once the four fields are in use, even with a wrong block", () => {
+        expect(migrateOldToken(BLOCKS, TOKEN)).to.deep.equal({ clearOld: true });
+        expect(migrateOldToken(["3f9a1c20", "77b4e1d", "", ""], "anything")).to.deep.equal({ clearOld: true });
+    });
+
+    it("does nothing without an old value or with an old value that is no token", () => {
+        expect(migrateOldToken(BLOCKS, "")).to.equal(null);
+        expect(migrateOldToken(["", "", "", ""], undefined)).to.equal(null);
+        expect(migrateOldToken(["", "", "", ""], "  ")).to.equal(null);
+        // not usable: stays, so that the log can name the problem
+        expect(migrateOldToken(["", "", "", ""], TOKEN.slice(0, 31))).to.equal(null);
+        expect(migrateOldToken(["", "", "", ""], `${TOKEN.slice(0, 31)}g`)).to.equal(null);
     });
 });
 

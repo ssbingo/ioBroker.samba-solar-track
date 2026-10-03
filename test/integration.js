@@ -1,3 +1,4 @@
+const crypto = require("node:crypto");
 const path = require("path");
 const { tests } = require("@iobroker/testing");
 const { expect } = require("chai");
@@ -12,6 +13,18 @@ const NAMESPACE = "samba-solar-track.0";
  */
 function tokenFields(blocks = TOKEN_BLOCKS) {
     return { tokenBlock1: blocks[0], tokenBlock2: blocks[1], tokenBlock3: blocks[2], tokenBlock4: blocks[3] };
+}
+
+/**
+ * Decrypts a protected setting the way js-controller stores it ($/aes-192-cbc:<iv>:<data>).
+ *
+ * @param {string} secret the system secret (system.config, native.secret)
+ * @param {string} value the stored value
+ */
+function decryptSetting(secret, value) {
+    const [, iv, data] = String(value).split(":", 3);
+    const decipher = crypto.createDecipheriv("aes-192-cbc", Buffer.from(secret, "hex"), Buffer.from(iv, "hex"));
+    return Buffer.concat([decipher.update(Buffer.from(data, "hex")), decipher.final()]).toString();
 }
 
 /**
@@ -528,7 +541,7 @@ tests.integration(path.join(__dirname, ".."), {
                 await device.stop();
             });
 
-            it("uses the old single field, typed with spaces like the display shows it, while the four fields are empty", async function () {
+            it("moves a token of the old single field, typed with spaces, into the four fields and uses it", async function () {
                 this.timeout(60000);
                 const harness = getHarness();
                 const state = async id => harness.states.getStateAsync(`${NAMESPACE}.${id}`);
@@ -540,6 +553,22 @@ tests.integration(path.join(__dirname, ".."), {
                 await harness.startAdapterAndWait(true);
                 await until(async () => (await state("info.authorized"))?.val === true, "info.authorized");
                 await until(() => harness.hasLog("token from the old token field complete (32 characters)", "info"), "summary of the token");
+
+                // since 0.0.6 the settings show only the four fields: the token is moved there, encrypted
+                await until(
+                    () => harness.hasLog("moved from the old token field into the four fields", "info"),
+                    "move of the old token",
+                );
+                const instance = await harness.objects.getObjectAsync(`system.adapter.${NAMESPACE}`);
+                const secret = (await harness.objects.getObjectAsync("system.config"))?.native.secret;
+                const stored = name => instance?.native[name];
+                // js-controller stores protected settings as $/aes-192-cbc:<iv>:<data>, also an empty one
+                expect(decryptSetting(secret, stored("token")), "old field").to.equal("");
+                TOKEN_BLOCKS.forEach((block, index) => {
+                    const name = `tokenBlock${index + 1}`;
+                    expect(stored(name), `${name} stored encrypted`).to.match(/^\$\/aes-192-cbc:/);
+                    expect(decryptSetting(secret, stored(name)), name).to.equal(block);
+                });
 
                 // the device takes commands with this token
                 await harness.states.setStateAsync(`${NAMESPACE}.control.auto`, { val: false, ack: false });

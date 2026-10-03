@@ -26,6 +26,7 @@ __export(protocol_exports, {
   TOKEN_LENGTH: () => TOKEN_LENGTH,
   assembleToken: () => assembleToken,
   isObject: () => isObject,
+  migrateOldToken: () => migrateOldToken,
   parseHello: () => parseHello,
   parseInfo: () => parseInfo,
   parseLogLine: () => parseLogLine,
@@ -155,6 +156,24 @@ function assembleToken(blocks, old) {
   });
   return problems.length ? { token: "", source: "blocks", problem: problems.join(", "), ...lengths } : { token: parts.join(""), source: "blocks", ...lengths };
 }
+function migrateOldToken(blocks, old) {
+  const single = normalizeToken(old);
+  if (!single) {
+    return null;
+  }
+  const inUse = Array.from({ length: TOKEN_BLOCKS }, (_, i) => normalizeToken(blocks[i])).some((part) => part !== "");
+  if (inUse) {
+    return { clearOld: true };
+  }
+  if (tokenProblems(single, TOKEN_LENGTH).length) {
+    return null;
+  }
+  const moved = [];
+  for (let i = 0; i < TOKEN_BLOCKS; i++) {
+    moved.push(single.slice(i * TOKEN_BLOCK_LENGTH, (i + 1) * TOKEN_BLOCK_LENGTH));
+  }
+  return { blocks: moved, clearOld: true };
+}
 function tokenSummary(setting) {
   if (setting.source === "none") {
     return "token not set (read only)";
@@ -172,6 +191,7 @@ function tokenSummary(setting) {
   TOKEN_LENGTH,
   assembleToken,
   isObject,
+  migrateOldToken,
   parseHello,
   parseInfo,
   parseLogLine,

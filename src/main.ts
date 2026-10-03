@@ -30,6 +30,7 @@ import {
     TOKEN_HINT,
     assembleToken,
     isObject,
+    migrateOldToken,
     resumeSince,
     tokenSummary,
     type DeviceInfo,
@@ -145,6 +146,30 @@ class SambaSolarTrack extends utils.Adapter {
         );
         if (tokenSetting.source === "blocks" && tokenSetting.oldLength > 0) {
             this.log.debug("[cfg] Token: the four fields are used, the old token field is ignored");
+        }
+        // Since 0.0.6 the settings show only the four fields: move a token of the old single field
+        // there once, or empty the old field when the four fields are in use. The settings are
+        // written encrypted, and js-controller restarts the adapter; until then this run goes on
+        // with the token assembled above.
+        const migration = migrateOldToken(
+            [this.config.tokenBlock1, this.config.tokenBlock2, this.config.tokenBlock3, this.config.tokenBlock4],
+            this.config.token,
+        );
+        if (migration) {
+            const update: Record<string, string> = { token: "" };
+            migration.blocks?.forEach((block, index) => (update[`tokenBlock${index + 1}`] = block));
+            try {
+                await this.updateConfig(update);
+                this.log.info(
+                    migration.blocks
+                        ? "[cfg] Token: moved from the old token field into the four fields (the settings show only these since 0.0.6)"
+                        : "[cfg] Token: the old token field was emptied, the four fields are used",
+                );
+            } catch (e) {
+                this.log.warn(
+                    `[cfg] Token: the old token field could not be moved into the four fields (${(e as Error).message}); it is still used`,
+                );
+            }
         }
         if (tokenSetting.problem) {
             this.log.error(

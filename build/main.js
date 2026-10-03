@@ -84,7 +84,7 @@ class SambaSolarTrack extends utils.Adapter {
    * Is called when databases are connected and adapter received configuration.
    */
   async onReady() {
-    var _a, _b;
+    var _a, _b, _c;
     await this.setState("info.connection", false, true);
     const host = String((_a = this.config.ip) != null ? _a : "").trim();
     const port = Number(this.config.port);
@@ -110,13 +110,31 @@ class SambaSolarTrack extends utils.Adapter {
     if (tokenSetting.source === "blocks" && tokenSetting.oldLength > 0) {
       this.log.debug("[cfg] Token: the four fields are used, the old token field is ignored");
     }
+    const migration = (0, import_protocol.migrateOldToken)(
+      [this.config.tokenBlock1, this.config.tokenBlock2, this.config.tokenBlock3, this.config.tokenBlock4],
+      this.config.token
+    );
+    if (migration) {
+      const update = { token: "" };
+      (_b = migration.blocks) == null ? void 0 : _b.forEach((block, index) => update[`tokenBlock${index + 1}`] = block);
+      try {
+        await this.updateConfig(update);
+        this.log.info(
+          migration.blocks ? "[cfg] Token: moved from the old token field into the four fields (the settings show only these since 0.0.6)" : "[cfg] Token: the old token field was emptied, the four fields are used"
+        );
+      } catch (e) {
+        this.log.warn(
+          `[cfg] Token: the old token field could not be moved into the four fields (${e.message}); it is still used`
+        );
+      }
+    }
     if (tokenSetting.problem) {
       this.log.error(
         `[cfg] The token in the adapter settings cannot be used: ${tokenSetting.problem}. ${import_protocol.TOKEN_HINT} Until then the adapter only reads.`
       );
     }
     const token = tokenSetting.token;
-    const configuredLevel = String((_b = this.config.forwardLevel) != null ? _b : "W");
+    const configuredLevel = String((_c = this.config.forwardLevel) != null ? _c : "W");
     if (configuredLevel === "off" || import_messages.DEVICE_LEVELS.includes(configuredLevel)) {
       this.forwardLevel = configuredLevel;
     } else {

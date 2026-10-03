@@ -318,6 +318,43 @@ export function assembleToken(blocks: readonly unknown[], old: unknown): TokenSe
         : { token: parts.join(""), source: "blocks", ...lengths };
 }
 
+/** What to do with the old single token field of version 0.0.4 and older (not shown since 0.0.6). */
+export interface TokenMigration {
+    /** new values for the four fields, when the token of the old field is moved there */
+    blocks?: string[];
+    /** the old field is emptied */
+    clearOld: true;
+}
+
+/**
+ * Decides whether the old single field is moved into the four fields. Since 0.0.6 the settings
+ * show only the four fields. While they are empty, a usable token of the old field is moved
+ * there, one block per field; once they are in use, the old field is emptied. An old value that
+ * is not a usable token stays, so that the log can name the problem.
+ *
+ * @param blocks values of the four fields, in the order of the display
+ * @param old value of the old single field
+ * @returns what to write into the settings, or null if nothing is to be done
+ */
+export function migrateOldToken(blocks: readonly unknown[], old: unknown): TokenMigration | null {
+    const single = normalizeToken(old);
+    if (!single) {
+        return null;
+    }
+    const inUse = Array.from({ length: TOKEN_BLOCKS }, (_, i) => normalizeToken(blocks[i])).some(part => part !== "");
+    if (inUse) {
+        return { clearOld: true };
+    }
+    if (tokenProblems(single, TOKEN_LENGTH).length) {
+        return null;
+    }
+    const moved: string[] = [];
+    for (let i = 0; i < TOKEN_BLOCKS; i++) {
+        moved.push(single.slice(i * TOKEN_BLOCK_LENGTH, (i + 1) * TOKEN_BLOCK_LENGTH));
+    }
+    return { blocks: moved, clearOld: true };
+}
+
 /**
  * Describes the token for the log, without showing it.
  *

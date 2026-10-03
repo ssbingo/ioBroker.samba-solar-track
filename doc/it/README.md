@@ -28,8 +28,7 @@ Versione iniziale in sviluppo, non pubblicata su npm. Disponibile: connessione c
 | --- | --- |
 | Indirizzo del dispositivo | Indirizzo IP o nome host; il display li mostra in configurazione > rete. |
 | Porta | Il dispositivo usa la porta 80. |
-| Blocchi 1-4 del token | Il token del dispositivo, un blocco per campo. Il display lo mostra in ingranaggio > NETZWERK, sotto il titolo «TOKEN FUER DEN ADAPTER», come 4 blocchi di 8 caratteri su due righe: blocchi 1 e 2 nella prima riga, blocchi 3 e 4 nella seconda. I campi sono disposti allo stesso modo. Maiuscole e minuscole non contano. La lettura funziona senza token; comandi e impostazioni lo richiedono. I campi vengono salvati cifrati. Un blocco errato (non 8 caratteri 0-9 e a-f, oppure vuoto mentre altri sono compilati) viene segnato in rosso, e le impostazioni si possono salvare solo dopo averlo corretto o dopo aver svuotato tutti e quattro i campi. Se un token errato arriva comunque all'adattatore, il log indica il blocco errato e l'adattatore legge soltanto. L'inserimento è nascosto come una password; l'occhio in ogni campo lo mostra. |
-| Token (campo precedente) | Compare solo se è stato inserito un token con la versione 0.0.4 o precedente. Viene usato solo finché i quattro campi sono vuoti e può essere cancellato dopo aver inserito i quattro blocchi. |
+| Token, blocco da 1 a 4 | Il token del dispositivo: quattro campi affiancati, ciascuno con un blocco di 8 caratteri (0-9, a-f). Il display lo mostra in ingranaggio > NETZWERK, titolo «TOKEN FUER DEN ADAPTER»: blocchi 1 e 2 nella prima riga, 3 e 4 nella seconda; inserirli da sinistra a destra. L'inserimento è nascosto come una password, l'occhio lo mostra; i campi sono salvati cifrati. Senza token l'adattatore legge soltanto. Un blocco errato è segnato in rosso e impedisce il salvataggio; se comunque arriva all'adattatore un token errato, il log indica il blocco. Un token del vecchio campo unico (versione 0.0.4 o precedente) viene spostato nei quattro campi al primo avvio della 0.0.6. |
 | Scrivere i messaggi del dispositivo nel log di ioBroker | Da quale livello i messaggi del dispositivo compaiono anche nel log di ioBroker. Tutti i messaggi sono comunque salvati negli stati sotto `messages`. |
 | Messaggi nella cronologia | Numero di messaggi in `messages.history` (da 1 a 500). |
 
@@ -38,6 +37,9 @@ Versione iniziale in sviluppo, non pubblicata su npm. Disponibile: connessione c
 Livelli di log, tag e cambio del livello sono descritti nel [README inglese](../../README.md#logging-and-debugging). Il token non compare mai nel log.
 
 ## Changelog
+
+### 0.0.6 (2026-10-03)
+- (ssbingo) inserimento del token: quattro campi affiancati (blocco da 1 a 4) senza righe di aiuto; il vecchio campo unico non viene più mostrato: un token inserito lì con la 0.0.4 o precedente viene spostato nei quattro campi al primo avvio (cifrato) e il vecchio campo viene svuotato
 
 ### 0.0.5 (2026-10-03)
 - (ssbingo) inserimento del token in quattro campi, un blocco di 8 caratteri ciascuno come sul display; anche un token inserito in precedenza con spazi ora funziona; un blocco errato viene indicato nel log; i testi indicano il punto corretto del token (ingranaggio > NETZWERK); i quattro campi sono nascosti come una password, l'occhio mostra quanto inserito

@@ -28,8 +28,7 @@ Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie
 | --- | --- |
 | Adres urządzenia | Adres IP lub nazwa hosta; wyświetlacz pokazuje je w konfiguracja > sieć. |
 | Port | Urządzenie używa portu 80. |
-| Bloki tokenu 1–4 | Token urządzenia, jeden blok na pole. Wyświetlacz pokazuje go w menu koło zębate > NETZWERK, pod nagłówkiem „TOKEN FUER DEN ADAPTER”, jako 4 bloki po 8 znaków w dwóch wierszach: bloki 1 i 2 w pierwszym wierszu, bloki 3 i 4 w drugim. Pola są ułożone tak samo. Wielkość liter nie ma znaczenia. Odczyt działa bez tokenu; polecenia i ustawienia go wymagają. Pola są zapisywane w postaci zaszyfrowanej. Błędny blok (nie 8 znaków 0-9 i a-f albo pusty, gdy inne są wypełnione) jest oznaczany na czerwono, a ustawienia można zapisać dopiero po jego poprawieniu lub wyczyszczeniu wszystkich czterech pól. Jeśli mimo to błędny token trafi do adaptera, dziennik wskazuje błędny blok, a adapter tylko odczytuje. Wpis jest ukryty jak hasło; oko w każdym polu go pokazuje. |
-| Token (stare pole) | Pojawia się tylko wtedy, gdy token wpisano w wersji 0.0.4 lub starszej. Jest używany tylko wtedy, gdy cztery pola są puste, i można go usunąć po wpisaniu czterech bloków. |
+| Token, blok 1 do 4 | Token urządzenia: cztery pola obok siebie, w każdym blok 8 znaków (0-9, a-f). Wyświetlacz pokazuje go w zębatka > NETZWERK, nagłówek „TOKEN FUER DEN ADAPTER”: bloki 1 i 2 w pierwszym wierszu, 3 i 4 w drugim; wpisuj od lewej do prawej. Wpis jest ukryty jak hasło, oko go pokazuje; pola są zapisywane w postaci zaszyfrowanej. Bez tokenu adapter tylko odczytuje. Błędny blok jest oznaczany na czerwono i uniemożliwia zapisanie; jeśli mimo to do adaptera trafi błędny token, dziennik wskaże blok. Token z dawnego pojedynczego pola (wersja 0.0.4 lub starsza) wersja 0.0.6 przenosi przy pierwszym uruchomieniu do czterech pól. |
 | Zapisuj komunikaty urządzenia w dzienniku ioBroker | Od którego poziomu komunikaty urządzenia pojawiają się także w dzienniku ioBroker. Wszystkie komunikaty są i tak zapisywane w stanach w `messages`. |
 | Komunikaty w historii | Liczba komunikatów w `messages.history` (od 1 do 500). |
 
@@ -38,6 +37,9 @@ Wczesna wersja w trakcie rozwoju, nieopublikowana w npm. Dostępne: połączenie
 Poziomy dziennika, znaczniki i zmiana poziomu są opisane w [angielskim README](../../README.md#logging-and-debugging). Token nigdy nie pojawia się w dzienniku.
 
 ## Changelog
+
+### 0.0.6 (2026-10-03)
+- (ssbingo) wpisywanie tokenu: cztery pola obok siebie (blok 1 do 4) bez linii pomocy; dawne pojedyncze pole nie jest już pokazywane: token wpisany tam w wersji 0.0.4 lub starszej jest przy pierwszym uruchomieniu przenoszony do czterech pól (zaszyfrowany), a stare pole jest czyszczone
 
 ### 0.0.5 (2026-10-03)
 - (ssbingo) wpisywanie tokenu w czterech polach, po jednym bloku 8 znaków, jak na wyświetlaczu; token wpisany wcześniej ze spacjami też działa; błędny blok jest wskazywany w dzienniku; teksty podają właściwe miejsce tokenu (koło zębate > NETZWERK); cztery pola są ukryte jak hasło, oko pokazuje wpis

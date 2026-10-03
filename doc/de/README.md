@@ -28,8 +28,7 @@ Frühe Version in Entwicklung, nicht auf npm veröffentlicht. Vorhanden: Verbind
 | --- | --- |
 | Adresse des Geräts | IP-Adresse oder Gerätename; beides zeigt das Display unter Einrichtung > Netzwerk. |
 | Port | Das Gerät verwendet Port 80. |
-| Token-Block 1 bis 4 | Das Token des Geräts, ein Block pro Feld. Das Display zeigt es unter Zahnrad > NETZWERK, Überschrift „TOKEN FUER DEN ADAPTER“, als 4 Blöcke zu je 8 Zeichen in zwei Zeilen: Block 1 und 2 in der ersten Zeile, Block 3 und 4 in der zweiten. Die Felder sind genauso angeordnet. Groß- und Kleinschreibung spielt keine Rolle. Lesen geht ohne Token; Befehle und Einstellungen brauchen es. Die Felder werden verschlüsselt gespeichert. Ein falscher Block (nicht 8 Zeichen 0-9 und a-f, oder leer, während andere ausgefüllt sind) wird rot markiert, und die Einstellungen lassen sich erst speichern, wenn er berichtigt ist oder alle vier Felder leer sind. Kommt trotzdem ein falsches Token beim Adapter an, nennt das Log den falschen Block, und der Adapter liest nur. Die Eingabe ist verdeckt wie ein Passwort; das Auge im Feld zeigt sie an. |
-| Token (altes Feld) | Erscheint nur, wenn mit Version 0.0.4 oder älter ein Token eingegeben wurde. Es gilt nur, solange die vier Felder leer sind, und kann nach dem Eintragen der vier Blöcke gelöscht werden. |
+| Token, Block 1 bis 4 | Das Token des Geräts: vier Felder nebeneinander, je ein Block zu 8 Zeichen (0-9, a-f). Das Display zeigt es unter Zahnrad > NETZWERK, Überschrift „TOKEN FUER DEN ADAPTER“: Block 1 und 2 in der ersten Zeile, 3 und 4 in der zweiten; von links nach rechts eintragen. Die Eingabe ist verdeckt wie ein Passwort, das Auge zeigt sie an; die Felder werden verschlüsselt gespeichert. Ohne Token liest der Adapter nur. Ein falscher Block wird rot markiert und verhindert das Speichern; kommt trotzdem ein falsches Token an, nennt das Log den Block. Ein Token aus dem früheren einzelnen Feld (Version 0.0.4 oder älter) übernimmt 0.0.6 beim ersten Start in die vier Felder. |
 | Meldungen des Geräts ins ioBroker-Log schreiben | Ab welcher Stufe Meldungen des Geräts auch im ioBroker-Log erscheinen. Alle Meldungen stehen unabhängig davon in den Datenpunkten unter `messages`. |
 | Meldungen im Verlauf | Anzahl der Meldungen in `messages.history` (1 bis 500). |
 
@@ -38,6 +37,9 @@ Frühe Version in Entwicklung, nicht auf npm veröffentlicht. Vorhanden: Verbind
 Log-Stufen, Tags und das Umschalten der Log-Stufe stehen im [englischen README](../../README.md#logging-and-debugging). Das Token erscheint nie im Log.
 
 ## Changelog
+
+### 0.0.6 (2026-10-03)
+- (ssbingo) Eingabe des Tokens: vier Felder nebeneinander (Block 1 bis 4) ohne Hilfezeilen; das alte einzelne Feld wird nicht mehr angezeigt: ein dort mit 0.0.4 oder älter eingetragenes Token wird beim ersten Start in die vier Felder übernommen (verschlüsselt), das alte Feld wird geleert
 
 ### 0.0.5 (2026-10-03)
 - (ssbingo) Eingabe des Tokens in vier Feldern, je ein Block zu 8 Zeichen wie am Display; ein früher mit Leerzeichen eingegebenes Token funktioniert jetzt auch; ein falscher Block wird im Log genannt; die Texte nennen den richtigen Ort des Tokens (Zahnrad > NETZWERK); die vier Felder sind verdeckt wie ein Passwort, das Auge zeigt die Eingabe

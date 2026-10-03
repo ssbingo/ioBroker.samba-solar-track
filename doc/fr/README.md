@@ -28,8 +28,7 @@ Version précoce en cours de développement, non publiée sur npm. Disponible : 
 | --- | --- |
 | Adresse de l'appareil | Adresse IP ou nom d'hôte ; l'écran affiche les deux sous configuration > réseau. |
 | Port | L'appareil utilise le port 80. |
-| Blocs 1 à 4 du jeton | Le jeton de l'appareil, un bloc par champ. L'écran l'affiche sous roue dentée > NETZWERK, sous le titre « TOKEN FUER DEN ADAPTER », en 4 blocs de 8 caractères sur deux lignes : blocs 1 et 2 sur la première ligne, blocs 3 et 4 sur la seconde. Les champs sont disposés de la même façon. Les majuscules et les minuscules n'ont pas d'importance. La lecture fonctionne sans jeton ; les commandes et les réglages en ont besoin. Les champs sont stockés chiffrés. Un bloc erroné (pas 8 caractères 0-9 et a-f, ou vide alors que d'autres sont remplis) est marqué en rouge, et les réglages ne peuvent être enregistrés qu'une fois le bloc corrigé ou les quatre champs vidés. Si un jeton erroné parvient malgré tout à l'adaptateur, le journal indique le bloc erroné et l'adaptateur ne fait que lire. La saisie est masquée comme un mot de passe ; l'œil de chaque champ l'affiche. |
-| Jeton (ancien champ) | N'apparaît que si un jeton a été saisi avec la version 0.0.4 ou antérieure. Il n'est utilisé que tant que les quatre champs sont vides et peut être supprimé après la saisie des quatre blocs. |
+| Jeton, bloc 1 à 4 | Le jeton de l'appareil : quatre champs côte à côte, chacun avec un bloc de 8 caractères (0-9, a-f). L'écran l'affiche sous roue dentée > NETZWERK, titre « TOKEN FUER DEN ADAPTER » : blocs 1 et 2 sur la première ligne, 3 et 4 sur la deuxième ; saisissez-les de gauche à droite. La saisie est masquée comme un mot de passe, l'œil l'affiche ; les champs sont enregistrés chiffrés. Sans jeton, l'adaptateur ne fait que lire. Un bloc erroné est marqué en rouge et empêche l'enregistrement ; si un jeton erroné parvient malgré tout à l'adaptateur, le journal indique le bloc. Un jeton de l'ancien champ unique (version 0.0.4 ou antérieure) est transféré dans les quatre champs au premier démarrage de la 0.0.6. |
 | Écrire les messages de l'appareil dans le journal ioBroker | À partir de quel niveau les messages de l'appareil apparaissent aussi dans le journal ioBroker. Tous les messages sont de toute façon enregistrés dans les états sous `messages`. |
 | Messages dans l'historique | Nombre de messages dans `messages.history` (1 à 500). |
 
@@ -38,6 +37,9 @@ Version précoce en cours de développement, non publiée sur npm. Disponible : 
 Les niveaux de journalisation, les balises et le changement de niveau sont décrits dans le [README anglais](../../README.md#logging-and-debugging). Le jeton n'apparaît jamais dans le journal.
 
 ## Changelog
+
+### 0.0.6 (2026-10-03)
+- (ssbingo) saisie du jeton : quatre champs côte à côte (bloc 1 à 4) sans lignes d'aide ; l'ancien champ unique n'est plus affiché : un jeton qui y a été saisi avec la 0.0.4 ou antérieure est transféré dans les quatre champs au premier démarrage (chiffré), et l'ancien champ est vidé
 
 ### 0.0.5 (2026-10-03)
 - (ssbingo) saisie du jeton dans quatre champs, un bloc de 8 caractères chacun comme à l'écran ; un jeton saisi auparavant avec des espaces fonctionne aussi ; un bloc erroné est signalé dans le journal ; les textes indiquent le bon emplacement du jeton (roue dentée > NETZWERK); les quatre champs sont masqués comme un mot de passe, l'œil affiche la saisie

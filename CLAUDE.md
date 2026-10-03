@@ -56,14 +56,17 @@ OWN_GITHUB_TOKEN="$(gh auth token)" npx @iobroker/repochecker ssbingo/ioBroker.s
 
 | Meldung | Begründung |
 | --- | --- |
-| E2000, W3038 (nicht auf npm) | Auf npm gibt es das Paket noch nicht, und Trusted Publishing ist dort nicht eingerichtet |
-| E3032 (Lauf zum Tag v0.0.5 gescheitert) | Derselbe Grund: Der Job `deploy` scheiterte am 3.10.2026 mit `ENEEDAUTH`; alle Tests waren grün |
+| E2001 (`bluefox` nicht Mitinhaber auf npm) | nur für die Aufnahme ins ioBroker-Repository nötig (`npm owner add bluefox iobroker.samba-solar-track`); vorher die Lizenzfrage klären |
+| E2008 (0.0.5 ohne Herkunftsnachweis) | 0.0.5 hat der Nutzer am 3.10.2026 von Hand veröffentlicht; ab der nächsten Version über den Workflow mit Trusted Publishing |
+| E3032 (Lauf zum Tag v0.0.5 gescheitert) | `deploy` scheiterte am 3.10.2026 mit `ENEEDAUTH`, bevor das Paket auf npm existierte; erledigt sich mit dem nächsten erfolgreichen Tag-Lauf |
 | W4001 (nicht im ioBroker-Repository) | erledigt sich mit der Aufnahme; vorher ist zu klären, ob das offizielle Repository die Lizenz CC BY-NC-SA annimmt |
 
 Tag `v0.0.5` und GitHub-Release v0.0.5 gibt es seit dem 3.10.2026 (auf Anweisung des Nutzers);
-den Release hat Claude von Hand angelegt, weil `deploy` vor dem Anlegen abbrach. Beim Versuch
-meldete npm außerdem, dass es `repository.url` in `package.json` selbst berichtigt
-(`git+https://…`); behoben werden kann das mit `npm pkg fix` (offen).
+den Release hat Claude von Hand angelegt, weil `deploy` vor dem Anlegen abbrach. Auf npm liegt
+0.0.5 seit dem 3.10.2026 (vom Nutzer von Hand veröffentlicht, davor ein Platzhalter
+`0.0.0-stage` für „staged publishing“). Beim Versuch meldete npm außerdem, dass es
+`repository.url` in `package.json` selbst berichtigt (`git+https://…`); behoben werden kann das
+mit `npm pkg fix` (offen).
 
 Abweichungen vom Skill, die der Checker verlangt (er ist das Tor): Testmatrix mit Node.js 22,
 24 **und 26**, die Jobs `check-and-lint` und `deploy` auf Node.js 24,
@@ -119,6 +122,11 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   Leerzeichen und Großbuchstaben werden aufbereitet, ein falscher Block wird im Log genannt.
   Das alte Feld `token` gilt nur, solange die vier Felder leer sind, und ist nur sichtbar,
   solange es einen Wert hat. Alle Texte nennen den richtigen Ort des Tokens.
+- **Erledigt (0.0.6):** Die vier Felder stehen nebeneinander („Block 1“ bis „Block 4“), ohne
+  Hilfezeilen, verdeckt mit Auge (Wunsch des Nutzers vom 3.10.2026); das alte Feld `token` wird
+  nicht mehr angezeigt. Beim Start übernimmt der Adapter ein gültiges Token daraus einmalig in
+  die vier Felder (`updateConfig`, verschlüsselt) und leert es; sind die vier Felder belegt,
+  wird es nur geleert. Ein unbrauchbarer alter Wert bleibt, damit das Log den Fehler nennt.
 - Mit dem echten Gerät verbunden (3.10.2026, Firmware 0.0.3): Verbindung und Lesen gehen; das
   Token wurde nicht angenommen. Die Ursache ist nicht bestätigt; möglich sind Leerzeichen in der
   Eingabe (die 0.0.5 entfernt) oder ein Tippfehler. Alles Übrige nur gegen das nachgebildete
