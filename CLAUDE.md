@@ -52,13 +52,18 @@ Commit:
 OWN_GITHUB_TOKEN="$(gh auth token)" npx @iobroker/repochecker ssbingo/ioBroker.samba-solar-track main
 ```
 
-**Offene Checker-Meldungen (Stand 2.10.2026) und ihre Begründung:**
+**Offene Checker-Meldungen (Stand 3.10.2026) und ihre Begründung:**
 
 | Meldung | Begründung |
 | --- | --- |
-| E2000, W3038 (nicht auf npm) | Der Adapter wird ohne Anweisung des Nutzers nicht veröffentlicht |
-| E3032 (Version nicht getaggt), S8005 (kein GitHub-Release) | Tag und Release nur auf Anweisung des Nutzers |
+| E2000, W3038 (nicht auf npm) | Auf npm gibt es das Paket noch nicht, und Trusted Publishing ist dort nicht eingerichtet |
+| E3032 (Lauf zum Tag v0.0.5 gescheitert) | Derselbe Grund: Der Job `deploy` scheiterte am 3.10.2026 mit `ENEEDAUTH`; alle Tests waren grün |
 | W4001 (nicht im ioBroker-Repository) | erledigt sich mit der Aufnahme; vorher ist zu klären, ob das offizielle Repository die Lizenz CC BY-NC-SA annimmt |
+
+Tag `v0.0.5` und GitHub-Release v0.0.5 gibt es seit dem 3.10.2026 (auf Anweisung des Nutzers);
+den Release hat Claude von Hand angelegt, weil `deploy` vor dem Anlegen abbrach. Beim Versuch
+meldete npm außerdem, dass es `repository.url` in `package.json` selbst berichtigt
+(`git+https://…`); behoben werden kann das mit `npm pkg fix` (offen).
 
 Abweichungen vom Skill, die der Checker verlangt (er ist das Tor): Testmatrix mit Node.js 22,
 24 **und 26**, die Jobs `check-and-lint` und `deploy` auf Node.js 24,
