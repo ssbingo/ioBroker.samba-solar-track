@@ -52,21 +52,26 @@ Commit:
 OWN_GITHUB_TOKEN="$(gh auth token)" npx @iobroker/repochecker ssbingo/ioBroker.samba-solar-track main
 ```
 
-**Offene Checker-Meldungen (Stand 3.10.2026) und ihre Begründung:**
+Der Checker liest den Stand auf GitHub, nicht die Arbeitskopie: Meldungen zu einer neuen
+Änderung zeigen sich erst nach dem Push. Deshalb nach dem Push noch einmal laufen lassen.
+
+**Offene Checker-Meldungen (Stand 3.10.2026, nach 0.0.6) und ihre Begründung:**
 
 | Meldung | Begründung |
 | --- | --- |
 | E2001 (`bluefox` nicht Mitinhaber auf npm) | nur für die Aufnahme ins ioBroker-Repository nötig (`npm owner add bluefox iobroker.samba-solar-track`); vorher die Lizenzfrage klären |
-| E2008 (0.0.5 ohne Herkunftsnachweis) | 0.0.5 hat der Nutzer am 3.10.2026 von Hand veröffentlicht; ab der nächsten Version über den Workflow mit Trusted Publishing |
-| E3032 (Lauf zum Tag v0.0.5 gescheitert) | `deploy` scheiterte am 3.10.2026 mit `ENEEDAUTH`, bevor das Paket auf npm existierte; erledigt sich mit dem nächsten erfolgreichen Tag-Lauf |
 | W4001 (nicht im ioBroker-Repository) | erledigt sich mit der Aufnahme; vorher ist zu klären, ob das offizielle Repository die Lizenz CC BY-NC-SA annimmt |
+| W5508 (Passwortfelder `tokenBlock1` bis `tokenBlock4` ohne `xs: 12`) | seit 0.0.6 stehen auf dem Handy zwei Felder je Zeile (`xs: 6`); erst nach dem Push von 0.0.6 gemeldet. Vorschlag an den Nutzer: mit der nächsten Version `xs: 12` (auf dem Handy ein Feld je Zeile, ab `sm` weiter vier nebeneinander) |
+| W3052 (Log eines Testjobs nicht abrufbar) | vorübergehend, der Lauf selbst war erfolgreich |
 
 Tag `v0.0.5` und GitHub-Release v0.0.5 gibt es seit dem 3.10.2026 (auf Anweisung des Nutzers);
 den Release hat Claude von Hand angelegt, weil `deploy` vor dem Anlegen abbrach. Auf npm liegt
 0.0.5 seit dem 3.10.2026 (vom Nutzer von Hand veröffentlicht, davor ein Platzhalter
-`0.0.0-stage` für „staged publishing“). Beim Versuch meldete npm außerdem, dass es
-`repository.url` in `package.json` selbst berichtigt (`git+https://…`); behoben werden kann das
-mit `npm pkg fix` (offen).
+`0.0.0-stage` für „staged publishing“). **0.0.6** (Tag `v0.0.6`, 3.10.2026) hat der Workflow
+vollständig veröffentlicht: npm über Trusted Publishing mit Herkunftsnachweis, dazu den
+GitHub-Release „Release v0.0.6“. Damit sind E2008 und E3032 erledigt. npm meldet weiter, dass
+es `repository.url` in `package.json` selbst berichtigt (`git+https://…`); behoben werden kann
+das mit `npm pkg fix` (offen).
 
 Abweichungen vom Skill, die der Checker verlangt (er ist das Tor): Testmatrix mit Node.js 22,
 24 **und 26**, die Jobs `check-and-lint` und `deploy` auf Node.js 24,
