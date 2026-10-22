@@ -5,7 +5,7 @@
 
 监视 **Samba Solar Track** 控制器：一款带风暴保护的太阳能组件太阳跟踪器，基于配有 7 英寸触摸屏的 ESP32-S3 开发板。适配器在 ioBroker 中显示控制器的状态，并接收设备写入其日志的每一条消息。
 
-设备的硬件、固件和手册： <https://github.com/ssbingo/samba-solar-track> （该仓库尚未公开）
+设备的硬件和手册（10.1 英寸版本）： <https://github.com/ssbingo/samba-solar-track>。固件仅以编译后的形式提供： <https://firmware.samba-solar.de/>
 
 “Samba”是项目的名称。本适配器与 Samba 文件共享服务（SMB）无关。
 

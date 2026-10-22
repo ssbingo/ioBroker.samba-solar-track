@@ -5,7 +5,7 @@
 
 Bewaakt de besturing **Samba Solar Track**: een zonnevolger voor zonnepanelen met stormbeveiliging op een ESP32-S3-board met 7-inch touchscreen. De adapter toont de toestand van de besturing in ioBroker en ontvangt elke melding die het apparaat in zijn log schrijft.
 
-Hardware, firmware en handleiding van het apparaat: <https://github.com/ssbingo/samba-solar-track> (deze repository is nog niet openbaar)
+Hardware en handleiding van het apparaat (10,1-inch-versie): <https://github.com/ssbingo/samba-solar-track>. De firmware is alleen gecompileerd beschikbaar: <https://firmware.samba-solar.de/>
 
 "Samba" is de naam van het project. De adapter heeft niets te maken met de bestandsdienst Samba (SMB).
 

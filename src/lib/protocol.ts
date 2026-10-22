@@ -1,6 +1,6 @@
 /*
  * Protocol between the Samba Solar Track controller and this adapter (protocol version 1).
- * The contract is PROTOCOL.md of the firmware project (https://github.com/ssbingo/samba-solar-track).
+ * The contract is PROTOCOL.md of the firmware project (private development repository, folder zehnzoll/).
  * This file only contains types and pure functions, no I/O.
  */
 

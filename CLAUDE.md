@@ -6,10 +6,11 @@ sind deutsch; Code, Kommentare, Log-Texte und README sind englisch, wie bei ioBr
 ## Was wir bauen
 
 Den ioBroker-Adapter zur Steuerung **Samba Solar Track** (Solarnachführung mit Sturmschutz,
-ESP32-S3 mit 7-Zoll-Touch-Display). Der Adapter enthält den Adapter selbst **und vis-2-Widgets**.
+Waveshare ESP32-P4-WIFI6-Touch-LCD-10.1 mit 10,1-Zoll-Touch-Display). Der Adapter enthält den Adapter selbst **und vis-2-Widgets**.
 
-- Firmware, Hardware, Handbuch und Regelwerk: `/home/ssternitzke/samba-solar-track`
-  (GitHub: `ssbingo/samba-solar-track`, privat; bleibt privat).
+- Firmware, Hardware, Handbuch und Regelwerk: `/home/ssternitzke/samba-solar-track`, Ordner `zehnzoll/`
+  (GitHub: `ssbingo/samba-solar-track-dev`, privat; bleibt privat). Öffentlich sind seit 22.10.2026 nur
+  `ssbingo/samba-solar-track` (Nachbau: Handbuch, Platinen) und `ssbingo/samba-solar-track-firmware` (Abbilder).
 - Dieses Repository (`ssbingo/ioBroker.samba-solar-track`) ist seit dem 2.10.2026 öffentlich,
   damit sich der Adapter in ioBroker über GitHub installieren lässt.
 - Vertrag zwischen Gerät und Adapter: `PROTOCOL.md` im Firmware-Projekt (Protokollversion 1).

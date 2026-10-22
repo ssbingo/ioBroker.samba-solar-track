@@ -5,7 +5,7 @@
 
 Überwacht die Steuerung **Samba Solar Track**: eine Solarnachführung mit Sturmschutz auf einem ESP32-S3-Board mit 7-Zoll-Touch-Display. Der Adapter zeigt den Zustand der Steuerung in ioBroker und empfängt jede Meldung, die das Gerät in sein Log schreibt.
 
-Hardware, Firmware und Handbuch des Geräts: <https://github.com/ssbingo/samba-solar-track> (dieses Repository ist noch nicht öffentlich)
+Hardware und Handbuch des Geräts (10,1-Zoll-Version): <https://github.com/ssbingo/samba-solar-track>. Die Firmware gibt es nur fertig kompiliert: <https://firmware.samba-solar.de/>
 
 „Samba“ ist der Name des Projekts. Der Adapter hat nichts mit dem Dateidienst Samba (SMB) zu tun.
 

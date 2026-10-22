@@ -9,8 +9,8 @@ Monitors and operates the **Samba Solar Track** controller: a sun tracker for so
 ESP32-S3 board with a 7" touch display. The adapter shows the state of the controller in ioBroker, receives every
 message the device writes to its log and passes on commands.
 
-Hardware, firmware and manual of the device: <https://github.com/ssbingo/samba-solar-track> (this repository is
-not public yet)
+Hardware and manual of the device (10.1-inch version): <https://github.com/ssbingo/samba-solar-track>. The firmware is available compiled only:
+<https://firmware.samba-solar.de/>
 
 "Samba" is the name of the project. The adapter has nothing to do with the Samba file sharing service (SMB).
 

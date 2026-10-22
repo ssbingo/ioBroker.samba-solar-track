@@ -5,7 +5,7 @@
 
 Monitora il controllore **Samba Solar Track**: un inseguitore solare per moduli fotovoltaici con protezione dalle tempeste, basato su una scheda ESP32-S3 con display touch da 7 pollici. L'adattatore mostra lo stato del controllore in ioBroker e riceve ogni messaggio che il dispositivo scrive nel proprio log.
 
-Hardware, firmware e manuale del dispositivo: <https://github.com/ssbingo/samba-solar-track> (questo repository non è ancora pubblico)
+Hardware e manuale del dispositivo (versione da 10,1 pollici): <https://github.com/ssbingo/samba-solar-track>. Il firmware è disponibile solo compilato: <https://firmware.samba-solar.de/>
 
 «Samba» è il nome del progetto. L'adattatore non ha nulla a che fare con il servizio di condivisione file Samba (SMB).
 
