@@ -3,7 +3,7 @@
 
 > [English README](../../README.md)
 
-Supervisa el controlador **Samba Solar Track**: un seguidor solar para módulos fotovoltaicos con protección contra tormentas, basado en una placa ESP32-S3 con pantalla táctil de 7 pulgadas. El adaptador muestra el estado del controlador en ioBroker y recibe cada mensaje que el dispositivo escribe en su registro.
+Supervisa el controlador **Samba Solar Track**: un seguidor solar para módulos fotovoltaicos con protección contra tormentas, basado en una placa ESP32-P4 con pantalla táctil de 10,1 pulgadas. El adaptador muestra el estado del controlador en ioBroker y recibe cada mensaje que el dispositivo escribe en su registro.
 
 Hardware y manual del dispositivo (versión de 10,1 pulgadas): <https://github.com/ssbingo/samba-solar-track>. El firmware solo está disponible compilado: <https://firmware.samba-solar.de/>
 
@@ -15,7 +15,7 @@ El dispositivo es el que manda. El seguimiento, la protección contra tormentas,
 
 ## Estado del proyecto
 
-Versión temprana en desarrollo, publicada en npm, pero aún no en los repositorios de ioBroker. Disponible: conexión con reconexión automática, estado del controlador como estados, mensajes con hora e historial, comandos (automático, aparcar en horizontal, confirmar avería, movimiento manual con hombre muerto) y ajustes del dispositivo (valores con límites, propuestas con confirmación en la pantalla, configuración, diseño), véase el [README en inglés](../../README.md#commands). Además, notificaciones a través de un adaptador de mensajería (tormenta, averías, anemómetro, sensor solar, conexión, reinicio). Previsto: widgets vis-2. La conexión y la lectura se han probado con un dispositivo real (firmware 0.0.3, 03/10/2026); los comandos, los ajustes y las notificaciones solo con un dispositivo simulado.
+Versión temprana en desarrollo, publicada en npm, pero aún no en los repositorios de ioBroker. Disponible: conexión con reconexión automática, estado del controlador como estados, mensajes con hora e historial, comandos (automático, aparcar en horizontal, confirmar avería, movimiento manual con hombre muerto) y ajustes del dispositivo (valores con límites, propuestas con confirmación en la pantalla, configuración, diseño), véase el [README en inglés](../../README.md#commands). Además, notificaciones a través de un adaptador de mensajería (tormenta, averías, anemómetro, sensor solar, conexión, reinicio). Desde la 0.1.0 el adaptador incluye seis widgets vis-2 (conjunto «Samba Solar Track»): resumen, mando, mensajes, valores, posición del sol y programa de puesta en marcha, con los colores y la disposición de la pantalla; solo se elige la instancia del adaptador. Descripción en el [README en inglés](../../README.md#vis-2-widgets). La conexión y la lectura se han probado con un dispositivo real (firmware 0.0.3, 03/10/2026); los comandos, los ajustes y las notificaciones solo con un dispositivo simulado. Desde la 0.1.0 también las funciones del firmware hasta 0.7.8: posición del sol, programa de puesta en marcha con informes de prueba, inclinación por orden con sensor Hall, reinicio del control síncrono y firmware por internet; los estados están en el [README en inglés](../../README.md#states).
 
 ## Requisitos
 
@@ -37,6 +37,9 @@ Versión temprana en desarrollo, publicada en npm, pero aún no en los repositor
 Los niveles de registro, las etiquetas y el cambio de nivel se describen en el [README en inglés](../../README.md#logging-and-debugging). El token nunca aparece en el registro.
 
 ## Changelog
+
+### 0.1.0 (2026-11-15)
+- (ssbingo) Compatibilidad con el firmware hasta 0.7.8: estados POSITION, COMMISSION y ASTRO; posición del sol; programa de puesta en marcha con informes de prueba; inclinación por orden con sensor Hall; reinicio del control síncrono; firmware por internet; inclinación en grados; denominaciones MÁS INCL./MÁS PLANO; nuevos ajustes; notificación si el programa de puesta en marcha no está terminado; nombres de objetos en 11 idiomas. Los estados de una función solo se crean si el firmware la comunica; widgets vis-2 resumen, mando, mensajes, valores, posición del sol y programa de puesta en marcha (React, Module Federation, 11 idiomas); nuevos estados `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` y `update.*`; la página de ajustes ya no repite el texto inglés en otros idiomas (puerto, partes del token, títulos)
 
 ### 0.0.7 (2026-10-03)
 - (ssbingo) introducción del token: una línea roja bajo los cuatro campos indica el motivo cuando un bloque está incompleto o es erróneo; un bloque guardado se puede volver a cambiar (borrarlo por completo e introducirlo de nuevo); en el móvil cada campo ocupa todo el ancho; tras trasladar el token antiguo, el primer arranque termina limpiamente antes de que js-controller reinicie el adaptador (sin segunda conexión en modo compacto); textos de registro más claros sobre el antiguo campo del token

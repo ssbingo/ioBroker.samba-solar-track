@@ -6,7 +6,7 @@
 ## samba-solar-track adapter for ioBroker
 
 Monitors and operates the **Samba Solar Track** controller: a sun tracker for solar modules with storm protection, built on an
-ESP32-S3 board with a 7" touch display. The adapter shows the state of the controller in ioBroker, receives every
+ESP32-P4 board with a 10.1" touch display. The adapter shows the state of the controller in ioBroker, receives every
 message the device writes to its log and passes on commands.
 
 Hardware and manual of the device (10.1-inch version): <https://github.com/ssbingo/samba-solar-track>. The firmware is available compiled only:
@@ -33,13 +33,17 @@ This is an early version under development. It is published on npm but not yet i
 | Commands (automatic on/off, park flat, acknowledge fault, manual drive with dead man) | available |
 | Settings of the device (values with limits, proposals, setup, design) | available |
 | Notifications through a messaging adapter (Telegram, Pushover, e-mail and others) | available |
-| vis-2 widgets (overview, operation, messages, values) | planned |
+| Features of firmware 0.4 to 0.7.8: position of the sun, setup program and test reports, tilt on command, Hall tap, reset of the synchronous control, firmware over the internet, STEEPER/FLATTER | available (0.1.0) |
+| vis-2 widgets (overview, control, messages, values, position of the sun, setup program) | available (0.1.0) |
 
-Connection and reading were tested with a real device (firmware 0.0.3, 2026-10-03); commands, settings and notifications only against a simulated device.
+Connection and reading were tested with a real device (firmware 0.0.3, 2026-10-03); commands, settings, notifications
+and everything of version 0.1.0 only against a simulated device that follows the protocol of firmware 0.7.8. The
+widgets were loaded in vis-2 2.20.9 against that simulated device.
 
 ### Requirements
 
-- Samba Solar Track with firmware 0.0.1 or newer (protocol version 1), WLAN switched on at the display
+- Samba Solar Track with firmware 0.0.1 or newer (protocol version 1), WLAN switched on at the display. Older firmware
+  keeps working: the adapter creates the states of a feature only when the firmware reports it (`info.features`).
 - ioBroker js-controller 6.0.11 or newer, admin 8.0.0 or newer, Node.js 22 or newer
 
 ### Installation
@@ -64,10 +68,16 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | --- | --- |
 | `info` | connection, firmware, protocol, device id, address, start time, uptime, memory, signal strength, `info.simulation`, `info.authorized` |
 | `status` | state of the controller (`status.state`), automatic, park request, lock at the display, faults, storm protection and its remaining time |
-| `axes.elevation`, `axes.azimuth` | output, limit switches, blocked directions, runtime fault, deviation from the sun |
+| `axes.elevation`, `axes.azimuth` | output, limit switches, blocked directions, runtime fault, deviation from the sun; for the elevation also the direction of the flat position (`flatDirection`), the tilt in degrees (`angle`, `null` = unknown) and where it comes from (`angleSource`: `hall` counted, `time` estimated); with the reset of the synchronous control the states `syncReset…` (connection, phase, remaining times, last result and reason of an abort) |
 | `sun` | the four values of the sun sensor |
+| `sunPosition` | position of the sun from site and time (feature `sunpos`, firmware 0.7.0): time and site known, latitude, longitude, azimuth and elevation of the sun, sunrise, sunset, highest position, polar day/night, night by the position of the sun, beginning of night and day (times as ms since 1970); with one axis also the orientation of the rack and the best tilt; `astroTarget` = angle driven to when cloudy (state `ASTRO`) |
+| `position` | tilt of the elevation on command (feature `position`, one axis only): commanded angle, phase, tilt, uncertainty, travel times measured, offered angles (`presets`), waiting time; with the Hall tap (feature `hall`) the source of the tilt and the state of the Hall tap |
+| `commissioning` | setup program (feature `commissioning`, firmware 0.7.0): completed, open at the display, step, phase, number of the step and of all steps, step optional; the last three test reports as text (`report0` = newest to `report2`, empty = none); with the feature `reportjson` (firmware 0.7.6) the folder `commissioning.report` with the data set of the newest report (date, passed, firmware, duration, travel times, Hall steps, steps with their result and the numbers of passed, skipped and open steps, the complete data set as JSON) |
+| `firmware` | version check and update over the internet (feature `fwonline`): state, running and newest version, date, notes, size, time since the last check, error, progress, version taken back, `canInstall` |
 | `wind` | wind speed, gust, strongest gust, storm threshold, wind direction |
-| `io`, `supply`, `leds` | components, supplies and indicator lights of the add-on board |
+| `io`, `supply`, `leds` | components, supplies and indicator lights of the add-on board; with the feature `power` also `supply.v24` and `supply.v5` (24 V and 5 V present, `null` = unknown), with the feature `chargecheck` `supply.adcOk` (the component that checks the charge lock answers) and `supply.checks` (pending findings of that check as a JSON list, empty = none) |
+| `battery` | built-in battery of the board as at the top right of the display (feature `battery`): battery fitted (setting), valid measurement, charge level in % (`null` without a valid measurement), charging, level `ok`/`low`/`critical`. Display only, no effect on the controller |
+| `update` | firmware update in progress (feature `update`): new firmware is being written (all outputs off, commands refused), progress in %; with the feature `updatepark` also the phase (`none`, `loading`, `parking`, `writing`) and why the last update over the network was not written |
 | `jog` | manual drive from remote that is running |
 | `counters` | error counters of the device |
 | `messages` | last message, last warning or error, history as JSON, lost messages |
@@ -75,6 +85,21 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | `setup`, `params` | setup and settings of the device, see below |
 
 If `info.simulation` is `true`, the device runs its built-in simulation: no value is a real measurement.
+
+`status.state` names the state of the controller, highest priority first: `SETUP`, `FAULT`, `STORM`, `MANUAL`, `PARK`,
+`WINDFAULT`, `POSITION` (tilt on command), `SENSOR`, `COMMISSION` (setup program not completed: automatic and night
+position rest, storm protection works), `NIGHT`, and the automatic `ASTRO` (cloudy, calculated angle), `IDLE`,
+`TRACKING`, `SETTLING`. Since firmware 0.7.0 the night follows the position of the sun once time and site are known
+(`sunPosition.known`); without them it follows the brightness (`params.control.nightEnterLevel` and
+`nightExitLevel`). The adapter accepts states it does not know yet.
+
+The display shows the directions of the elevation as STEEPER and FLATTER (firmware 0.5.8). Which output is which
+depends on the direction of the flat position (`axes.elevation.flatDirection`); the adapter names the states of the
+elevation and the values of `control.jogElevation` accordingly. The state ids stay `limitPlus`, `limitMinus` and so on.
+
+The test reports are read after connecting, when `commissioning.done` changes and when the setup program is closed at
+the display. The setup program itself is operated only at the display (someone has to watch the rack); there is no
+command for it.
 
 The device has no clock. The adapter calculates the time of each message from the uptime of the device.
 
@@ -88,9 +113,14 @@ switches, dead time and runtime monitoring of the device cannot be switched off 
 | `control.auto` | automatic on or off, like the switch at the display. Shows the state of the device. |
 | `control.park` | park request on or off: the module drives flat and stays there until the request is cancelled here or at the display. It survives a restart of the device. |
 | `control.acknowledge` | acknowledge a runtime fault, like the button at the display |
-| `control.jogElevation` | manual drive: `1` = up, `-1` = down, `0` = stop |
+| `control.jogElevation` | manual drive: `1` = PLUS (output UP), `-1` = MINUS (output DOWN), `0` = stop; the object names which of them is STEEPER and FLATTER |
 | `control.jogAzimuth` | manual drive: `1` = east, `-1` = west, `0` = stop |
-| `control.lastResult` | result of the last command as JSON: `command`, `ok`, `reason`, `text`, `from`, `ts` |
+| `control.position` | tilt the elevation to one of the offered angles in `position.presets` (feature `position`, one axis only); shows the commanded angle, `null` = none. Like a park request it stays until it is cancelled and survives a restart; a higher state (storm, fault, manual mode, park, wind sensor failed) has priority |
+| `control.positionResume` | cancel the tilt on command, the automatic continues |
+| `control.syncResetElevation`, `control.syncResetAzimuth` | reset of the synchronous control of the axis (feature `syncreset`; azimuth only with two axes). **The rack then drives into its end position by itself: make sure the swivel range is clear first** (the display asks for this; a widget or script has to ask as well) |
+| `control.fwCheck` | check now whether newer firmware exists; the result is in `firmware` |
+| `control.fwInstall` | install the newest firmware over the internet: write the version from `firmware.latest`. A wrong version is refused (`range`). The device loads and checks the image, drives the elevation flat and only then writes it; it refuses during storm protection or while a drive is running |
+| `control.lastResult` | result of the last command as JSON: `command`, `ok`, `reason`, `text`, `detail` (text of the device, for example why a reset was refused), `from`, `ts` |
 
 **Manual drive works with a dead man.** A drive runs only while its state is written again and again: whoever drives
 (a widget, a script) has to write `1` or `-1` at least once per second, best every 300 to 500 ms. If the writes stop,
@@ -117,13 +147,18 @@ A command the device refuses is taken back: the state returns to what the device
 | `protocol`, `unsupported` | the firmware is newer than this adapter knows, or too old for this command |
 | `hold` | a manual drive was stopped because its state was not written again in time (dead man) |
 | `device` | the device ended a manual drive, for example because of storm or an operation at the display |
+| `format`, `type` | the command or value is malformed, for example `control.fwInstall` without a version |
 
 ### Settings of the device
 
 The device tells the adapter which values can be set, with their limits and defaults. The adapter creates one state
 per value under `params`, in the groups of the display: `params.control`, `params.commissioning`, `params.safety` and
-`params.diagnostics`. Which values exist depends on the setup: with one axis the values of the azimuth are missing,
-without a wind sensor with direction the values of the wind direction.
+`params.diagnostics`. Which values exist depends on the firmware and the setup: with one axis the values of the azimuth
+are missing, without a wind sensor with direction the values of the wind direction. Newer firmware adds, each only
+with its feature: site latitude and longitude, night after sunset, day before sunrise (`sunpos`); orientation of the
+rack, drive to the calculated angle when cloudy and its brightness (`sunpos`, one axis); travel times, frame of the
+rack, start loss and two preset angles (`position`, one axis); Hall tap, its counting direction and steps per stroke
+(`hall`, one axis); reset contacts of the synchronous control (`syncreset`).
 
 Writing a state sends the value to the device. The device checks it against its limits and answers:
 
@@ -159,11 +194,44 @@ the events:
 | Faults | a drive ran longer than its maximum runtime (with the axis), the component of the switching outputs does not answer, and when the fault is cleared |
 | Wind sensor | when it stops answering and when it answers again |
 | Sun sensor | when it reports a fault and when it works again |
+| Setup program | when the controller changes to the state `COMMISSION` (setup program not completed); once per occurrence, again only after it was completed in between |
 | Connection | when the device was not reachable for the chosen number of minutes (default 5), and when it is reachable again. A short interruption of the WLAN causes no notification. |
 | Restart | when the device has restarted, with the reason (off by default) |
 
 The texts are written in the language of the ioBroker system. Nothing is sent for the state the device is in when
 the adapter starts; only changes are reported.
+
+### vis-2 widgets
+
+The adapter brings the widget set "Samba Solar Track" for vis-2 (React, module federation, built like the widgets of
+ioBroker.pondpump). Every widget only needs the adapter instance (attribute "Adapter instance"); it reads the states
+below `samba-solar-track.<instance>.` itself. Colours, tiles, status band and font (Montserrat, bundled, SIL Open Font
+License 1.1, see `widgets/samba-solar-track/fonts/OFL.txt`) follow the design "Standard" of the display. All texts exist
+in the 11 languages of ioBroker; the status band uses the texts of the display. States that an older firmware does not
+provide show "–" or a hint, they never leave a widget empty.
+
+| Widget | Default size | Content | Attributes |
+| --- | --- | --- | --- |
+| Overview | 420 × 290 | like the start page of the display: wind gauge with storm threshold, gust and peak, cross-hair of the sun sensor with the deviation, tilt with sketch and target, status band with text and colour per state, automatic switch, button PARK FLAT / CANCEL PARKING | instance, without card background |
+| Control | 300 × 290 | automatic switch; STEEPER/FLATTER, with two axes also EAST/WEST (manual drive with dead man); with one axis the angle buttons of `position.presets` (0°, 30°, 60° and the preferred angles) and RESUME AUTOMATIC; park flat, acknowledge; optionally the reset of the synchronous control with a question first | instance, without card background, show angle buttons, offer the reset of the synchronous control |
+| Messages | 400 × 290 | latest messages of the device with time and level, filter all / warnings / errors | instance, without card background, filter at the start, show debug messages |
+| Values | 360 × 250 | wind, gust, direction, tilt, height and azimuth of the sun, battery, 24 V / 5 V, firmware, connection | instance, without card background |
+| Position of the sun | 400 × 250 | arc of the sun today from `sunPosition.*` (firmware 0.7.0): sunrise, noon with its height, sunset, night windows, the sun now, orientation of the rack and best tilt (one axis) | instance, without card background |
+| Setup program | 300 × 250 | state of the setup program and key values of the newest test report (result, travel times, Hall tap or azimuth), progress of the steps; display only | instance, without card background |
+
+Safety rules of the widgets:
+
+- Manual drive only while the button is held (dead man): the widget writes `control.jogElevation` or
+  `control.jogAzimuth` again every 400 ms and writes 0 when the button is released, the pointer is lost or the page is
+  hidden. If the browser disappears, the adapter stops the drive after one second without renewal.
+- The direction of STEEPER/FLATTER comes from `axes.elevation.flatDirection`, without it from the names of
+  `control.jogElevation`.
+- Manual drive needs the automatic off (as at the display). Drive commands are locked during storm protection, without
+  completed setup and without completed setup program; every button is locked when "remote control locked" is on at the
+  display, while a firmware update is written and without connection. The device checks every command itself.
+- In the vis-2 editor no command is sent.
+- The widgets show the times in the time zone of the browser. The texts of the messages are the log lines of the
+  firmware as the device sends them.
 
 ### Logging and debugging
 
@@ -191,6 +259,7 @@ Every line starts with a tag that names the part of the adapter:
 | `[cmd]` | commands with their number, result and duration |
 | `[jog]` | manual drive: start, renewals, stop and the reason |
 | `[par]` | settings and setup of the device: old and new value, proposals, refusals |
+| `[rep]` | test reports of the setup program: why they are read, which exist, the data set |
 | `[ntf]` | notifications: every event, whether it was sent and to which instance |
 | `[unload]` | shutdown |
 
@@ -201,6 +270,9 @@ The token never appears in the log.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.1.0 (2026-11-15)
+- (ssbingo) firmware up to 0.7.8: states `POSITION`, `COMMISSION` and `ASTRO`; channel `sunPosition` (position of the sun, sunrise, sunset, night); channel `commissioning` with the setup program and its test reports (text and data set); tilt on command with Hall tap (`position`, `control.position`, `control.positionResume`); reset of the synchronous control (`axes.*.syncReset…`, `control.syncReset…`); firmware over the internet (`firmware`, `control.fwCheck`, `control.fwInstall`); tilt of the elevation in degrees; names STEEPER/FLATTER of the elevation directions; names of the new settings; notification when the setup program is not completed; every object name in 11 languages. States of a feature are created only when the firmware reports it; vis-2 widgets overview, control, messages, values, position of the sun and setup program (React, module federation, 11 languages); new states `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` and `update.*`; the settings page no longer repeats the English text in other languages (port, token parts, headings)
+
 ### 0.0.7 (2026-10-03)
 - (ssbingo) token entry: a red line under the four fields names the reason when a block is incomplete or wrong; a saved block can be changed again (delete it completely and enter it again); on phones each field takes the full width; after moving the old token the first start ends cleanly before js-controller restarts the adapter (no second connection in compact mode); clearer log texts about the old token field
 

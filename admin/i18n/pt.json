@@ -30,6 +30,7 @@
     "notifyFaultLabel": "Avarias (tempo de funcionamento de um acionamento, saídas de comutação)",
     "notifyWindLabel": "O sensor de vento deixa de responder ou volta a responder",
     "notifySensorLabel": "O sensor solar comunica uma avaria ou volta a funcionar",
+    "notifyCommissionLabel": "Programa de configuração não concluído",
     "notifyConnectionLabel": "Dispositivo inacessível ou novamente acessível",
     "notifyRestartLabel": "O dispositivo reiniciou",
     "notifyConnectionMinutesLabel": "Notificar após minutos sem ligação",

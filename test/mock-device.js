@@ -10,8 +10,242 @@ const { WebSocketServer } = require("ws");
 const FIRMWARE_PARAMS = require("./mock-params");
 
 /** Settings that exist only with two axes or with a wind sensor with direction */
-const AZIMUTH_ONLY = ["motorMaxRunMsAzimuth", "limitSwitchesAzimuth", "nightReturnEast"];
+const AZIMUTH_ONLY = ["motorMaxRunMsAzimuth", "limitSwitchesAzimuth", "nightReturnEast", "syncResetAzimuth"];
 const DIRECTION_ONLY = ["windDirAddr", "windDirFunction", "windDirRegister", "windDirScale"];
+/** Settings that exist only with one axis (vertical only) */
+const ELEVATION_ONLY = [
+    "elevTravelSteepMs",
+    "elevTravelFlatMs",
+    "elevGeometry",
+    "elevStartLossMs",
+    "elevPreset1",
+    "elevPreset2",
+    "elevHall",
+    "elevHallInvert",
+    "elevHallSteps",
+    "rackAzimuth",
+    "cloudAstro",
+    "cloudLevel",
+];
+/** Settings that exist only with a feature of the firmware (PROTOCOL.md, section 8) */
+const FEATURE_OF = {
+    elevTravelSteepMs: "position",
+    elevTravelFlatMs: "position",
+    elevGeometry: "position",
+    elevStartLossMs: "position",
+    elevPreset1: "position",
+    elevPreset2: "position",
+    elevHall: "hall",
+    elevHallInvert: "hall",
+    elevHallSteps: "hall",
+    syncResetElevation: "syncreset",
+    syncResetAzimuth: "syncreset",
+    siteLatitude: "sunpos",
+    siteLongitude: "sunpos",
+    rackAzimuth: "sunpos",
+    nightAfterSunsetMin: "sunpos",
+    dayBeforeSunriseMin: "sunpos",
+    cloudAstro: "sunpos",
+    cloudLevel: "sunpos",
+};
+
+/** Every feature of the firmware 0.7.8 (as FEATURES in src/net/net.cpp of the firmware project) */
+const FEATURES_078 = [
+    "status",
+    "log",
+    "command",
+    "jog",
+    "park",
+    "setup",
+    "params",
+    "update",
+    "time",
+    "fwonline",
+    "duty",
+    "position",
+    "hall",
+    "battery",
+    "lang",
+    "updatepark",
+    "power",
+    "chargecheck",
+    "syncreset",
+    "sunpos",
+    "commissioning",
+    "reportjson",
+];
+
+/** Test report as text, as the firmware writes it (shortened example) */
+const REPORT_TEXT =
+    "PRUEFBERICHT SAMBA SOLAR TRACK\nDatum: 2026-11-11 14:32\nFirmware: 0.7.8\nBetriebsart: nur vertikal\n" +
+    " 1 Sicherheit: BESTANDEN\n 6 Fahrweg der Elevation: BESTANDEN (steiler 52300 ms, flacher 49600 ms)\n";
+
+/** Data set of the same report (GET /api/report?format=json), example of PROTOCOL.md for one axis */
+function reportData() {
+    return {
+        v: 1,
+        fw: "0.7.8",
+        epoch: 1794407520,
+        durationS: 6420,
+        done: true,
+        simulation: false,
+        dualAxis: false,
+        windDirection: true,
+        plant: {
+            limitElevation: false,
+            limitAzimuth: false,
+            hall: true,
+            syncResetElevation: 1,
+            syncResetAzimuth: 0,
+            maxRunElevationMs: 60000,
+            maxRunAzimuthMs: 90000,
+        },
+        site: { set: true, lat: 51.0504, lon: 13.7373, rackAz: 0 },
+        steps: [
+            { n: 1, key: "safety", result: "passed" },
+            { n: 6, key: "elevtravel", result: "passed" },
+            { n: 9, key: "position", result: "passed" },
+            { n: 11, key: "network", result: "skipped" },
+            { n: 13, key: "signals", result: "skipped" },
+            { n: 14, key: "tracktest", result: "open" },
+        ],
+        values: {
+            windSpinKmh: 18.4,
+            windDirDeg: 3,
+            flatPlus: true,
+            flatDirChanged: false,
+            flatRunMs: 41800,
+            elevSteepMs: 52300,
+            elevFlatMs: 49600,
+            elevHallSteps: 1184,
+            azEastMs: 0,
+            azWestMs: 0,
+            azBackMs: 0,
+            syncOk: true,
+            posReadDeg: 30,
+            sun: { east: 1, west: 0, south: 2, north: 3 },
+            sensorFixes: 1,
+            trackFixes: 0,
+            leds: "unchecked",
+            sound: "unchecked",
+            motion: "unchecked",
+        },
+    };
+}
+
+/**
+ * The parts of the status that exist only with a feature (PROTOCOL.md, section 5).
+ *
+ * @param {object} status the status to complete
+ * @param {string[]} features features of the firmware
+ */
+function addFeatureStatus(status, features) {
+    const has = feature => features.includes(feature);
+    const oneAxis = status.mode === 1;
+    if (has("syncreset")) {
+        for (const axis of ["elevation", "azimuth"]) {
+            status.axes[axis].syncReset = {
+                port: axis === "elevation" ? "j23" : "off",
+                available: axis === "elevation",
+                phase: "idle",
+                remainingMs: 0,
+                phaseRemainingMs: 0,
+                totalMs: 0,
+                result: "none",
+                reason: "",
+                resultMs: null,
+            };
+        }
+    }
+    if (has("fwonline")) {
+        status.fwOnline = {
+            state: "available",
+            current: "0.7.8",
+            latest: "0.7.9",
+            date: "2026-11-20",
+            notes: "Beispiel",
+            size: 1811856,
+            checkedAgoMs: 3600000,
+            error: null,
+            percent: 0,
+            rolledBack: null,
+            newer: true,
+            canInstall: true,
+            keyPresent: true,
+            awaitingConfirm: false,
+        };
+    }
+    if (has("position") && oneAxis) {
+        status.position = {
+            target: null,
+            phase: "none",
+            deg: 38,
+            known: true,
+            uncert: 2,
+            calibrated: true,
+            presets: [0, 15, 30, 45, 60],
+            waitMs: 0,
+        };
+        if (has("hall")) {
+            status.position.source = "hall";
+            status.position.hall = { enabled: true, ok: true, fault: null, count: 15620, steps: 60000, faults: 0 };
+        }
+    }
+    if (has("sunpos")) {
+        status.sunPos = {
+            known: true,
+            timeOk: true,
+            siteSet: true,
+            lat: 51.0504,
+            lon: 13.7373,
+            az: 190.5,
+            el: 21.1,
+            rise: 1794291186,
+            set: 1794324284,
+            noon: 1794307735,
+            noonEl: 21.7,
+            alwaysUp: false,
+            alwaysDown: false,
+            night: false,
+            nightStart: 1794326084,
+            dayStart: 1794291186,
+            astroTarget: null,
+        };
+        if (oneAxis) {
+            status.sunPos.rackAz = 0;
+            status.sunPos.bestTilt = 68.5;
+        }
+    }
+    if (has("update")) {
+        status.update = { active: false, percent: 0 };
+        if (has("updatepark")) {
+            status.update.phase = "none";
+            status.update.error = null;
+        }
+    }
+    if (has("battery")) {
+        status.battery = { fitted: true, valid: true, percent: 82, charging: true, level: "ok" };
+    }
+    if (has("power")) {
+        status.supply.v24 = true;
+        status.supply.v5 = true;
+    }
+    if (has("chargecheck")) {
+        status.supply.adcOk = true;
+        status.supply.checks = [];
+    }
+    if (has("commissioning")) {
+        status.commissioning = {
+            done: true,
+            active: false,
+            step: "done",
+            phase: "passed",
+            number: 13,
+            total: 13,
+            optional: false,
+        };
+    }
+}
 
 /** Token of the device: 32 hex characters in lower case, as the firmware expects it (invented example) */
 const TOKEN = "3f9a1c2077b4e1d20a5c9e314b6f8d02";
@@ -41,6 +275,9 @@ function defaultStatus() {
                 blockedPlus: false,
                 blockedMinus: false,
                 fault: false,
+                flatDir: 1,
+                deg: 38,
+                degSource: "time",
                 errPermille: 7,
             },
             azimuth: {
@@ -84,7 +321,7 @@ function defaultStatus() {
 
 class MockDevice {
     /**
-     * @param {{ device?: string, protocol?: number, ringSize?: number, autoPong?: boolean, jogTimeoutMs?: number, features?: string[] }} [options]
+     * @param {{ device?: string, protocol?: number, ringSize?: number, autoPong?: boolean, jogTimeoutMs?: number, features?: string[], mode?: number, fw?: string }} [options]
      */
     constructor(options = {}) {
         this.device = options.device ?? "samba-solar-track";
@@ -106,7 +343,19 @@ class MockDevice {
         /** bodies of the POST requests received, with the token that came with them */
         this.posts = [];
         this.token = TOKEN;
+        this.fw = options.fw ?? "0.0.1";
         this.status = defaultStatus();
+        if (options.mode === 1) {
+            this.status.mode = 1;
+            this.status.axes.azimuth.enabled = false;
+        }
+        addFeatureStatus(this.status, this.features);
+        /** test reports as text, newest first (feature commissioning) */
+        this.reports = this.features.includes("commissioning") ? [REPORT_TEXT] : [];
+        /** data set of the newest report (feature reportjson), null = none */
+        this.reportJson = this.features.includes("reportjson") ? reportData() : null;
+        /** number of GET /api/report requests */
+        this.reportRequests = 0;
         /** frames received from clients, parsed */
         this.received = [];
         /** number of answered GET /api/info */
@@ -185,7 +434,7 @@ class MockDevice {
     info() {
         return {
             device: this.device,
-            fw: "0.0.1",
+            fw: this.fw,
             protocol: this.protocol,
             id: "aa:bb:cc:dd:ee:ff",
             hostname: "samba-solar-track",
@@ -230,6 +479,26 @@ class MockDevice {
             send(200, this.statusBody());
         } else if (req.method === "GET" && url.pathname === "/api/params") {
             send(200, { params: this.visibleParams() });
+        } else if (req.method === "GET" && url.pathname === "/api/report" && this.features.includes("commissioning")) {
+            this.reportRequests++;
+            const n = Number(url.searchParams.get("n") ?? "0");
+            if (!Number.isInteger(n) || n < 0 || n > 2) {
+                send(422, { ok: false, reason: "range", detail: "n ausserhalb 0 bis 2" });
+            } else if (url.searchParams.get("format") === "json" && this.features.includes("reportjson")) {
+                if (n === 0 && this.reportJson) {
+                    send(200, this.reportJson);
+                } else {
+                    send(409, { ok: false, reason: "state", detail: "kein Datensatz" });
+                }
+            } else if (this.reports[n] === undefined) {
+                send(409, { ok: false, reason: "state", detail: "kein Bericht" });
+            } else {
+                res.writeHead(200, {
+                    "Content-Type": "text/plain; charset=utf-8",
+                    "Content-Disposition": `attachment; filename="pruefbericht-samba-solar-track-${n + 1}.txt"`,
+                });
+                res.end(this.reports[n]);
+            }
         } else if (req.method === "GET" && url.pathname === "/api/setup") {
             send(200, { configured: this.status.setupDone, mode: this.status.mode, windSensor: this.status.windSensor });
         } else if (req.method === "POST" && (url.pathname === "/api/params" || url.pathname === "/api/setup")) {
@@ -287,7 +556,7 @@ class MockDevice {
             JSON.stringify({
                 t: "hello",
                 device: this.device,
-                fw: "0.0.1",
+                fw: this.fw,
                 protocol: this.protocol,
                 bootId: this.bootId,
                 uptimeMs: this.uptimeMs,
@@ -299,12 +568,14 @@ class MockDevice {
         ws.send(JSON.stringify({ t: "status", ...this.statusBody() }));
     }
 
-    /** The settings the firmware reports for the chosen mode and wind sensor */
+    /** The settings the firmware reports for its features, the chosen mode and wind sensor */
     visibleParams() {
         return this.params.filter(
             entry =>
                 (this.status.mode === 2 || !AZIMUTH_ONLY.includes(entry.key)) &&
-                (this.status.windSensor === 2 || !DIRECTION_ONLY.includes(entry.key)),
+                (this.status.mode === 1 || !ELEVATION_ONLY.includes(entry.key)) &&
+                (this.status.windSensor === 2 || !DIRECTION_ONLY.includes(entry.key)) &&
+                (!FEATURE_OF[entry.key] || this.features.includes(FEATURE_OF[entry.key])),
         );
     }
 
@@ -429,11 +700,14 @@ class MockDevice {
         return [200, { ok: true, restart: true }];
     }
 
-    /** Answers a command like the firmware: {"t":"result","id":…,"ok":…,"reason":…} */
-    result(ws, id, reason) {
+    /** Answers a command like the firmware: {"t":"result","id":…,"ok":…,"reason":…,"detail":…} */
+    result(ws, id, reason, detail) {
         const frame = { t: "result", id: typeof id === "number" ? id : null, ok: !reason };
         if (reason) {
             frame.reason = reason;
+        }
+        if (detail) {
+            frame.detail = detail;
         }
         ws.send(JSON.stringify(frame));
     }
@@ -468,6 +742,89 @@ class MockDevice {
                     return this.result(ws, frame.id, "locked");
                 }
                 this.status.fault = { ...this.status.fault, motor: false };
+                break;
+            case "position": {
+                // PROTOCOL.md, section 7: only with the feature and one axis, only offered angles
+                if (!this.features.includes("position") || !this.status.position) {
+                    return this.result(ws, frame.id, "unknown");
+                }
+                if (locked || !this.status.setupDone) {
+                    return this.result(ws, frame.id, locked ? "locked" : "setup");
+                }
+                if (frame.on === false) {
+                    this.status.position.target = null;
+                    this.status.position.phase = "none";
+                    if (this.status.state === "POSITION") {
+                        this.status.state = this.status.auto ? "IDLE" : "MANUAL";
+                    }
+                    break;
+                }
+                if (typeof frame.deg !== "number") {
+                    return this.result(ws, frame.id, "format");
+                }
+                if (!Number.isInteger(frame.deg) || !this.status.position.presets.includes(frame.deg)) {
+                    return this.result(ws, frame.id, "range");
+                }
+                this.status.position.target = frame.deg;
+                this.status.position.phase = "move";
+                this.status.state = "POSITION";
+                break;
+            }
+            case "syncReset": {
+                const axis = this.status.axes[frame.axis];
+                if (!this.features.includes("syncreset")) {
+                    return this.result(ws, frame.id, "unknown");
+                }
+                if (frame.axis !== "elevation" && frame.axis !== "azimuth") {
+                    return this.result(ws, frame.id, "format", "Achse fehlt");
+                }
+                if (locked || !this.status.setupDone) {
+                    return this.result(ws, frame.id, locked ? "locked" : "setup");
+                }
+                if (!axis.syncReset || axis.syncReset.port === "off" || !axis.syncReset.available) {
+                    return this.result(ws, frame.id, "unknown", "kein Anschluss fuer den Reset eingestellt");
+                }
+                if (axis.syncReset.phase !== "idle") {
+                    return this.result(ws, frame.id, "busy", "Reset laeuft schon");
+                }
+                axis.syncReset = {
+                    ...axis.syncReset,
+                    phase: "pulse",
+                    remainingMs: 65000,
+                    phaseRemainingMs: 5000,
+                    totalMs: 65000,
+                    result: "none",
+                    reason: "",
+                    resultMs: null,
+                };
+                axis.blockedPlus = true;
+                axis.blockedMinus = true;
+                break;
+            }
+            case "fwCheck":
+                if (!this.features.includes("fwonline")) {
+                    return this.result(ws, frame.id, "unknown");
+                }
+                if (locked) {
+                    return this.result(ws, frame.id, "locked");
+                }
+                this.status.fwOnline.state = "checking";
+                this.status.fwOnline.checkedAgoMs = 0;
+                break;
+            case "fwInstall":
+                if (!this.features.includes("fwonline")) {
+                    return this.result(ws, frame.id, "unknown");
+                }
+                if (locked) {
+                    return this.result(ws, frame.id, "locked");
+                }
+                if (typeof frame.version !== "string" || frame.version.length > 11) {
+                    return this.result(ws, frame.id, "format");
+                }
+                if (frame.version !== this.status.fwOnline.latest || !this.status.fwOnline.canInstall) {
+                    return this.result(ws, frame.id, "range");
+                }
+                this.status.fwOnline.state = "downloading";
                 break;
             default:
                 return this.result(ws, frame.id, "unknown");
@@ -610,4 +967,4 @@ class MockDevice {
     }
 }
 
-module.exports = { MockDevice, TOKEN, TOKEN_BLOCKS };
+module.exports = { MockDevice, TOKEN, TOKEN_BLOCKS, FEATURES_078, REPORT_TEXT, reportData };

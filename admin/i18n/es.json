@@ -30,6 +30,7 @@
     "notifyFaultLabel": "Averías (tiempo de marcha de un accionamiento, salidas de conmutación)",
     "notifyWindLabel": "El anemómetro deja de responder o vuelve a responder",
     "notifySensorLabel": "El sensor solar comunica una avería o vuelve a funcionar",
+    "notifyCommissionLabel": "Programa de puesta en marcha no terminado",
     "notifyConnectionLabel": "Dispositivo no accesible o accesible de nuevo",
     "notifyRestartLabel": "El dispositivo se ha reiniciado",
     "notifyConnectionMinutesLabel": "Notificar tras minutos sin conexión",

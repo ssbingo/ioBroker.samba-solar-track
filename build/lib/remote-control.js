@@ -18,12 +18,22 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var remote_control_exports = {};
 __export(remote_control_exports, {
+  COMMAND_FEATURES: () => COMMAND_FEATURES,
   DEFAULT_REMOTE_TIMING: () => DEFAULT_REMOTE_TIMING,
   REASON_TEXT: () => REASON_TEXT,
   RemoteControl: () => RemoteControl,
   reasonText: () => reasonText
 });
 module.exports = __toCommonJS(remote_control_exports);
+const COMMAND_FEATURES = {
+  auto: "command",
+  park: "park",
+  ack: "command",
+  position: "position",
+  syncReset: "syncreset",
+  fwCheck: "fwonline",
+  fwInstall: "fwonline"
+};
 const DEFAULT_REMOTE_TIMING = {
   resultTimeoutMs: 2e3,
   jogRenewMs: 300,
@@ -48,7 +58,8 @@ const REASON_TEXT = {
   type: "the value has the wrong type",
   same: "the value is already valid",
   answer: "the answer of the device could not be read",
-  device: "the device ended the drive"
+  device: "the device ended the drive",
+  mode: "the command does not exist in this operating mode"
 };
 function reasonText(reason) {
   var _a;
@@ -94,6 +105,20 @@ class RemoteControl {
       frame.on = on === true;
     }
     return this.request(frame, `${cmd}${cmd === "ack" ? "" : ` on=${on === true}`}`, source, "[cmd]");
+  }
+  /**
+   * Sends a command with its own fields and waits for the answer of the device, e.g.
+   * `position` with `deg`, `syncReset` with `axis` or `fwInstall` with `version`.
+   *
+   * @param cmd the command
+   * @param fields fields of the command besides `cmd`
+   * @param source who gave the command, for the log
+   */
+  commandWith(cmd, fields, source) {
+    const what = [cmd, ...Object.entries(fields).map(([key, value]) => `${key}=${JSON.stringify(value)}`)].join(
+      " "
+    );
+    return this.request({ ...fields, t: "cmd", cmd }, what, source, "[cmd]");
   }
   /**
    * Starts, renews or stops a manual drive. Has to be called again at least once per second
@@ -146,8 +171,9 @@ class RemoteControl {
    * @param id id of the command, null when the device could not read it
    * @param ok true = accepted
    * @param reason why not
+   * @param detail text of the device that explains a refusal
    */
-  handleResult(id, ok, reason) {
+  handleResult(id, ok, reason, detail) {
     const { log } = this.options;
     if (id !== null) {
       const pending = this.pending.get(id);
@@ -157,7 +183,8 @@ class RemoteControl {
         pending.resolve({
           ok,
           reason: ok ? void 0 : reason != null ? reason : "unknown",
-          durationMs: this.now() - pending.started
+          durationMs: this.now() - pending.started,
+          ...ok || !detail ? {} : { detail }
         });
         return;
       }
@@ -238,7 +265,7 @@ class RemoteControl {
       this.pending.set(id, { resolve, timer, started, what });
     }).then((result) => {
       log.debug(
-        result.ok ? `${tag} #${id} ${what} confirmed after ${result.durationMs} ms` : `${tag} #${id} ${what} failed after ${result.durationMs} ms: ${result.reason} (${reasonText(result.reason)})`
+        result.ok ? `${tag} #${id} ${what} confirmed after ${result.durationMs} ms` : `${tag} #${id} ${what} failed after ${result.durationMs} ms: ${result.reason} (${reasonText(result.reason)})${result.detail ? `, device: "${result.detail}"` : ""}`
       );
       return result;
     });
@@ -309,6 +336,7 @@ class RemoteControl {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  COMMAND_FEATURES,
   DEFAULT_REMOTE_TIMING,
   REASON_TEXT,
   RemoteControl,

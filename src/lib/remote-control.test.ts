@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { RemoteControl, reasonText, type Axis } from "./remote-control";
+import { COMMAND_FEATURES, RemoteControl, reasonText, type Axis } from "./remote-control";
 
 /** Clock and timers that only move when the test says so */
 class FakeTime {
@@ -99,6 +99,38 @@ describe("remote-control => commands", () => {
         remote.handleResult(1, true, undefined);
         expect(await promise).to.deep.equal({ ok: true, reason: undefined, durationMs: 12 });
         expect(time.waiting).to.equal(0);
+    });
+
+    it("sends a command with its own fields and passes on the detail of a refusal", async () => {
+        const { remote, sent } = setup();
+        const position = remote.commandWith("position", { deg: 30 }, "test");
+        const reset = remote.commandWith("syncReset", { axis: "elevation" }, "test");
+        const install = remote.commandWith("fwInstall", { version: "0.7.9" }, "test");
+        expect(sent).to.deep.equal([
+            { t: "cmd", cmd: "position", deg: 30, id: 1 },
+            { t: "cmd", cmd: "syncReset", axis: "elevation", id: 2 },
+            { t: "cmd", cmd: "fwInstall", version: "0.7.9", id: 3 },
+        ]);
+        remote.handleResult(1, true, undefined);
+        remote.handleResult(2, false, "state", "Laufzeitfehler der Achse, erst quittieren");
+        remote.handleResult(3, false, "range");
+        expect(await position).to.include({ ok: true });
+        expect(await reset).to.include({
+            ok: false,
+            reason: "state",
+            detail: "Laufzeitfehler der Achse, erst quittieren",
+        });
+        expect(await install).to.not.have.property("detail");
+    });
+
+    it("names the feature every command needs", () => {
+        expect(COMMAND_FEATURES).to.include({
+            auto: "command",
+            position: "position",
+            syncReset: "syncreset",
+            fwCheck: "fwonline",
+            fwInstall: "fwonline",
+        });
     });
 
     it("passes on the reason of a rejected command", async () => {

@@ -19,8 +19,10 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var params_exports = {};
 __export(params_exports, {
   PARAM_GROUPS: () => PARAM_GROUPS,
+  PARAM_TEXTS: () => PARAM_TEXTS,
   groupName: () => groupName,
   paramCommon: () => paramCommon,
+  paramName: () => paramName,
   paramStateId: () => paramStateId,
   parseParam: () => parseParam,
   parseParams: () => parseParams,
@@ -29,6 +31,7 @@ __export(params_exports, {
   toDeviceValue: () => toDeviceValue
 });
 module.exports = __toCommonJS(params_exports);
+var import_i18n = require("./i18n");
 var import_protocol = require("./protocol");
 const PARAM_GROUPS = {
   control: { en: "Settings: control", de: "Einstellungen: Regelung" },
@@ -67,11 +70,66 @@ const PARAM_NAMES = {
   trackStartDelayMs: { en: "Waiting time before a drive", de: "Wartezeit vor einer Fahrt" },
   trackSettleMs: { en: "Rest time after a drive", de: "Ruhezeit nach einer Fahrt" },
   trackMaxMoveMs: { en: "Longest tracking drive", de: "L\xE4ngste Nachf\xFChrfahrt" },
-  nightEnterLevel: { en: "Night below brightness (sum)", de: "Nacht unter Helligkeit (Summe)" },
-  nightExitLevel: { en: "Day above brightness (sum)", de: "Tag \xFCber Helligkeit (Summe)" },
+  nightEnterLevel: {
+    en: "Night below brightness (sum; without known position of the sun)",
+    de: "Nacht unter Helligkeit (Summe; ohne bekannten Sonnenstand)"
+  },
+  nightExitLevel: {
+    en: "Day above brightness (sum; without known position of the sun)",
+    de: "Tag \xFCber Helligkeit (Summe; ohne bekannten Sonnenstand)"
+  },
   nightDelayMs: { en: "Night or day only after", de: "Nacht oder Tag erst nach" },
   nightReturnEast: { en: "Return to the east at night", de: "Nachts zur\xFCck nach Osten" },
-  logLevel: { en: "Log level of the device (until its restart)", de: "Log-Stufe des Ger\xE4ts (bis zum Neustart)" }
+  logLevel: { en: "Log level of the device (until its restart)", de: "Log-Stufe des Ger\xE4ts (bis zum Neustart)" },
+  // tilt on command (feature position, vertical only)
+  elevTravelSteepMs: { en: "Travel time 0\xB0 to 60\xB0 (steeper)", de: "Fahrzeit 0\xB0 bis 60\xB0 (steiler)" },
+  elevTravelFlatMs: { en: "Travel time 60\xB0 to 0\xB0 (flatter)", de: "Fahrzeit 60\xB0 bis 0\xB0 (flacher)" },
+  elevGeometry: {
+    en: "Frame of the rack (0 = linear, 1 = G1, 2 = G2)",
+    de: "Gestell des Racks (0 = linear, 1 = G1, 2 = G2)"
+  },
+  elevStartLossMs: { en: "Start and run-on loss per drive", de: "Anlauf- und Nachlaufverlust je Fahrt" },
+  elevPreset1: { en: "Preset angle 1 (0 = off)", de: "Wunschwinkel 1 (0 = aus)" },
+  elevPreset2: { en: "Preset angle 2 (0 = off)", de: "Wunschwinkel 2 (0 = aus)" },
+  // Hall tap (feature hall, vertical only)
+  elevHall: { en: "Hall tap installed (HallTapBoard)", de: "Hall-Abgriff vorhanden (HallTapBoard)" },
+  elevHallInvert: {
+    en: "Reverse the counting direction of the Hall tap",
+    de: "Z\xE4hlrichtung des Hall-Abgriffs umkehren"
+  },
+  elevHallSteps: {
+    en: "Hall steps per stroke (0 = not measured)",
+    de: "Hall-Schritte je Hub (0 = nicht eingemessen)"
+  },
+  // reset of the synchronous control (feature syncreset)
+  syncResetElevation: {
+    en: "Reset contact of the synchronous control elevation (0 = off, 1 = J23, 2 = J5)",
+    de: "Reset-Kontakt der Synchronsteuerung Elevation (0 = aus, 1 = J23, 2 = J5)"
+  },
+  syncResetAzimuth: {
+    en: "Reset contact of the synchronous control azimuth (0 = off, 1 = J23)",
+    de: "Reset-Kontakt der Synchronsteuerung Azimut (0 = aus, 1 = J23)"
+  },
+  // position of the sun (feature sunpos)
+  siteLatitude: { en: "Latitude of the site (north positive)", de: "Breite des Standorts (Nord positiv)" },
+  siteLongitude: { en: "Longitude of the site (east positive)", de: "L\xE4nge des Standorts (Ost positiv)" },
+  rackAzimuth: {
+    en: "Orientation of the rack (0 = south, west positive)",
+    de: "Ausrichtung des Racks (0 = S\xFCd, nach Westen positiv)"
+  },
+  nightAfterSunsetMin: { en: "Night begins after sunset", de: "Nacht beginnt nach Sonnenuntergang" },
+  dayBeforeSunriseMin: { en: "Day begins before sunrise", de: "Tag beginnt vor Sonnenaufgang" },
+  cloudAstro: {
+    en: "When cloudy, drive to the calculated best angle",
+    de: "Bei Bew\xF6lkung den berechneten besten Winkel anfahren"
+  },
+  cloudLevel: { en: "Cloudy below brightness (sum)", de: "Bew\xF6lkt unter Helligkeit (Summe)" }
+};
+const UNKNOWN_GROUP = { en: "Settings:", de: "Einstellungen:" };
+const APPLY_HINTS = {
+  confirm: { en: "(needs confirmation at the display)", de: "(braucht die Best\xE4tigung am Display)" },
+  standstill: { en: "(only while no drive is running)", de: "(nur bei stehenden Antrieben)" },
+  now: void 0
 };
 const UNITS = { permille: "\u2030", deg: "\xB0" };
 const ID_PART = /^[A-Za-z][A-Za-z0-9]*$/;
@@ -124,22 +182,32 @@ function paramStateId(entry) {
   return `params.${entry.group}.${entry.key}`;
 }
 function groupName(group) {
-  var _a;
-  return (_a = PARAM_GROUPS[group]) != null ? _a : { en: `Settings: ${group}`, de: `Einstellungen: ${group}` };
+  const known = PARAM_GROUPS[group];
+  return known ? (0, import_i18n.fullName)(known) : (0, import_i18n.joinNames)((0, import_i18n.fullName)(UNKNOWN_GROUP), group);
 }
+function paramName(entry) {
+  const known = PARAM_NAMES[entry.key];
+  const name = known ? (0, import_i18n.fullName)(known) : (0, import_i18n.joinNames)(void 0, entry.key);
+  const hint = APPLY_HINTS[entry.apply];
+  return hint ? (0, import_i18n.joinNames)(name, (0, import_i18n.fullName)(hint)) : name;
+}
+const PARAM_TEXTS = [
+  ...Object.values(PARAM_GROUPS),
+  ...Object.values(PARAM_NAMES),
+  UNKNOWN_GROUP,
+  ...Object.values(APPLY_HINTS).filter((hint) => hint !== void 0)
+];
 function paramCommon(entry) {
-  var _a, _b;
-  const name = (_a = PARAM_NAMES[entry.key]) != null ? _a : { en: entry.key, de: entry.key };
-  const hint = entry.apply === "confirm" ? { en: " (needs confirmation at the display)", de: " (braucht die Best\xE4tigung am Display)" } : entry.apply === "standstill" ? { en: " (only while no drive is running)", de: " (nur bei stehenden Antrieben)" } : { en: "", de: "" };
+  var _a;
   const common = {
-    name: { en: name.en + hint.en, de: name.de + hint.de },
+    name: paramName(entry),
     type: entry.type === "bool" ? "boolean" : "number",
     role: entry.type === "bool" ? "switch" : "level",
     read: true,
     write: true,
     def: entry.default
   };
-  const unit = (_b = UNITS[entry.unit]) != null ? _b : entry.unit;
+  const unit = (_a = UNITS[entry.unit]) != null ? _a : entry.unit;
   if (unit) {
     common.unit = unit;
   }
@@ -199,8 +267,10 @@ function pendingMap(entries) {
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   PARAM_GROUPS,
+  PARAM_TEXTS,
   groupName,
   paramCommon,
+  paramName,
   paramStateId,
   parseParam,
   parseParams,

@@ -30,6 +30,7 @@
     "notifyFaultLabel": "Guasti (tempo di funzionamento di un azionamento, uscite di commutazione)",
     "notifyWindLabel": "L'anemometro non risponde più o risponde di nuovo",
     "notifySensorLabel": "Il sensore solare segnala un guasto o funziona di nuovo",
+    "notifyCommissionLabel": "Programma di messa in servizio non completato",
     "notifyConnectionLabel": "Dispositivo non raggiungibile o di nuovo raggiungibile",
     "notifyRestartLabel": "Il dispositivo si è riavviato",
     "notifyConnectionMinutesLabel": "Notifica dopo minuti senza connessione",

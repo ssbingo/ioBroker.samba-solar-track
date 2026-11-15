@@ -3,6 +3,7 @@
  * The device says which settings exist, with their limits; this file turns them into states.
  * Pure data and functions, no I/O.
  */
+import { fullName, joinNames, type Translated } from "./i18n";
 import { isObject } from "./protocol";
 import type { Name, StateValue } from "./states";
 
@@ -85,11 +86,70 @@ const PARAM_NAMES: Record<string, Name> = {
     trackStartDelayMs: { en: "Waiting time before a drive", de: "Wartezeit vor einer Fahrt" },
     trackSettleMs: { en: "Rest time after a drive", de: "Ruhezeit nach einer Fahrt" },
     trackMaxMoveMs: { en: "Longest tracking drive", de: "Längste Nachführfahrt" },
-    nightEnterLevel: { en: "Night below brightness (sum)", de: "Nacht unter Helligkeit (Summe)" },
-    nightExitLevel: { en: "Day above brightness (sum)", de: "Tag über Helligkeit (Summe)" },
+    nightEnterLevel: {
+        en: "Night below brightness (sum; without known position of the sun)",
+        de: "Nacht unter Helligkeit (Summe; ohne bekannten Sonnenstand)",
+    },
+    nightExitLevel: {
+        en: "Day above brightness (sum; without known position of the sun)",
+        de: "Tag über Helligkeit (Summe; ohne bekannten Sonnenstand)",
+    },
     nightDelayMs: { en: "Night or day only after", de: "Nacht oder Tag erst nach" },
     nightReturnEast: { en: "Return to the east at night", de: "Nachts zurück nach Osten" },
     logLevel: { en: "Log level of the device (until its restart)", de: "Log-Stufe des Geräts (bis zum Neustart)" },
+    // tilt on command (feature position, vertical only)
+    elevTravelSteepMs: { en: "Travel time 0° to 60° (steeper)", de: "Fahrzeit 0° bis 60° (steiler)" },
+    elevTravelFlatMs: { en: "Travel time 60° to 0° (flatter)", de: "Fahrzeit 60° bis 0° (flacher)" },
+    elevGeometry: {
+        en: "Frame of the rack (0 = linear, 1 = G1, 2 = G2)",
+        de: "Gestell des Racks (0 = linear, 1 = G1, 2 = G2)",
+    },
+    elevStartLossMs: { en: "Start and run-on loss per drive", de: "Anlauf- und Nachlaufverlust je Fahrt" },
+    elevPreset1: { en: "Preset angle 1 (0 = off)", de: "Wunschwinkel 1 (0 = aus)" },
+    elevPreset2: { en: "Preset angle 2 (0 = off)", de: "Wunschwinkel 2 (0 = aus)" },
+    // Hall tap (feature hall, vertical only)
+    elevHall: { en: "Hall tap installed (HallTapBoard)", de: "Hall-Abgriff vorhanden (HallTapBoard)" },
+    elevHallInvert: {
+        en: "Reverse the counting direction of the Hall tap",
+        de: "Zählrichtung des Hall-Abgriffs umkehren",
+    },
+    elevHallSteps: {
+        en: "Hall steps per stroke (0 = not measured)",
+        de: "Hall-Schritte je Hub (0 = nicht eingemessen)",
+    },
+    // reset of the synchronous control (feature syncreset)
+    syncResetElevation: {
+        en: "Reset contact of the synchronous control elevation (0 = off, 1 = J23, 2 = J5)",
+        de: "Reset-Kontakt der Synchronsteuerung Elevation (0 = aus, 1 = J23, 2 = J5)",
+    },
+    syncResetAzimuth: {
+        en: "Reset contact of the synchronous control azimuth (0 = off, 1 = J23)",
+        de: "Reset-Kontakt der Synchronsteuerung Azimut (0 = aus, 1 = J23)",
+    },
+    // position of the sun (feature sunpos)
+    siteLatitude: { en: "Latitude of the site (north positive)", de: "Breite des Standorts (Nord positiv)" },
+    siteLongitude: { en: "Longitude of the site (east positive)", de: "Länge des Standorts (Ost positiv)" },
+    rackAzimuth: {
+        en: "Orientation of the rack (0 = south, west positive)",
+        de: "Ausrichtung des Racks (0 = Süd, nach Westen positiv)",
+    },
+    nightAfterSunsetMin: { en: "Night begins after sunset", de: "Nacht beginnt nach Sonnenuntergang" },
+    dayBeforeSunriseMin: { en: "Day begins before sunrise", de: "Tag beginnt vor Sonnenaufgang" },
+    cloudAstro: {
+        en: "When cloudy, drive to the calculated best angle",
+        de: "Bei Bewölkung den berechneten besten Winkel anfahren",
+    },
+    cloudLevel: { en: "Cloudy below brightness (sum)", de: "Bewölkt unter Helligkeit (Summe)" },
+};
+
+/** Start of the name of a group the adapter does not know yet; the key of the group follows */
+const UNKNOWN_GROUP: Name = { en: "Settings:", de: "Einstellungen:" };
+
+/** Hints added to the name of a setting, by the way a change becomes valid */
+const APPLY_HINTS: Record<ParamApply, Name | undefined> = {
+    confirm: { en: "(needs confirmation at the display)", de: "(braucht die Bestätigung am Display)" },
+    standstill: { en: "(only while no drive is running)", de: "(nur bei stehenden Antrieben)" },
+    now: undefined,
 };
 
 /** Units the device names in ASCII */
@@ -172,9 +232,31 @@ export function paramStateId(entry: Pick<ParamEntry, "group" | "key">): string {
  *
  * @param group key of the group
  */
-export function groupName(group: string): Name {
-    return PARAM_GROUPS[group] ?? { en: `Settings: ${group}`, de: `Einstellungen: ${group}` };
+export function groupName(group: string): Translated {
+    const known = PARAM_GROUPS[group];
+    return known ? fullName(known) : joinNames(fullName(UNKNOWN_GROUP), group);
 }
+
+/**
+ * Name of a setting in every language, with the hint when a change becomes valid.
+ *
+ * @param entry the setting
+ */
+export function paramName(entry: Pick<ParamEntry, "key" | "apply">): Translated {
+    const known = PARAM_NAMES[entry.key];
+    // a setting of a newer firmware: its key is the only name there is (in every language)
+    const name = known ? fullName(known) : joinNames(undefined, entry.key);
+    const hint = APPLY_HINTS[entry.apply];
+    return hint ? joinNames(name, fullName(hint)) : name;
+}
+
+/** Names of all known settings and groups, and the hints (for the tests of the translations) */
+export const PARAM_TEXTS: Name[] = [
+    ...Object.values(PARAM_GROUPS),
+    ...Object.values(PARAM_NAMES),
+    UNKNOWN_GROUP,
+    ...Object.values(APPLY_HINTS).filter((hint): hint is Name => hint !== undefined),
+];
 
 /**
  * The `common` part of the state object of a setting.
@@ -182,15 +264,8 @@ export function groupName(group: string): Name {
  * @param entry the setting
  */
 export function paramCommon(entry: ParamEntry): Record<string, unknown> {
-    const name = PARAM_NAMES[entry.key] ?? { en: entry.key, de: entry.key };
-    const hint: Name =
-        entry.apply === "confirm"
-            ? { en: " (needs confirmation at the display)", de: " (braucht die Bestätigung am Display)" }
-            : entry.apply === "standstill"
-              ? { en: " (only while no drive is running)", de: " (nur bei stehenden Antrieben)" }
-              : { en: "", de: "" };
     const common: Record<string, unknown> = {
-        name: { en: name.en + hint.en, de: name.de + hint.de },
+        name: paramName(entry),
         type: entry.type === "bool" ? "boolean" : "number",
         role: entry.type === "bool" ? "switch" : "level",
         read: true,

@@ -92,13 +92,19 @@ nutzt wie bei `ioBroker.pondpump` „Trusted Publishing“ statt eines `NPM_TOKE
 | `src/lib/params.ts` | Einstellungen des Geräts: Liste prüfen, Datenpunkte beschreiben, Ergebnisse lesen |
 | `src/lib/events.ts` | Ereignisse für Benachrichtigungen aus dem Vergleich zweier Zustände |
 | `src/lib/notifications.ts` | Texte der Benachrichtigungen in 11 Sprachen, Liste der Messaging-Adapter |
-| `test/mock-params.js` | Werteliste, wie der Firmware-Code sie ausgibt (`.pio/build/screenshots/program - wertejson 1 2` im Firmware-Projekt) |
+| `src/lib/i18n.ts` | Sprachen von ioBroker, `fullName` (Objektname in 11 Sprachen aus Englisch/Deutsch und der Tabelle) |
+| `src/lib/name-translations.ts` | Übersetzungen der Objektnamen in die übrigen 9 Sprachen, nach dem englischen Text; `i18n.test.ts` prüft Vollständigkeit, keine Kopie des Englischen (Ausnahme: „West“ im Deutschen) und keine verwaisten Einträge |
+| `test/mock-params.js` | Werteliste, wie der Firmware-Code sie ausgibt (`.pio/build/screenshots_10/program - wertejson 1 2` und `… 0 1` im Firmware-Projekt, Firmware 0.7.8): Liste für zwei Achsen, dahinter die Werte nur für eine Achse; das nachgebildete Gerät filtert nach Merkmal und Betriebsart |
 | `src/lib/*.test.ts` | Unit-Tests (mocha) |
 | `test/mock-device.js` | nachgebildetes Gerät nach `PROTOCOL.md` für Unit- und Integrationstest |
 | `test/integration.js` | Adapter im echten js-controller gegen das nachgebildete Gerät |
 | `build/` | Ergebnis von `npm run build`; wird committet (der Adapter-Checker verlangt es) |
+| `src-widgets/` | vis-2-Widgets in React (Vite, Module Federation, Aufbau wie `ioBroker.pondpump`): `SstWidgetBase.tsx` (Basisklasse, Abo relativ zur Instanz), sechs Widgets `Sst*.tsx`, `band.ts` (Statusband wie `updateStatus()` der Firmware), `lock.ts` (Sperren F2–F4), `styles.ts` (Farben Design „Standard“, Schrift Montserrat OFL in `src/fonts/`), `i18n/*.json` (11 Sprachen; Statusbandtexte aus `zehnzoll/sprachen/` übernommen) |
+| `widgets/samba-solar-track/` | Ergebnis von `npm run build:widgets` (`tasks.js`); wird committet, damit `build-adapter ts` und die CI kein Vite brauchen |
+| `src/lib/texts.test.ts` | prüft admin/i18n, `io-package.json` (Titel, Beschreibung, news), Benachrichtigungen und Widget-Texte: alle 11 Sprachen, keine Kopie des Englischen außer „Samba Solar Track“ |
 
-Prüfen vor jeder Fertigmeldung: `npm run build`, `npm run check`, `npm run lint`, `npm test`,
+Prüfen vor jeder Fertigmeldung: `npm run build`, nach Änderungen in `src-widgets/` auch `npm run build:widgets`
+(dort vorher `npx eslint -c eslint.config.mjs src` und `npx tsc --noEmit -p .`), `npm run check`, `npm run lint`, `npm test`,
 `npm run test:integration`. Der Integrationstest legt eine ioBroker-Testinstallation im
 Temp-Verzeichnis an (`test-iobroker.samba-solar-track`) und verwendet sie wieder. Nach
 Änderungen an `io-package.json` (neue Einstellungen, `messagebox`) enthält eine alte
@@ -128,7 +134,7 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   Leerzeichen und Großbuchstaben werden aufbereitet, ein falscher Block wird im Log genannt.
   Das alte Feld `token` gilt nur, solange die vier Felder leer sind, und ist nur sichtbar,
   solange es einen Wert hat. Alle Texte nennen den richtigen Ort des Tokens.
-- **Erledigt (0.0.6):** Die vier Felder stehen nebeneinander („Block 1“ bis „Block 4“), ohne
+- **Erledigt (0.0.6):** Die vier Felder stehen nebeneinander (damals „Block 1“ bis „Block 4“, seit 0.1.0 „Teil 1“ bis „Teil 4“), ohne
   Hilfezeilen, verdeckt mit Auge (Wunsch des Nutzers vom 3.10.2026); das alte Feld `token` wird
   nicht mehr angezeigt. Beim Start übernimmt der Adapter ein gültiges Token daraus einmalig in
   die vier Felder (`updateConfig`, verschlüsselt) und leert es; sind die vier Felder belegt,
@@ -149,8 +155,42 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   Token wurde nicht angenommen. Die Ursache ist nicht bestätigt; möglich sind Leerzeichen in der
   Eingabe (die 0.0.5 entfernt) oder ein Tippfehler. Alles Übrige nur gegen das nachgebildete
   Gerät geprüft.
-- **Offen, in dieser Reihenfolge:** vis-2-Widgets (Übersicht, Bedienung, Meldungen,
-  Werte), Handbuch, Uhrzeit des Geräts (`time` in `GET /api/info`, ab Firmware 0.0.4).
+- **Erledigt (0.1.0, 15.11.2026, nicht veröffentlicht):** Stand der Firmware 0.7.8 nach der
+  Aufgabenliste `docs/planung/iobroker-adapter-aufgaben.md` im Firmware-Projekt (A1–A9, B1–B6,
+  C1–C4, C6, C8). Kanäle und Datenpunkte mit `feature`/`mode` in `states.ts` entstehen erst, wenn
+  das Gerät das Merkmal in `features` meldet und die Betriebsart passt (`syncLayout` in `main.ts`,
+  beim ersten Zustand nach dem Verbinden); fällt die Bedingung weg, werden sie gelöscht. Neu:
+  Zustände `POSITION`, `COMMISSION`, `ASTRO`; Kanal `sunPosition` (eigener Kanal, weil `sun` der
+  Sonnensensor ist; Zeiten als ms); Kanal `commissioning` mit `report0`–`report2` (Text) und
+  Ordner `commissioning.report` (Datensatz, Merkmal `reportjson`), gelesen nach dem Verbinden,
+  bei Änderung von `done` und beim Schließen des Setup-Programms (Tag `[rep]`); Kanal `position`
+  mit Hall-Abgriff; `axes.*.syncReset…`; Kanal `firmware`; `axes.elevation.flatDirection`,
+  `angle`, `angleSource`; Befehle `control.position`, `control.positionResume`,
+  `control.syncResetElevation`/`Azimuth`, `control.fwCheck`, `control.fwInstall` (die Version
+  muss geschrieben werden, statt einer Schaltfläche: das ist die Rückfrage); `detail` der
+  Ablehnung in `control.lastResult`; die Namen der Elevation folgen `flatDir`
+  (STEEPER/FLATTER wie am Display, `relabelElevation`); Namen der neuen Einstellungen;
+  Benachrichtigung `commission` (Setup-Programm nicht abgeschlossen, einmal je Auftreten, ab Werk
+  an); alle Objektnamen in 11 Sprachen. Geprüft nur gegen das nachgebildete Gerät.
+- **Ebenfalls in 0.1.0 (15.11.2026, nicht veröffentlicht):** Datenpunkte `battery.*` (Merkmal `battery`),
+  `supply.v24`/`v5` (`power`), `supply.adcOk`/`checks` (`chargecheck`), Kanal `update` mit `active`/`percent`
+  (`update`) und `phase`/`error` (`updatepark`). Texte der Einstellungsseite ohne Kopie des Englischen (de
+  „Portnummer“, „Teil 1“–„Teil 4“; fr „Port réseau“, „Messages de l’appareil“, „Alertes“; pl „Port sieciowy“), geprüft
+  von `texts.test.ts`. Sechs vis-2-Widgets (Übersicht, Bedienung, Meldungen, Werte, Sonnenstand, Setup-Programm) nach
+  der freigegebenen Vorschau vom 15.11.2026, Satz `samba-solar-track`, `common.visWidgets` und
+  `restartAdapters: ["vis-2"]` wie pondpump (ein `restrictWidgets` gibt es weder dort noch in vis-2 2.20.9).
+  Totmann: das Widget schreibt `control.jogElevation`/`jogAzimuth` alle 400 ms, beim Loslassen, Fokus- oder
+  Seitenverlust 0; Richtung aus `axes.elevation.flatDirection`, sonst aus `common.states`. Handfahrt nur bei
+  Automatik aus; Fahrbefehle gesperrt bei Sturm, fehlender Einrichtung, fehlendem Setup-Programm; alles gesperrt bei
+  „Fernsteuerung gesperrt“, Update und ohne Verbindung; im Editor wird nichts gesendet. Geprüft in einer echten vis-2
+  2.20.9 (dev-server mit web und vis-2) gegen das nachgebildete Gerät, auch Totmann und Browserabbruch.
+  Bewusste Abweichungen vom Display, weil kein Widget-Text dem Englischen gleichen darf: einzelne Wörter wie
+  STOP, WEST, ELEVATION, „Wind“, Stufenkürzel INF/WRN/ERR (im Widget Zeichen i/!/✕ mit übersetztem Titel). Farben des
+  Statusbands je Zustand wie am Display (`pal()`: Nacht und Parken #34495E, Setup-Programm, Einrichtung und
+  Sonnensensor violett #8E44AD); die Vorschau hatte Nacht violett und „Setup fehlt“ orange gezeigt.
+- **Offen, in dieser Reihenfolge:** Handbuch, Uhrzeit des Geräts (`time` in `GET /api/info`, ab Firmware 0.0.4).
+  Nicht abgebildet sind weiterhin `axes.*.dutyPauseMs` und `lang` (nicht Teil der Aufgabenliste). Die Widgets sind
+  noch nicht mit einem echten Gerät geprüft.
 
 ---
 

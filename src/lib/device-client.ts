@@ -90,8 +90,9 @@ export interface ClientEvents {
      * @param id id of the command, null when the device could not read it
      * @param ok true = accepted
      * @param reason why not
+     * @param detail text of the device that explains a refusal (e.g. syncReset)
      */
-    onResult(id: number | null, ok: boolean, reason: string | undefined): void;
+    onResult(id: number | null, ok: boolean, reason: string | undefined, detail?: string): void;
     /**
      * Settings or proposals have changed at the device.
      *
@@ -234,6 +235,25 @@ export class DeviceClient {
         const json: unknown = await response.json();
         this.options.log.debug(`[conn] GET ${path} answered after ${Date.now() - started} ms`);
         return json;
+    }
+
+    /**
+     * Reads a text document from the device (the test reports of GET /api/report). An answer
+     * with an HTTP error is not an exception: the device explains it in a JSON body.
+     *
+     * @param path path with leading slash, e.g. "/api/report?n=0"
+     * @returns HTTP status and the body as text
+     */
+    public async getText(path: string): Promise<{ status: number; text: string }> {
+        const started = Date.now();
+        const response = await fetch(`http://${this.baseUrl}${path}`, {
+            signal: AbortSignal.timeout(this.timing.httpTimeoutMs),
+        });
+        const text = await response.text();
+        this.options.log.debug(
+            `[conn] GET ${path} answered HTTP ${response.status} (${text.length} characters) after ${Date.now() - started} ms`,
+        );
+        return { status: response.status, text };
     }
 
     /**
@@ -404,6 +424,7 @@ export class DeviceClient {
                     typeof frame.id === "number" ? frame.id : null,
                     frame.ok === true,
                     typeof frame.reason === "string" ? frame.reason : undefined,
+                    typeof frame.detail === "string" ? frame.detail : undefined,
                 );
                 break;
             case "params":

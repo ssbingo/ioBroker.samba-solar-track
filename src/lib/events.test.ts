@@ -74,6 +74,32 @@ describe("events => EventDetector", () => {
         expect(detector.update(status()).map(e => e.key)).to.deep.equal(["windBack", "sunBack"]);
     });
 
+    it("reports the setup program once per occurrence, not after each interruption", () => {
+        const detector = new EventDetector();
+        detector.update(status({ state: "IDLE", commissioning: { done: true } }));
+        const pending = status({ state: "COMMISSION", commissioning: { done: false } });
+        expect(detector.update(pending)).to.deep.equal([
+            { category: "commission", key: "commissionPending", params: {} },
+        ]);
+        // a storm interrupts, the setup program is still not completed: no second notification
+        expect(
+            detector
+                .update(status({ state: "STORM", storm: { active: true }, commissioning: { done: false } }))
+                .map(e => e.key),
+        ).to.deep.equal(["stormStarted"]);
+        expect(detector.update(pending).map(e => e.key)).to.deep.equal(["stormEnded"]);
+        // completed and started again: a new occurrence
+        detector.update(status({ state: "IDLE", commissioning: { done: true } }));
+        expect(detector.update(pending).map(e => e.key)).to.deep.equal(["commissionPending"]);
+    });
+
+    it("does not report a setup program that was already pending at the first status", () => {
+        const detector = new EventDetector();
+        detector.update(status({ state: "COMMISSION", commissioning: { done: false } }));
+        expect(detector.update(status({ state: "PARK", commissioning: { done: false } }))).to.deep.equal([]);
+        expect(detector.update(status({ state: "COMMISSION", commissioning: { done: false } }))).to.deep.equal([]);
+    });
+
     it("treats a status without these fields as everything in order", () => {
         const detector = new EventDetector();
         detector.update({});

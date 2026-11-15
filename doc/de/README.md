@@ -3,7 +3,7 @@
 
 > [English README](../../README.md)
 
-Überwacht die Steuerung **Samba Solar Track**: eine Solarnachführung mit Sturmschutz auf einem ESP32-S3-Board mit 7-Zoll-Touch-Display. Der Adapter zeigt den Zustand der Steuerung in ioBroker und empfängt jede Meldung, die das Gerät in sein Log schreibt.
+Überwacht die Steuerung **Samba Solar Track**: eine Solarnachführung mit Sturmschutz auf einem ESP32-P4-Board mit 10,1-Zoll-Touch-Display. Der Adapter zeigt den Zustand der Steuerung in ioBroker und empfängt jede Meldung, die das Gerät in sein Log schreibt.
 
 Hardware und Handbuch des Geräts (10,1-Zoll-Version): <https://github.com/ssbingo/samba-solar-track>. Die Firmware gibt es nur fertig kompiliert: <https://firmware.samba-solar.de/>
 
@@ -15,7 +15,7 @@ Das Gerät ist der Kopf. Nachführung, Sturmschutz, Endschalter und Laufzeitübe
 
 ## Stand des Projekts
 
-Frühe Version in Entwicklung, auf npm veröffentlicht, aber noch nicht in den ioBroker-Repositories. Vorhanden: Verbindung mit automatischem Wiederverbinden, Zustand der Steuerung als Datenpunkte, Meldungen mit Uhrzeit und Verlauf, Befehle (Automatik, flach parken, Störung quittieren, Handfahrt mit Totmann) und Einstellungen des Geräts (Werte mit Grenzen, Vorschläge mit Bestätigung am Display, Einrichtung, Design), siehe [englisches README](../../README.md#commands). Dazu Benachrichtigungen über einen Messaging-Adapter (Sturm, Störungen, Windmesser, Sonnensensor, Verbindung, Neustart). Geplant: vis-2-Widgets. Verbindung und Lesen sind mit einem echten Gerät geprüft (Firmware 0.0.3, 3.10.2026); Befehle, Einstellungen und Benachrichtigungen nur gegen ein nachgebildetes Gerät.
+Frühe Version in Entwicklung, auf npm veröffentlicht, aber noch nicht in den ioBroker-Repositories. Vorhanden: Verbindung mit automatischem Wiederverbinden, Zustand der Steuerung als Datenpunkte, Meldungen mit Uhrzeit und Verlauf, Befehle (Automatik, flach parken, Störung quittieren, Handfahrt mit Totmann) und Einstellungen des Geräts (Werte mit Grenzen, Vorschläge mit Bestätigung am Display, Einrichtung, Design), siehe [englisches README](../../README.md#commands). Dazu Benachrichtigungen über einen Messaging-Adapter (Sturm, Störungen, Windmesser, Sonnensensor, Verbindung, Neustart). Seit 0.1.0 enthält der Adapter sechs vis-2-Widgets (Satz „Samba Solar Track“): Übersicht, Bedienung, Meldungen, Werte, Sonnenstand und Setup-Programm, in Farben und Aufbau wie das Display; gewählt wird nur die Adapter-Instanz. Beschreibung im [englischen README](../../README.md#vis-2-widgets). Verbindung und Lesen sind mit einem echten Gerät geprüft (Firmware 0.0.3, 3.10.2026); Befehle, Einstellungen und Benachrichtigungen nur gegen ein nachgebildetes Gerät. Seit 0.1.0 dazu die Funktionen der Firmware bis 0.7.8: Sonnenstand, Setup-Programm mit Prüfberichten, Neigung auf Befehl mit Hall-Abgriff, Reset der Synchronsteuerung und Firmware über das Internet; die Datenpunkte stehen im [englischen README](../../README.md#states).
 
 ## Voraussetzungen
 
@@ -27,8 +27,8 @@ Frühe Version in Entwicklung, auf npm veröffentlicht, aber noch nicht in den i
 | Einstellung | Bedeutung |
 | --- | --- |
 | Adresse des Geräts | IP-Adresse oder Gerätename; beides zeigt das Display unter Einrichtung > Netzwerk. |
-| Port | Das Gerät verwendet Port 80. |
-| Token, Block 1 bis 4 | Das Token des Geräts: vier Felder nebeneinander, je ein Block zu 8 Zeichen (0-9, a-f). Das Display zeigt es unter Zahnrad > NETZWERK, Überschrift „TOKEN FUER DEN ADAPTER“: Block 1 und 2 in der ersten Zeile, 3 und 4 in der zweiten; von links nach rechts eintragen. Die Eingabe ist verdeckt wie ein Passwort; beim Eintippen zeigt das Auge sie an. Die Felder werden verschlüsselt gespeichert, und ein gespeicherter Block bleibt verdeckt: zum Ändern ganz löschen und neu eintragen. Ohne Token liest der Adapter nur. Ein falscher oder unvollständiger Block wird rot markiert, eine rote Zeile unter den Feldern nennt den Grund, und Speichern ist gesperrt; kommt trotzdem ein falsches Token an, nennt das Log den Block. Ein Token aus dem früheren einzelnen Feld (Version 0.0.4 oder älter) übernimmt 0.0.6 oder neuer beim ersten Start in die vier Felder, danach startet der Adapter einmal neu; ein unbrauchbarer alter Wert wird nicht übernommen und als Fehler gemeldet, bis die vier Felder ausgefüllt sind. |
+| Portnummer | Das Gerät verwendet die Portnummer 80. |
+| Token, Teil 1 bis 4 | Das Token des Geräts: vier Felder nebeneinander, je ein Teil zu 8 Zeichen (0-9, a-f). Das Display zeigt es unter Zahnrad > NETZWERK, Überschrift „TOKEN FUER DEN ADAPTER“: Teil 1 und 2 in der ersten Zeile, 3 und 4 in der zweiten; von links nach rechts eintragen. Die Eingabe ist verdeckt wie ein Passwort; beim Eintippen zeigt das Auge sie an. Die Felder werden verschlüsselt gespeichert, und ein gespeicherter Teil bleibt verdeckt: zum Ändern ganz löschen und neu eintragen. Ohne Token liest der Adapter nur. Ein falscher oder unvollständiger Teil wird rot markiert, eine rote Zeile unter den Feldern nennt den Grund, und Speichern ist gesperrt; kommt trotzdem ein falsches Token an, nennt das Log den Teil. Ein Token aus dem früheren einzelnen Feld (Version 0.0.4 oder älter) übernimmt 0.0.6 oder neuer beim ersten Start in die vier Felder, danach startet der Adapter einmal neu; ein unbrauchbarer alter Wert wird nicht übernommen und als Fehler gemeldet, bis die vier Felder ausgefüllt sind. |
 | Meldungen des Geräts ins ioBroker-Log schreiben | Ab welcher Stufe Meldungen des Geräts auch im ioBroker-Log erscheinen. Alle Meldungen stehen unabhängig davon in den Datenpunkten unter `messages`. |
 | Meldungen im Verlauf | Anzahl der Meldungen in `messages.history` (1 bis 500). |
 
@@ -37,6 +37,9 @@ Frühe Version in Entwicklung, auf npm veröffentlicht, aber noch nicht in den i
 Log-Stufen, Tags und das Umschalten der Log-Stufe stehen im [englischen README](../../README.md#logging-and-debugging). Das Token erscheint nie im Log.
 
 ## Changelog
+
+### 0.1.0 (2026-11-15)
+- (ssbingo) Unterstützung der Firmware bis 0.7.8: Zustände POSITION, COMMISSION und ASTRO; Sonnenstand; Setup-Programm mit Prüfberichten; Neigung auf Befehl mit Hall-Abgriff; Reset der Synchronsteuerung; Firmware über das Internet; Neigung in Grad; Bezeichnungen STEILER/FLACHER; neue Einstellungen; Benachrichtigung bei nicht abgeschlossenem Setup-Programm; Objektnamen in 11 Sprachen. Datenpunkte eines Merkmals entstehen nur, wenn die Firmware es meldet; vis-2-Widgets Übersicht, Bedienung, Meldungen, Werte, Sonnenstand und Setup-Programm (React, Module Federation, 11 Sprachen); neue Datenpunkte `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` und `update.*`; die Einstellungsseite wiederholt in anderen Sprachen nicht mehr den englischen Text (Portnummer, Teile des Tokens, Überschriften)
 
 ### 0.0.7 (2026-10-03)
 - (ssbingo) Eingabe des Tokens: eine rote Zeile unter den vier Feldern nennt den Grund, wenn ein Block unvollständig oder falsch ist; ein gespeicherter Block lässt sich wieder ändern (ganz löschen und neu eintragen); auf dem Handy nimmt jedes Feld die volle Breite ein; nach der Übernahme des alten Tokens endet der erste Start sauber, bevor js-controller den Adapter neu startet (keine zweite Verbindung im Compact-Modus); klarere Log-Texte zum alten Token-Feld

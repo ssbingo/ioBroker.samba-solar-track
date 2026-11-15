@@ -30,6 +30,7 @@
     "notifyFaultLabel": "故障（驱动器运行时间、开关输出）",
     "notifyWindLabel": "风速计停止响应或恢复响应",
     "notifySensorLabel": "太阳传感器报告故障或恢复工作",
+    "notifyCommissionLabel": "调试程序未完成",
     "notifyConnectionLabel": "设备无法访问或恢复访问",
     "notifyRestartLabel": "设备已重新启动",
     "notifyConnectionMinutesLabel": "无连接多少分钟后通知",

@@ -34,6 +34,8 @@ declare global {
             notifyWind: boolean;
             /** Notify when the sun sensor reports a fault or works again */
             notifySensor: boolean;
+            /** Notify when the setup program is not completed (state COMMISSION) */
+            notifyCommission: boolean;
             /** Notify when the device is not reachable for a while or reachable again */
             notifyConnection: boolean;
             /** Notify when the device has restarted */

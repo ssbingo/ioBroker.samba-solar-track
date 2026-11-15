@@ -1,5 +1,6 @@
 /*
- * Commands to the device: automatic on/off, park, acknowledge and the manual drive (jog).
+ * Commands to the device: automatic on/off, park, acknowledge, tilt on command, reset of the
+ * synchronous control, firmware over the internet and the manual drive (jog).
  * Pure logic without I/O: sending, timers and the clock come in from outside.
  *
  * Manual drive works with a dead man from end to end (rule F3 of the device):
@@ -19,7 +20,18 @@ export type Axis = "elevation" | "azimuth";
 export type Direction = -1 | 0 | 1;
 
 /** Commands of POST /api/command and the `cmd` frame */
-export type Command = "auto" | "park" | "ack";
+export type Command = "auto" | "park" | "ack" | "position" | "syncReset" | "fwCheck" | "fwInstall";
+
+/** Feature the firmware has to report for a command (PROTOCOL.md, section 5) */
+export const COMMAND_FEATURES: Record<Command, string> = {
+    auto: "command",
+    park: "park",
+    ack: "command",
+    position: "position",
+    syncReset: "syncreset",
+    fwCheck: "fwonline",
+    fwInstall: "fwonline",
+};
 
 /** Result of a command */
 export interface CommandResult {
@@ -27,6 +39,8 @@ export interface CommandResult {
     ok: boolean;
     /** Why not: a reason of the device (auth, locked, ...) or of this adapter (timeout, disconnected, ...) */
     reason?: string;
+    /** Text of the device that explains the refusal (only some commands, e.g. syncReset) */
+    detail?: string;
     /** Time until the answer in ms */
     durationMs: number;
 }
@@ -71,6 +85,7 @@ export const REASON_TEXT: Record<string, string> = {
     same: "the value is already valid",
     answer: "the answer of the device could not be read",
     device: "the device ended the drive",
+    mode: "the command does not exist in this operating mode",
 };
 
 /**
@@ -170,6 +185,21 @@ export class RemoteControl {
     }
 
     /**
+     * Sends a command with its own fields and waits for the answer of the device, e.g.
+     * `position` with `deg`, `syncReset` with `axis` or `fwInstall` with `version`.
+     *
+     * @param cmd the command
+     * @param fields fields of the command besides `cmd`
+     * @param source who gave the command, for the log
+     */
+    public commandWith(cmd: Command, fields: Record<string, unknown>, source: string): Promise<CommandResult> {
+        const what = [cmd, ...Object.entries(fields).map(([key, value]) => `${key}=${JSON.stringify(value)}`)].join(
+            " ",
+        );
+        return this.request({ ...fields, t: "cmd", cmd }, what, source, "[cmd]");
+    }
+
+    /**
      * Starts, renews or stops a manual drive. Has to be called again at least once per second
      * while the drive shall continue.
      *
@@ -223,8 +253,9 @@ export class RemoteControl {
      * @param id id of the command, null when the device could not read it
      * @param ok true = accepted
      * @param reason why not
+     * @param detail text of the device that explains a refusal
      */
-    public handleResult(id: number | null, ok: boolean, reason: string | undefined): void {
+    public handleResult(id: number | null, ok: boolean, reason: string | undefined, detail?: string): void {
         const { log } = this.options;
         if (id !== null) {
             const pending = this.pending.get(id);
@@ -235,6 +266,7 @@ export class RemoteControl {
                     ok,
                     reason: ok ? undefined : (reason ?? "unknown"),
                     durationMs: this.now() - pending.started,
+                    ...(ok || !detail ? {} : { detail }),
                 });
                 return;
             }
@@ -322,7 +354,9 @@ export class RemoteControl {
             log.debug(
                 result.ok
                     ? `${tag} #${id} ${what} confirmed after ${result.durationMs} ms`
-                    : `${tag} #${id} ${what} failed after ${result.durationMs} ms: ${result.reason} (${reasonText(result.reason)})`,
+                    : `${tag} #${id} ${what} failed after ${result.durationMs} ms: ${result.reason} (${reasonText(result.reason)})${
+                          result.detail ? `, device: "${result.detail}"` : ""
+                      }`,
             );
             return result;
         });

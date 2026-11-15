@@ -3,7 +3,7 @@
 
 > [English README](../../README.md)
 
-Monitoriza o controlador **Samba Solar Track**: um seguidor solar para módulos solares com proteção contra tempestades, baseado numa placa ESP32-S3 com ecrã tátil de 7 polegadas. O adaptador mostra o estado do controlador no ioBroker e recebe todas as mensagens que o dispositivo escreve no seu registo.
+Monitoriza o controlador **Samba Solar Track**: um seguidor solar para módulos solares com proteção contra tempestades, baseado numa placa ESP32-P4 com ecrã tátil de 10,1 polegadas. O adaptador mostra o estado do controlador no ioBroker e recebe todas as mensagens que o dispositivo escreve no seu registo.
 
 Hardware e manual do dispositivo (versão de 10,1 polegadas): <https://github.com/ssbingo/samba-solar-track>. O firmware está disponível apenas compilado: <https://firmware.samba-solar.de/>
 
@@ -15,7 +15,7 @@ O dispositivo é quem comanda. O seguimento, a proteção contra tempestades, os
 
 ## Estado do projeto
 
-Versão inicial em desenvolvimento, publicada no npm, mas ainda não nos repositórios do ioBroker. Disponível: ligação com reconexão automática, estado do controlador como estados, mensagens com hora e histórico, comandos (automático, estacionar na horizontal, confirmar avaria, movimento manual com homem-morto) e definições do dispositivo (valores com limites, propostas com confirmação no ecrã, configuração inicial, design), ver o [README em inglês](../../README.md#commands). Além disso, notificações através de um adaptador de mensagens (tempestade, avarias, sensor de vento, sensor solar, ligação, reinício). Planeado: widgets vis-2. A ligação e a leitura foram testadas com um dispositivo real (firmware 0.0.3, 03/10/2026); comandos, definições e notificações apenas com um dispositivo simulado.
+Versão inicial em desenvolvimento, publicada no npm, mas ainda não nos repositórios do ioBroker. Disponível: ligação com reconexão automática, estado do controlador como estados, mensagens com hora e histórico, comandos (automático, estacionar na horizontal, confirmar avaria, movimento manual com homem-morto) e definições do dispositivo (valores com limites, propostas com confirmação no ecrã, configuração inicial, design), ver o [README em inglês](../../README.md#commands). Além disso, notificações através de um adaptador de mensagens (tempestade, avarias, sensor de vento, sensor solar, ligação, reinício). Desde a 0.1.0 o adaptador inclui seis widgets vis-2 (conjunto «Samba Solar Track»): visão geral, comando, mensagens, valores, posição do sol e programa de configuração, com as cores e a disposição do ecrã; escolhe-se apenas a instância do adaptador. Descrição no [README em inglês](../../README.md#vis-2-widgets). A ligação e a leitura foram testadas com um dispositivo real (firmware 0.0.3, 03/10/2026); comandos, definições e notificações apenas com um dispositivo simulado. Desde a 0.1.0 também as funções do firmware até 0.7.8: posição do sol, programa de configuração com relatórios de ensaio, inclinação por comando com sensor Hall, reposição do controlo síncrono e firmware pela internet; os estados estão no [README em inglês](../../README.md#states).
 
 ## Requisitos
 
@@ -37,6 +37,9 @@ Versão inicial em desenvolvimento, publicada no npm, mas ainda não nos reposit
 Os níveis de registo, as etiquetas e a forma de mudar o nível estão no [README em inglês](../../README.md#logging-and-debugging). O token nunca aparece no registo.
 
 ## Changelog
+
+### 0.1.0 (2026-11-15)
+- (ssbingo) Suporte do firmware até 0.7.8: estados POSITION, COMMISSION e ASTRO; posição do sol; programa de configuração com relatórios de ensaio; inclinação por comando com sensor Hall; reposição do controlo síncrono; firmware pela internet; inclinação em graus; designações MAIS ÍNGREME/MAIS PLANO; novas definições; notificação quando o programa de configuração não está concluído; nomes dos objetos em 11 idiomas. Os estados de uma funcionalidade só são criados quando o firmware a comunica; widgets vis-2 visão geral, comando, mensagens, valores, posição do sol e programa de configuração (React, Module Federation, 11 idiomas); novos estados `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` e `update.*`; a página de definições já não repete o texto inglês noutros idiomas (porta, partes do token, títulos)
 
 ### 0.0.7 (2026-10-03)
 - (ssbingo) introdução do token: uma linha vermelha por baixo dos quatro campos indica o motivo quando um bloco está incompleto ou errado; um bloco guardado pode voltar a ser alterado (apagar por completo e introduzir de novo); no telemóvel cada campo ocupa a largura total; depois de passar o token antigo, o primeiro arranque termina corretamente antes de o js-controller reiniciar o adaptador (sem segunda ligação no modo compacto); textos de registo mais claros sobre o antigo campo do token

@@ -30,6 +30,7 @@
     "notifyFaultLabel": "Storingen (looptijd van een aandrijving, schakeluitgangen)",
     "notifyWindLabel": "Windmeter antwoordt niet meer of weer",
     "notifySensorLabel": "Zonnesensor gestoord of weer in orde",
+    "notifyCommissionLabel": "Installatieprogramma niet voltooid",
     "notifyConnectionLabel": "Apparaat niet bereikbaar of weer bereikbaar",
     "notifyRestartLabel": "Apparaat is opnieuw gestart",
     "notifyConnectionMinutesLabel": "Melden na minuten zonder verbinding",

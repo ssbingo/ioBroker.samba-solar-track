@@ -1,9 +1,11 @@
 // @ts-nocheck
 "use strict";
 /*
- * The settings as the firmware reports them in GET /api/params (two axes, wind sensor with
- * direction). Printed by the firmware's own code (src/control/params.cpp, built for the PC),
- * so names, limits and defaults are the real ones.
+ * The settings as the firmware reports them in GET /api/params. Printed by the firmware's own code
+ * (src/control/params.cpp, built for the PC, firmware 0.7.8): first the list for two axes and a wind
+ * sensor with direction, then the settings that exist only with one axis. Names, limits and defaults
+ * are the real ones. Which of them a device reports depends on its features, operating mode and wind
+ * sensor; test/mock-device.js filters them like the firmware.
  */
 module.exports = [
     {
@@ -179,8 +181,8 @@ module.exports = [
         "group": "commissioning",
         "type": "int",
         "unit": "",
-        "value": 1,
-        "default": 1,
+        "value": 3,
+        "default": 3,
         "min": 1,
         "max": 247,
         "apply": "confirm",
@@ -227,8 +229,8 @@ module.exports = [
         "group": "commissioning",
         "type": "int",
         "unit": "",
-        "value": 1,
-        "default": 1,
+        "value": 4,
+        "default": 4,
         "min": 1,
         "max": 247,
         "apply": "now",
@@ -251,8 +253,8 @@ module.exports = [
         "group": "commissioning",
         "type": "int",
         "unit": "",
-        "value": 1,
-        "default": 1,
+        "value": 0,
+        "default": 0,
         "min": 0,
         "max": 65535,
         "apply": "now",
@@ -387,6 +389,222 @@ module.exports = [
         "default": 4,
         "min": 0,
         "max": 5,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "syncResetElevation",
+        "group": "commissioning",
+        "type": "int",
+        "unit": "",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 2,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "syncResetAzimuth",
+        "group": "commissioning",
+        "type": "int",
+        "unit": "",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "siteLatitude",
+        "group": "commissioning",
+        "type": "float",
+        "unit": "deg",
+        "value": 0.0,
+        "default": 0.0,
+        "min": -90.0,
+        "max": 90.0,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "siteLongitude",
+        "group": "commissioning",
+        "type": "float",
+        "unit": "deg",
+        "value": 0.0,
+        "default": 0.0,
+        "min": -180.0,
+        "max": 180.0,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "nightAfterSunsetMin",
+        "group": "control",
+        "type": "int",
+        "unit": "min",
+        "value": 30,
+        "default": 30,
+        "min": 0,
+        "max": 180,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "dayBeforeSunriseMin",
+        "group": "control",
+        "type": "int",
+        "unit": "min",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 180,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "elevTravelSteepMs",
+        "group": "commissioning",
+        "type": "int",
+        "unit": "ms",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 300000,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "elevTravelFlatMs",
+        "group": "commissioning",
+        "type": "int",
+        "unit": "ms",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 300000,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "elevGeometry",
+        "group": "commissioning",
+        "type": "int",
+        "unit": "",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 2,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "elevStartLossMs",
+        "group": "commissioning",
+        "type": "int",
+        "unit": "ms",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 3000,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "elevPreset1",
+        "group": "control",
+        "type": "int",
+        "unit": "deg",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 59,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "elevPreset2",
+        "group": "control",
+        "type": "int",
+        "unit": "deg",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 59,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "elevHall",
+        "group": "commissioning",
+        "type": "bool",
+        "unit": "",
+        "value": false,
+        "default": false,
+        "min": null,
+        "max": null,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "elevHallInvert",
+        "group": "commissioning",
+        "type": "bool",
+        "unit": "",
+        "value": false,
+        "default": false,
+        "min": null,
+        "max": null,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "elevHallSteps",
+        "group": "commissioning",
+        "type": "int",
+        "unit": "",
+        "value": 0,
+        "default": 0,
+        "min": 0,
+        "max": 2000000,
+        "apply": "standstill",
+        "pending": null
+    },
+    {
+        "key": "rackAzimuth",
+        "group": "commissioning",
+        "type": "int",
+        "unit": "deg",
+        "value": 0,
+        "default": 0,
+        "min": -90,
+        "max": 90,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "cloudAstro",
+        "group": "control",
+        "type": "bool",
+        "unit": "",
+        "value": false,
+        "default": false,
+        "min": null,
+        "max": null,
+        "apply": "now",
+        "pending": null
+    },
+    {
+        "key": "cloudLevel",
+        "group": "control",
+        "type": "int",
+        "unit": "",
+        "value": 20000,
+        "default": 20000,
+        "min": 0,
+        "max": 130000,
         "apply": "now",
         "pending": null
     }

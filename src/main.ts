@@ -9,12 +9,13 @@
  *
  * Log tags: [cfg] configuration, [obj] objects, [conn] connection, [rx] received frames,
  * [tx] sent frames, [dev] messages and events of the device, [msg] message handling,
- * [cmd] commands, [jog] manual drive, [par] settings and setup of the device, [ntf] notifications,
- * [unload] shutdown.
+ * [cmd] commands, [jog] manual drive, [par] settings and setup of the device, [rep] test reports of
+ * the setup program, [ntf] notifications, [unload] shutdown.
  */
 import * as utils from "@iobroker/adapter-core";
 import { DeviceClient } from "./lib/device-client";
 import { EVENT_CATEGORIES, EventDetector, type EventCategory } from "./lib/events";
+import { fullName } from "./lib/i18n";
 import {
     DEVICE_LEVELS,
     MessageStore,
@@ -31,6 +32,7 @@ import {
     assembleToken,
     isObject,
     migrateOldToken,
+    readPath,
     resumeSince,
     tokenSummary,
     type DeviceInfo,
@@ -50,8 +52,27 @@ import {
     toDeviceValue,
     type ParamEntry,
 } from "./lib/params";
-import { RemoteControl, reasonText, type Axis, type Command, type CommandResult } from "./lib/remote-control";
-import { NODES, STATES, infoToValues, statusToValues, type StateValue } from "./lib/states";
+import {
+    COMMAND_FEATURES,
+    RemoteControl,
+    reasonText,
+    type Axis,
+    type Command,
+    type CommandResult,
+} from "./lib/remote-control";
+import {
+    NODES,
+    STATES,
+    elevationLabelStates,
+    infoToValues,
+    isAvailable,
+    isConditional,
+    reportToValues,
+    statusToValues,
+    type Layout,
+    type StateDef,
+    type StateValue,
+} from "./lib/states";
 
 /** Values that change constantly (uptime, memory, signal) are written at most this often */
 const VOLATILE_INTERVAL_MS = 30000;
@@ -69,6 +90,37 @@ const HISTORY_MAX = 500;
 const HISTORY_DEFAULT = 50;
 
 const VOLATILE_IDS = new Set(STATES.filter(def => def.volatile).map(def => def.id));
+
+/** Number of test reports the device keeps (GET /api/report?n=0..2) */
+const REPORT_COUNT = 3;
+
+/**
+ * The `common` part of the object of a state.
+ *
+ * @param def definition of the state
+ */
+function stateCommon(def: StateDef): Partial<ioBroker.StateCommon> {
+    const common: Partial<ioBroker.StateCommon> = {
+        name: fullName(def.name),
+        type: def.type,
+        role: def.role,
+        read: def.read !== false,
+        write: def.write === true,
+    };
+    if (def.min !== undefined) {
+        common.min = def.min;
+    }
+    if (def.max !== undefined) {
+        common.max = def.max;
+    }
+    if (def.unit) {
+        common.unit = def.unit;
+    }
+    if (def.states) {
+        common.states = def.states;
+    }
+    return common;
+}
 
 /** State of the manual drive for each axis */
 const JOG_STATE: Record<Axis, string> = { elevation: "control.jogElevation", azimuth: "control.jogAzimuth" };
@@ -91,6 +143,10 @@ class SambaSolarTrack extends utils.Adapter {
     private connectionLostNotified = false;
     /** Settings of the device by their key, from GET /api/params */
     private readonly params = new Map<string, ParamEntry>();
+    /** true while loadParams() reads the settings and creates their states */
+    private paramsLoading = false;
+    /** writes to settings that arrived while loadParams() was running, replayed afterwards */
+    private readonly deferredParamWrites = new Map<string, { value: ioBroker.StateValue; source: string }>();
     /** Setup values chosen in ioBroker that are not saved at the device yet */
     private stagedSetup: { mode?: number; windSensor?: number } = {};
     private store = new MessageStore(HISTORY_DEFAULT);
@@ -102,6 +158,16 @@ class SambaSolarTrack extends utils.Adapter {
     private flushTimer: ioBroker.Timeout | undefined;
     private lostReported = false;
     private stopping = false;
+    /** Features and operating mode the conditional objects were last created for */
+    private layoutKey = "";
+    /** Changes of the objects and the status writes after them run one after another */
+    private objectQueue: Promise<void> = Promise.resolve();
+    /** `axes.elevation.flatDir` the names of the elevation states were written for */
+    private flatDir = 1;
+    /** The test reports are read with the next status (after connecting) */
+    private reportsDue = false;
+    private reportsLoading = false;
+    private reportsAgain = false;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -235,7 +301,7 @@ class SambaSolarTrack extends utils.Adapter {
                 onLog: line => this.onLog(line),
                 onLost: lost => this.onLost(lost),
                 onConnection: connected => this.onConnection(connected),
-                onResult: (id, ok, reason) => this.remote?.handleResult(id, ok, reason),
+                onResult: (id, ok, reason, detail) => this.remote?.handleResult(id, ok, reason, detail),
                 onParams: changed => this.onParams(changed),
             },
         });
@@ -349,37 +415,95 @@ class SambaSolarTrack extends utils.Adapter {
         }, this.connectionMinutes * 60000);
     }
 
-    /** Creates or updates all channels and states. Settings made by the user are kept. */
+    /**
+     * Creates or updates the channels and states every firmware has. Settings made by the user
+     * are kept. The objects that depend on features and operating mode follow in syncLayout.
+     */
     private async createObjects(): Promise<void> {
         const started = Date.now();
-        for (const node of NODES) {
-            await this.extendObject(node.id, { type: node.type, common: { name: node.name }, native: {} });
+        const nodes = NODES.filter(node => !isConditional(node));
+        const states = STATES.filter(def => !isConditional(def));
+        for (const node of nodes) {
+            await this.extendObject(node.id, { type: node.type, common: { name: fullName(node.name) }, native: {} });
         }
-        for (const def of STATES) {
-            const common: Partial<ioBroker.StateCommon> = {
-                name: def.name,
-                type: def.type,
-                role: def.role,
-                read: def.read !== false,
-                write: def.write === true,
-            };
-            if (def.min !== undefined) {
-                common.min = def.min;
-            }
-            if (def.max !== undefined) {
-                common.max = def.max;
-            }
-            if (def.unit) {
-                common.unit = def.unit;
-            }
-            if (def.states) {
-                common.states = def.states;
-            }
-            await this.extendObject(def.id, { type: "state", common, native: {} });
+        for (const def of states) {
+            await this.extendObject(def.id, { type: "state", common: stateCommon(def), native: {} });
         }
+        this.flatDir = 1;
         this.log.debug(
-            `[obj] ${NODES.length} channels and ${STATES.length} states created or updated in ${Date.now() - started} ms`,
+            `[obj] ${nodes.length} channels and ${states.length} states created or updated in ${Date.now() - started} ms`,
         );
+    }
+
+    /**
+     * Creates the channels and states of the features the firmware reports and of the operating
+     * mode, and removes those that no longer exist (other firmware or other operating mode).
+     *
+     * @param layout features and operating mode of the device
+     */
+    private async syncLayout(layout: Layout): Promise<void> {
+        const started = Date.now();
+        let created = 0;
+        let removed = 0;
+        try {
+            const existing = await this.getAdapterObjectsAsync();
+            const exists = (id: string): boolean => `${this.namespace}.${id}` in existing;
+            const nodes = NODES.filter(isConditional);
+            for (const node of nodes.filter(n => isAvailable(n, layout))) {
+                await this.extendObject(node.id, {
+                    type: node.type,
+                    common: { name: fullName(node.name) },
+                    native: {},
+                });
+            }
+            for (const def of STATES.filter(isConditional)) {
+                if (isAvailable(def, layout)) {
+                    await this.extendObject(def.id, { type: "state", common: stateCommon(def), native: {} });
+                    created++;
+                } else if (exists(def.id)) {
+                    await this.delObjectAsync(def.id);
+                    this.cache.delete(def.id);
+                    removed++;
+                }
+            }
+            // children first: the folder of the report data set lies in the channel of the setup program
+            for (const node of [...nodes].reverse()) {
+                if (!isAvailable(node, layout) && exists(node.id)) {
+                    await this.delObjectAsync(node.id);
+                    removed++;
+                }
+            }
+            this.log.debug(
+                `[obj] Objects for features ${[...layout.features].join(",") || "-"} and mode ${String(layout.mode)}: ` +
+                    `${created} state(s) created or updated, ${removed} object(s) removed in ${Date.now() - started} ms`,
+            );
+        } catch (error) {
+            // happens when the adapter stops while the objects are written
+            this.log.debug(
+                `[obj] Creating the objects of the features failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+        }
+    }
+
+    /**
+     * Writes the names of the elevation states again when the flat position lies in the other
+     * direction: display and web page show STEEPER and FLATTER instead of the outputs.
+     *
+     * @param flatDir value of `axes.elevation.flatDir`
+     */
+    private async relabelElevation(flatDir: number): Promise<void> {
+        try {
+            for (const def of elevationLabelStates(flatDir)) {
+                await this.extendObject(def.id, { common: stateCommon(def) });
+            }
+            this.log.debug(
+                `[obj] Names of the elevation states written for the flat position in direction ${flatDir === -1 ? "MINUS" : "PLUS"}`,
+            );
+        } catch (error) {
+            this.log.debug(
+                `[obj] Writing the names of the elevation failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+        }
     }
 
     /** Reads where the message stream ended in the last run, so nothing is fetched twice */
@@ -477,19 +601,171 @@ class SambaSolarTrack extends utils.Adapter {
         if (typeof status.uptimeMs === "number") {
             this.bootEpoch = Date.now() - status.uptimeMs;
         }
+        if (isObject(status.jog) && typeof status.jog.active === "boolean") {
+            this.remote?.handleStatus(status.jog.active);
+        }
+        const layout: Layout = {
+            features: new Set(this.features),
+            mode: typeof status.mode === "number" ? status.mode : undefined,
+        };
+        const key = `${[...layout.features].sort().join(",")}|${String(layout.mode)}`;
+        if (key !== this.layoutKey) {
+            this.log.debug(`[obj] Features or operating mode changed (${this.layoutKey || "none"} -> ${key})`);
+            this.layoutKey = key;
+            this.enqueue(() => this.syncLayout(layout));
+        }
+        const flatDir = readPath(status, "axes.elevation.flatDir") === -1 ? -1 : 1;
+        if (flatDir !== this.flatDir) {
+            this.flatDir = flatDir;
+            this.enqueue(() => this.relabelElevation(flatDir));
+        }
+        // the values are written after the objects exist; the order of the frames is kept
+        this.enqueue(() => this.applyStatus(status, layout));
+    }
+
+    /**
+     * Runs a step after the steps before it; a failing step does not stop the following ones.
+     *
+     * @param task the step
+     */
+    private enqueue(task: () => void | Promise<void>): void {
+        this.objectQueue = this.objectQueue.then(task).catch((error: unknown) => {
+            this.log.debug(`[obj] ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
+        });
+    }
+
+    /**
+     * Writes a status into the states and evaluates it.
+     *
+     * @param status the status of the device
+     * @param layout features and operating mode the objects exist for
+     */
+    private applyStatus(status: DeviceStatus, layout: Layout): void {
+        if (this.stopping) {
+            return;
+        }
         const before = this.cache.get("status.state");
-        this.writeValues(statusToValues(status));
+        const doneBefore = this.cache.get("commissioning.done");
+        const activeBefore = this.cache.get("commissioning.active");
+        this.writeValues(statusToValues(status, layout));
         const after = this.cache.get("status.state");
         if (before !== after) {
             this.log.debug(`[dev] State ${String(before ?? "unknown")} -> ${String(after)}`);
-        }
-        if (isObject(status.jog) && typeof status.jog.active === "boolean") {
-            this.remote?.handleStatus(status.jog.active);
         }
         for (const event of this.events.update(status)) {
             this.log.debug(`[ntf] Event ${event.category}/${event.key} ${JSON.stringify(event.params)}`);
             this.notify(event.category, event.key, event.params);
         }
+        if (!layout.features.has("commissioning")) {
+            return;
+        }
+        // a test report is written when the setup program ends: read the reports after connecting,
+        // when `done` changes and when the program is closed at the display
+        const done = this.cache.get("commissioning.done");
+        const active = this.cache.get("commissioning.active");
+        let reason = "";
+        if (this.reportsDue) {
+            reason = "connected";
+        } else if (done !== doneBefore) {
+            reason = `setup program completed ${String(doneBefore)} -> ${String(done)}`;
+        } else if (activeBefore === true && active === false) {
+            reason = "setup program closed at the display";
+        }
+        if (reason) {
+            this.reportsDue = false;
+            void this.loadReports(reason);
+        }
+    }
+
+    /**
+     * Reads the test reports, one run at a time; a request during a run starts one more run.
+     *
+     * @param reason why, for the log
+     */
+    private async loadReports(reason: string): Promise<void> {
+        if (this.reportsLoading) {
+            this.log.debug(`[rep] Reading the test reports (${reason}) follows the run in progress`);
+            this.reportsAgain = true;
+            return;
+        }
+        this.reportsLoading = true;
+        try {
+            let why = reason;
+            do {
+                this.reportsAgain = false;
+                await this.readReports(why);
+                why = "requested during the last run";
+            } while (this.reportsAgain && !this.stopping);
+        } finally {
+            this.reportsLoading = false;
+        }
+    }
+
+    /**
+     * Reads the three test reports as text (GET /api/report?n=0..2) and the newest as data set
+     * (feature reportjson). "No report under this number" (409) is no error.
+     *
+     * @param reason why, for the log
+     */
+    private async readReports(reason: string): Promise<void> {
+        const client = this.client;
+        if (!client) {
+            this.log.debug(`[rep] Test reports (${reason}) skipped: not connected`);
+            return;
+        }
+        const started = Date.now();
+        const present: number[] = [];
+        for (let n = 0; n < REPORT_COUNT; n++) {
+            try {
+                const { status, text } = await client.getText(`/api/report?n=${n}`);
+                if (status === 200) {
+                    present.push(n);
+                    this.writeValue(`commissioning.report${n}`, text);
+                } else if (status === 409) {
+                    this.writeValue(`commissioning.report${n}`, "");
+                } else {
+                    this.log.debug(`[rep] Test report ${n}: HTTP ${status}, ${text.slice(0, 200)}`);
+                }
+            } catch (error) {
+                this.log.debug(
+                    `[rep] Reading test report ${n} failed: ${error instanceof Error ? error.message : String(error)}`,
+                );
+                return;
+            }
+        }
+        let dataSet = "not offered by the firmware";
+        if (this.features.has("reportjson")) {
+            try {
+                const { status, text } = await client.getText("/api/report?n=0&format=json");
+                let parsed: unknown;
+                if (status === 200) {
+                    try {
+                        parsed = JSON.parse(text);
+                    } catch {
+                        parsed = undefined;
+                    }
+                }
+                if (status === 200 && isObject(parsed)) {
+                    dataSet = "read";
+                } else if (status === 409) {
+                    dataSet = "none";
+                } else {
+                    dataSet = `not usable (HTTP ${status})`;
+                    parsed = undefined;
+                }
+                if (status === 200 || status === 409) {
+                    for (const [id, value] of reportToValues(parsed)) {
+                        this.writeValue(id, value);
+                    }
+                }
+            } catch (error) {
+                dataSet = `failed: ${error instanceof Error ? error.message : String(error)}`;
+            }
+        }
+        this.log.debug(
+            `[rep] Test reports read (${reason}): ${present.length ? `number(s) ${present.join(", ")} present` : "none present"}, ` +
+                `data set of the newest ${dataSet}, in ${Date.now() - started} ms`,
+        );
     }
 
     private onLog(line: LogLine): void {
@@ -541,6 +817,7 @@ class SambaSolarTrack extends utils.Adapter {
                 this.connectionLostNotified = false;
                 this.notify("connection", "connectionRestored", {});
             }
+            this.reportsDue = true;
             void this.loadParams();
         } else {
             this.flushMessages();
@@ -553,6 +830,39 @@ class SambaSolarTrack extends utils.Adapter {
     private async loadParams(): Promise<void> {
         if (!this.client || !this.features.has("params")) {
             this.log.debug("[par] Settings skipped: the firmware does not offer them");
+            return;
+        }
+        this.paramsLoading = true;
+        try {
+            await this.loadParamsNow();
+        } finally {
+            this.paramsLoading = false;
+            this.replayDeferredParamWrites();
+        }
+    }
+
+    /** Sends the writes to settings that arrived while the settings were loaded */
+    private replayDeferredParamWrites(): void {
+        if (this.deferredParamWrites.size === 0) {
+            return;
+        }
+        const writes = [...this.deferredParamWrites.entries()];
+        this.deferredParamWrites.clear();
+        for (const [local, { value, source }] of writes) {
+            if (this.paramByStateId(local)) {
+                this.log.debug(`[par] Write to ${local} from ${source} sent after loading the settings`);
+                void this.runParam(local, value, source);
+            } else {
+                this.log.debug(
+                    `[par] Write to ${local} from ${source} ignored: the device does not offer this setting`,
+                );
+            }
+        }
+    }
+
+    /** Body of loadParams(): reads the settings and creates or updates their states */
+    private async loadParamsNow(): Promise<void> {
+        if (!this.client) {
             return;
         }
         const started = Date.now();
@@ -689,6 +999,36 @@ class SambaSolarTrack extends utils.Adapter {
             case JOG_STATE.azimuth:
                 void this.runJog("azimuth", state.val, source);
                 break;
+            case "control.position":
+                void this.runPosition(local, state.val, source);
+                break;
+            case "control.positionResume":
+                void this.runButton("position", { on: false }, "position off (continue the automatic)", local, source);
+                break;
+            case "control.syncResetElevation":
+                void this.runButton(
+                    "syncReset",
+                    { axis: "elevation" },
+                    "reset of the synchronous control elevation",
+                    local,
+                    source,
+                );
+                break;
+            case "control.syncResetAzimuth":
+                void this.runButton(
+                    "syncReset",
+                    { axis: "azimuth" },
+                    "reset of the synchronous control azimuth",
+                    local,
+                    source,
+                );
+                break;
+            case "control.fwCheck":
+                void this.runButton("fwCheck", {}, "check for newer firmware", local, source);
+                break;
+            case "control.fwInstall":
+                void this.runFwInstall(local, state.val, source);
+                break;
             case "control.design":
                 void this.runValue("design", local, state.val, source);
                 break;
@@ -707,6 +1047,10 @@ class SambaSolarTrack extends utils.Adapter {
             default:
                 if (this.paramByStateId(local)) {
                     void this.runParam(local, state.val, source);
+                } else if (this.paramsLoading && local.startsWith("params.") && local.split(".").length === 3) {
+                    // the settings are being loaded: keep the latest write and send it afterwards
+                    this.deferredParamWrites.set(local, { value: state.val, source });
+                    this.log.debug(`[par] Write to ${local} from ${source} held until the settings are loaded`);
                 } else {
                     this.log.debug(`[cmd] Write to ${local} from ${source} ignored: this state is not a command`);
                 }
@@ -971,6 +1315,7 @@ class SambaSolarTrack extends utils.Adapter {
                 ok: result.ok,
                 reason: result.reason ?? null,
                 text: reasonText(result.reason),
+                detail: result.detail ?? null,
                 from: source,
             }),
         );
@@ -981,7 +1326,9 @@ class SambaSolarTrack extends utils.Adapter {
         const reason = result.reason ?? "unknown";
         const text = ended
             ? `[jog] The manual drive "${what}" was stopped: ${reason} (${reasonText(reason)})`
-            : `[cmd] "${what}" from ${source} was not executed: ${reason} (${reasonText(reason)})`;
+            : `[cmd] "${what}" from ${source} was not executed: ${reason} (${reasonText(reason)})${
+                  result.detail ? `, device: "${result.detail}"` : ""
+              }`;
         if (this.commandProblems.get(kind) === reason) {
             this.log.debug(text);
         } else {
@@ -1010,6 +1357,102 @@ class SambaSolarTrack extends utils.Adapter {
                 : await this.remote.command("ack", undefined, source);
         this.report("ack", "acknowledge", result, source);
         this.forceValue(id, result.ok);
+    }
+
+    /**
+     * Sends a command with its own fields.
+     *
+     * @param cmd the command
+     * @param fields fields besides `cmd`
+     * @param what the command in words
+     * @param source who gave the command
+     */
+    private async runCommand(
+        cmd: Command,
+        fields: Record<string, unknown>,
+        what: string,
+        source: string,
+    ): Promise<CommandResult> {
+        const blocked = this.precheck(COMMAND_FEATURES[cmd]);
+        const result =
+            blocked || !this.remote
+                ? { ok: false, reason: blocked ?? "disconnected", durationMs: 0 }
+                : await this.remote.commandWith(cmd, fields, source);
+        this.report(cmd, what, result, source);
+        return result;
+    }
+
+    /**
+     * A button: reset of the synchronous control, cancel the tilt on command, check for firmware.
+     *
+     * @param cmd the command
+     * @param fields fields besides `cmd`
+     * @param what the command in words
+     * @param id id of the state
+     * @param source who gave the command
+     */
+    private async runButton(
+        cmd: Command,
+        fields: Record<string, unknown>,
+        what: string,
+        id: string,
+        source: string,
+    ): Promise<void> {
+        const result = await this.runCommand(cmd, fields, what, source);
+        if (result.ok && cmd === "syncReset") {
+            // a drive of the synchronous control itself: worth a line at info level
+            this.log.info(`[cmd] The device starts the ${what} (from ${source})`);
+        }
+        this.forceValue(id, result.ok);
+    }
+
+    /**
+     * Tilts the elevation to an offered angle (command `position`, vertical only).
+     *
+     * @param id id of the state
+     * @param value angle in whole degrees
+     * @param source who gave the command
+     */
+    private async runPosition(id: string, value: unknown, source: string): Promise<void> {
+        const deg = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
+        if (typeof deg !== "number" || !Number.isInteger(deg) || deg < 0 || deg > 60) {
+            this.report("position", `position ${String(value)}`, { ok: false, reason: "range", durationMs: 0 }, source);
+            this.forceValue(id, this.cache.get(id) ?? null);
+            return;
+        }
+        const result = await this.runCommand("position", { deg }, `position ${deg}°`, source);
+        // accepted: the device reports the new target in position.target with the next status
+        this.forceValue(id, result.ok ? deg : (this.cache.get(id) ?? null));
+    }
+
+    /**
+     * Installs the newest firmware over the internet. The version has to be written: a button
+     * pressed by mistake cannot start an update, and the device checks the version against
+     * `fwOnline.latest` (PROTOCOL.md, fwInstall).
+     *
+     * @param id id of the state
+     * @param value version to install
+     * @param source who gave the command
+     */
+    private async runFwInstall(id: string, value: unknown, source: string): Promise<void> {
+        const version = typeof value === "string" ? value.trim() : "";
+        if (!version) {
+            this.report(
+                "fwInstall",
+                `fwInstall ${String(value)}`,
+                { ok: false, reason: "type", durationMs: 0 },
+                source,
+            );
+            this.forceValue(id, "");
+            return;
+        }
+        const result = await this.runCommand("fwInstall", { version }, `install firmware ${version}`, source);
+        if (result.ok) {
+            this.log.info(
+                `[cmd] The device loads firmware ${version} (from ${source}); it writes it after the elevation has reached the flat position`,
+            );
+        }
+        this.forceValue(id, result.ok ? version : "");
     }
 
     private async runJog(axis: Axis, value: unknown, source: string): Promise<void> {
@@ -1081,6 +1524,7 @@ class SambaSolarTrack extends utils.Adapter {
         try {
             this.stopping = true;
             this.log.debug("[unload] Stopping: closing the connection and clearing timers");
+            this.deferredParamWrites.clear();
             // a running manual drive gets its stop command before the connection closes
             this.remote?.stop();
             this.remote = undefined;

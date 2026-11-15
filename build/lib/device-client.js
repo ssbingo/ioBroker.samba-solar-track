@@ -139,6 +139,24 @@ class DeviceClient {
     return json;
   }
   /**
+   * Reads a text document from the device (the test reports of GET /api/report). An answer
+   * with an HTTP error is not an exception: the device explains it in a JSON body.
+   *
+   * @param path path with leading slash, e.g. "/api/report?n=0"
+   * @returns HTTP status and the body as text
+   */
+  async getText(path) {
+    const started = Date.now();
+    const response = await fetch(`http://${this.baseUrl}${path}`, {
+      signal: AbortSignal.timeout(this.timing.httpTimeoutMs)
+    });
+    const text = await response.text();
+    this.options.log.debug(
+      `[conn] GET ${path} answered HTTP ${response.status} (${text.length} characters) after ${Date.now() - started} ms`
+    );
+    return { status: response.status, text };
+  }
+  /**
    * Sends a JSON document to the device with the token (commands and changes need it).
    * An answer with an HTTP error is not an exception: the device explains the refusal in the body.
    *
@@ -296,7 +314,8 @@ class DeviceClient {
         events.onResult(
           typeof frame.id === "number" ? frame.id : null,
           frame.ok === true,
-          typeof frame.reason === "string" ? frame.reason : void 0
+          typeof frame.reason === "string" ? frame.reason : void 0,
+          typeof frame.detail === "string" ? frame.detail : void 0
         );
         break;
       case "params":

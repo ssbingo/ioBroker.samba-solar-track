@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { MockDevice, TOKEN } from "../../test/mock-device";
+import { FEATURES_078, MockDevice, REPORT_TEXT, TOKEN } from "../../test/mock-device";
 import { DeviceClient, type ClientEvents, type ClientTiming } from "./device-client";
 import {
     resumeSince,
@@ -29,7 +29,7 @@ class Recorder implements ClientEvents {
     public readonly losts: LostFrame[] = [];
     public readonly connection: boolean[] = [];
     public readonly params: unknown[] = [];
-    public readonly results: { id: number | null; ok: boolean; reason: string | undefined }[] = [];
+    public readonly results: { id: number | null; ok: boolean; reason: string | undefined; detail?: string }[] = [];
     public knownBootId: string | undefined;
     public lastSeq = 0;
 
@@ -71,8 +71,8 @@ class Recorder implements ClientEvents {
         this.connection.push(connected);
     }
 
-    public onResult(id: number | null, ok: boolean, reason: string | undefined): void {
-        this.results.push({ id, ok, reason });
+    public onResult(id: number | null, ok: boolean, reason: string | undefined, detail?: string): void {
+        this.results.push(detail === undefined ? { id, ok, reason } : { id, ok, reason, detail });
     }
 
     public onParams(changed: unknown): void {
@@ -410,5 +410,56 @@ describe("device-client => DeviceClient", function () {
         await new Promise(resolve => setTimeout(resolve, 200));
         expect(device.infoRequests).to.equal(requests);
         expect(device.connections).to.equal(0);
+    });
+});
+
+describe("device-client => firmware 0.7.8 (test reports, new commands)", function () {
+    this.timeout(10000);
+
+    let device: MockDevice;
+    let recorder: Recorder;
+    let client: DeviceClient;
+
+    beforeEach(async () => {
+        device = new MockDevice({ features: FEATURES_078, mode: 1, fw: "0.7.8" });
+        await device.start();
+        recorder = new Recorder();
+        client = new DeviceClient({
+            host: "127.0.0.1",
+            port: device.port,
+            token: TOKEN,
+            log: recorder.log,
+            timers: { set: (cb, ms) => setTimeout(cb, ms), clear: h => clearTimeout(h as NodeJS.Timeout) },
+            events: recorder,
+            timing: TIMING,
+        });
+        client.start();
+        await until(() => recorder.connection.length === 1, "connection");
+    });
+
+    afterEach(async () => {
+        client.stop();
+        await device.stop();
+    });
+
+    it("reads a test report as text and gets the refusal for a missing one as an answer", async () => {
+        expect(await client.getText("/api/report?n=0")).to.deep.equal({ status: 200, text: REPORT_TEXT });
+        const missing = await client.getText("/api/report?n=1");
+        expect(missing.status).to.equal(409);
+        expect(JSON.parse(missing.text)).to.include({ reason: "state" });
+        const json = await client.getText("/api/report?n=0&format=json");
+        expect(JSON.parse(json.text)).to.include({ v: 1, fw: "0.7.8" });
+    });
+
+    it("passes on the detail of a refused reset of the synchronous control", async () => {
+        client.send({ t: "cmd", id: 3, cmd: "syncReset", axis: "azimuth" });
+        client.send({ t: "cmd", id: 4, cmd: "syncReset", axis: "elevation" });
+        client.send({ t: "cmd", id: 5, cmd: "syncReset", axis: "elevation" });
+        await until(() => recorder.results.length === 3, "three results");
+        expect(recorder.results).to.deep.equal([
+            { id: 3, ok: false, reason: "unknown", detail: "kein Anschluss fuer den Reset eingestellt" },
+            { id: 4, ok: true, reason: undefined },
+            { id: 5, ok: false, reason: "busy", detail: "Reset laeuft schon" },
+        ]);
     });
 });

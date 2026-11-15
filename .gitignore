@@ -20,3 +20,7 @@ admin/i18n/*/flat.txt
 *.log
 *.tmp
 .DS_Store
+
+# Intermediate build of the vis-2 widgets (the result in widgets/ is committed)
+/src-widgets/build/
+/src-widgets/.__mf__temp/

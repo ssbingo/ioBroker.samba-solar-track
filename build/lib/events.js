@@ -23,7 +23,7 @@ __export(events_exports, {
 });
 module.exports = __toCommonJS(events_exports);
 var import_protocol = require("./protocol");
-const EVENT_CATEGORIES = ["storm", "fault", "wind", "sensor", "connection", "restart"];
+const EVENT_CATEGORIES = ["storm", "fault", "wind", "sensor", "commission", "connection", "restart"];
 function flag(status, path, fallback) {
   const value = (0, import_protocol.readPath)(status, path);
   return typeof value === "boolean" ? value : fallback;
@@ -33,6 +33,11 @@ function speed(value) {
 }
 class EventDetector {
   previous;
+  /**
+   * The setup program was reported as not completed; reported again only after it was
+   * completed in between (`commissioning.done`), not each time a higher state interrupts it.
+   */
+  commissionReported = false;
   /**
    * Compares a status with the one before.
    *
@@ -45,11 +50,16 @@ class EventDetector {
       faultIo: flag(status, "fault.io", false),
       faultMotor: flag(status, "fault.motor", false),
       windOk: flag(status, "wind.ok", true),
-      sunOk: flag(status, "sun.ok", true)
+      sunOk: flag(status, "sun.ok", true),
+      commission: (0, import_protocol.readPath)(status, "state") === "COMMISSION"
     };
+    if ((0, import_protocol.readPath)(status, "commissioning.done") === true) {
+      this.commissionReported = false;
+    }
     const before = this.previous;
     this.previous = now;
     if (!before) {
+      this.commissionReported = now.commission;
       return [];
     }
     const events = [];
@@ -84,6 +94,10 @@ class EventDetector {
       events.push({ category: "sensor", key: "sunLost", params: {} });
     } else if (now.sunOk && !before.sunOk) {
       events.push({ category: "sensor", key: "sunBack", params: {} });
+    }
+    if (now.commission && !before.commission && !this.commissionReported) {
+      this.commissionReported = true;
+      events.push({ category: "commission", key: "commissionPending", params: {} });
     }
     return events;
   }

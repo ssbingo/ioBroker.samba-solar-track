@@ -3,7 +3,7 @@
 
 > [English README](../../README.md)
 
-Bewaakt de besturing **Samba Solar Track**: een zonnevolger voor zonnepanelen met stormbeveiliging op een ESP32-S3-board met 7-inch touchscreen. De adapter toont de toestand van de besturing in ioBroker en ontvangt elke melding die het apparaat in zijn log schrijft.
+Bewaakt de besturing **Samba Solar Track**: een zonnevolger voor zonnepanelen met stormbeveiliging op een ESP32-P4-board met 10,1-inch touchscreen. De adapter toont de toestand van de besturing in ioBroker en ontvangt elke melding die het apparaat in zijn log schrijft.
 
 Hardware en handleiding van het apparaat (10,1-inch-versie): <https://github.com/ssbingo/samba-solar-track>. De firmware is alleen gecompileerd beschikbaar: <https://firmware.samba-solar.de/>
 
@@ -15,7 +15,7 @@ Het apparaat heeft de leiding. Volgen, stormbeveiliging, eindschakelaars en loop
 
 ## Stand van het project
 
-Vroege versie in ontwikkeling, op npm gepubliceerd, maar nog niet in de ioBroker-repositories. Beschikbaar: verbinding met automatisch opnieuw verbinden, toestand van de besturing als datapunten, meldingen met tijdstip en geschiedenis, commando's (automatisch, vlak parkeren, storing bevestigen, handmatig rijden met dodemansfunctie) en instellingen van het apparaat (waarden met grenzen, voorstellen met bevestiging op het display, inrichting, design), zie de [Engelse README](../../README.md#commands). Daarnaast meldingen via een berichtenadapter (storm, storingen, windmeter, zonnesensor, verbinding, herstart). Gepland: vis-2-widgets. Verbinding en uitlezen zijn getest met een echt apparaat (firmware 0.0.3, 03-10-2026); opdrachten, instellingen en meldingen alleen met een gesimuleerd apparaat.
+Vroege versie in ontwikkeling, op npm gepubliceerd, maar nog niet in de ioBroker-repositories. Beschikbaar: verbinding met automatisch opnieuw verbinden, toestand van de besturing als datapunten, meldingen met tijdstip en geschiedenis, commando's (automatisch, vlak parkeren, storing bevestigen, handmatig rijden met dodemansfunctie) en instellingen van het apparaat (waarden met grenzen, voorstellen met bevestiging op het display, inrichting, design), zie de [Engelse README](../../README.md#commands). Daarnaast meldingen via een berichtenadapter (storm, storingen, windmeter, zonnesensor, verbinding, herstart). Sinds 0.1.0 bevat de adapter zes vis-2-widgets (set „Samba Solar Track”): overzicht, bediening, meldingen, waarden, zonnestand en installatieprogramma, in kleuren en opbouw zoals het display; alleen de adapterinstantie wordt gekozen. Beschrijving in de [Engelse README](../../README.md#vis-2-widgets). Verbinding en uitlezen zijn getest met een echt apparaat (firmware 0.0.3, 03-10-2026); opdrachten, instellingen en meldingen alleen met een gesimuleerd apparaat. Sinds 0.1.0 ook de functies van de firmware tot 0.7.8: zonnestand, installatieprogramma met testrapporten, helling op commando met Hall-sensor, reset van de synchroonbesturing en firmware via internet; de datapunten staan in de [Engelse README](../../README.md#states).
 
 ## Vereisten
 
@@ -37,6 +37,9 @@ Vroege versie in ontwikkeling, op npm gepubliceerd, maar nog niet in de ioBroker
 Logniveaus, tags en het omschakelen van het logniveau staan in de [Engelse README](../../README.md#logging-and-debugging). Het token verschijnt nooit in het log.
 
 ## Changelog
+
+### 0.1.0 (2026-11-15)
+- (ssbingo) Ondersteuning van firmware tot 0.7.8: toestanden POSITION, COMMISSION en ASTRO; zonnestand; installatieprogramma met testrapporten; helling op commando met Hall-sensor; reset van de synchroonbesturing; firmware via internet; helling in graden; benamingen STEILER/VLAKKER; nieuwe instellingen; melding bij een niet voltooid installatieprogramma; objectnamen in 11 talen. Datapunten van een functie worden alleen aangemaakt als de firmware die meldt; vis-2-widgets overzicht, bediening, meldingen, waarden, zonnestand en installatieprogramma (React, Module Federation, 11 talen); nieuwe datapunten `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` en `update.*`; de instellingenpagina herhaalt in andere talen niet meer de Engelse tekst (poort, delen van het token, koppen)
 
 ### 0.0.7 (2026-10-03)
 - (ssbingo) invoer van het token: een rode regel onder de vier velden noemt de reden als een blok onvolledig of fout is; een opgeslagen blok kan weer worden gewijzigd (volledig wissen en opnieuw invoeren); op de telefoon neemt elk veld de volle breedte in; na het overnemen van het oude token eindigt de eerste start netjes voordat js-controller de adapter opnieuw start (geen tweede verbinding in compacte modus); duidelijkere logteksten over het oude tokenveld

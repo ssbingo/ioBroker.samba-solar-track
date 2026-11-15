@@ -3,6 +3,7 @@ import FIRMWARE_PARAMS from "../../test/mock-params";
 import {
     groupName,
     paramCommon,
+    paramName,
     paramStateId,
     parseParam,
     parseParams,
@@ -29,7 +30,8 @@ describe("params => parseParams", () => {
     it("accepts every setting the firmware reports", () => {
         const { entries, dropped } = parseParams(FIRMWARE_PARAMS);
         expect(dropped).to.equal(0);
-        expect(entries).to.have.length(32);
+        // the list of firmware 0.7.8 for two axes plus the settings that exist only with one axis
+        expect(entries).to.have.length(50);
         expect(new Set(entries.map(e => e.group))).to.deep.equal(
             new Set(["safety", "commissioning", "control", "diagnostics"]),
         );
@@ -85,11 +87,8 @@ describe("params => states", () => {
     });
 
     it("describes a number with unit, limits and default", () => {
-        expect(paramCommon(firmware("stormKmh"))).to.deep.equal({
-            name: {
-                en: "Storm threshold (gust) (needs confirmation at the display)",
-                de: "Sturmschwelle (Böe) (braucht die Bestätigung am Display)",
-            },
+        const { name, ...rest } = paramCommon(firmware("stormKmh"));
+        expect(rest).to.deep.equal({
             type: "number",
             role: "level",
             read: true,
@@ -98,6 +97,12 @@ describe("params => states", () => {
             unit: "km/h",
             min: 20,
             max: 60,
+        });
+        expect(name).to.include({
+            en: "Storm threshold (gust) (needs confirmation at the display)",
+            de: "Sturmschwelle (Böe) (braucht die Bestätigung am Display)",
+            fr: "Seuil de tempête (rafale) (nécessite une confirmation sur l'écran)",
+            "zh-cn": "风暴阈值（阵风） （需在显示屏上确认）",
         });
     });
 
@@ -123,8 +128,43 @@ describe("params => states", () => {
 
     it("shows a setting it does not know yet with its key", () => {
         const entry = parseParam({ key: "brandNew", group: "future", type: "int", value: 1 });
-        expect(paramCommon(entry!).name).to.deep.equal({ en: "brandNew", de: "brandNew" });
-        expect(groupName("future")).to.deep.equal({ en: "Settings: future", de: "Einstellungen: future" });
+        const name = paramCommon(entry!).name as Record<string, string>;
+        expect(Object.keys(name)).to.have.length(11);
+        expect(new Set(Object.values(name))).to.deep.equal(new Set(["brandNew"]));
+        expect(groupName("future")).to.include({ en: "Settings: future", de: "Einstellungen: future" });
+        expect(groupName("future").fr).to.match(/ future$/);
+    });
+
+    it("names the settings of firmware 0.7.8 (sun position, tilt, Hall tap, reset)", () => {
+        for (const key of [
+            "siteLatitude",
+            "siteLongitude",
+            "rackAzimuth",
+            "nightAfterSunsetMin",
+            "dayBeforeSunriseMin",
+            "cloudAstro",
+            "cloudLevel",
+            "elevTravelSteepMs",
+            "elevTravelFlatMs",
+            "elevGeometry",
+            "elevStartLossMs",
+            "elevPreset1",
+            "elevPreset2",
+            "elevHall",
+            "elevHallInvert",
+            "elevHallSteps",
+            "syncResetElevation",
+            "syncResetAzimuth",
+        ]) {
+            const name = paramName(firmware(key));
+            expect(name.en.startsWith(key), `${key} has no English name`).to.equal(false);
+        }
+        expect(paramName(firmware("siteLatitude")).en).to.equal("Latitude of the site (north positive)");
+        expect(paramName(firmware("elevHall")).de).to.equal(
+            "Hall-Abgriff vorhanden (HallTapBoard) (nur bei stehenden Antrieben)",
+        );
+        expect(paramCommon(firmware("siteLongitude"))).to.include({ unit: "°", min: -180, max: 180 });
+        expect(paramCommon(firmware("nightAfterSunsetMin"))).to.include({ unit: "min", def: 30 });
     });
 });
 

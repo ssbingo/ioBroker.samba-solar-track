@@ -4,11 +4,9 @@
  * Placeholders are written as {name}.
  */
 
-/** Languages of ioBroker */
-export const LANGUAGES = ["en", "de", "ru", "pt", "nl", "fr", "it", "es", "pl", "uk", "zh-cn"] as const;
+import { LANGUAGES, type Language } from "./i18n";
 
-/** Language of ioBroker */
-export type Language = (typeof LANGUAGES)[number];
+export { LANGUAGES, type Language };
 
 /** Texts by key and language. {name} is the name of the device. */
 export const NOTIFICATIONS: Record<string, Record<Language, string>> = {
@@ -129,6 +127,19 @@ export const NOTIFICATIONS: Record<string, Record<Language, string>> = {
         pl: "{name}: czujnik słońca znów działa.",
         uk: "{name}: датчик сонця знову працює.",
         "zh-cn": "{name}：太阳传感器已恢复工作。",
+    },
+    commissionPending: {
+        en: "{name}: the setup program is not completed. Automatic tracking and the night position rest until it is completed at the display; storm protection keeps working.",
+        de: "{name}: Das Setup-Programm ist nicht abgeschlossen. Nachführung und Nachtstellung ruhen, bis es am Display abgeschlossen ist; der Sturmschutz arbeitet weiter.",
+        ru: "{name}: программа ввода в эксплуатацию не завершена. Автоматическое слежение и ночное положение не работают, пока она не будет завершена на дисплее; защита от шторма продолжает работать.",
+        pt: "{name}: o programa de configuração não está concluído. O seguimento automático e a posição noturna ficam parados até ser concluído no ecrã; a proteção contra tempestades continua a funcionar.",
+        nl: "{name}: het installatieprogramma is niet voltooid. Automatisch volgen en de nachtstand rusten tot het op het display is voltooid; de stormbeveiliging blijft werken.",
+        fr: "{name} : le programme de mise en service n'est pas terminé. Le suivi automatique et la position de nuit sont suspendus jusqu'à ce qu'il soit terminé à l'écran ; la protection contre les tempêtes reste active.",
+        it: "{name}: il programma di messa in servizio non è completato. L'inseguimento automatico e la posizione notturna restano fermi finché non viene completato sul display; la protezione dalle tempeste continua a funzionare.",
+        es: "{name}: el programa de puesta en marcha no está terminado. El seguimiento automático y la posición nocturna quedan en reposo hasta terminarlo en la pantalla; la protección contra tormentas sigue funcionando.",
+        pl: "{name}: program uruchomieniowy nie został ukończony. Automatyczne śledzenie i pozycja nocna są wstrzymane, dopóki nie zostanie ukończony na wyświetlaczu; ochrona przed burzą działa dalej.",
+        uk: "{name}: програму введення в експлуатацію не завершено. Автоматичне стеження та нічне положення не працюють, доки її не буде завершено на дисплеї; захист від шторму працює далі.",
+        "zh-cn": "{name}：调试程序尚未完成。在显示屏上完成之前，自动跟踪和夜间位置暂停；风暴保护继续工作。",
     },
     connectionLost: {
         en: "{name}: no connection to the device for {minutes} minute(s). The tracker keeps working on its own, but ioBroker receives no messages.",

@@ -3,7 +3,7 @@
 
 > [English README](../../README.md)
 
-Monitoruje sterownik **Samba Solar Track**: tracker słoneczny do modułów fotowoltaicznych z ochroną przed burzą, zbudowany na płytce ESP32-S3 z 7-calowym wyświetlaczem dotykowym. Adapter pokazuje stan sterownika w ioBroker i odbiera każdy komunikat, który urządzenie zapisuje w swoim dzienniku.
+Monitoruje sterownik **Samba Solar Track**: tracker słoneczny do modułów fotowoltaicznych z ochroną przed burzą, zbudowany na płytce ESP32-P4 z 10,1-calowym wyświetlaczem dotykowym. Adapter pokazuje stan sterownika w ioBroker i odbiera każdy komunikat, który urządzenie zapisuje w swoim dzienniku.
 
 Sprzęt i instrukcja urządzenia (wersja 10,1 cala): <https://github.com/ssbingo/samba-solar-track>. Oprogramowanie jest dostępne tylko w postaci skompilowanej: <https://firmware.samba-solar.de/>
 
@@ -15,7 +15,7 @@ Najważniejsze jest urządzenie. Śledzenie słońca, ochrona przed burzą, wył
 
 ## Stan projektu
 
-Wczesna wersja w trakcie rozwoju, opublikowana w npm, ale jeszcze nie w repozytoriach ioBroker. Dostępne: połączenie z automatycznym ponownym łączeniem, stan sterownika jako stany, komunikaty z godziną i historią, polecenia (automatyka, parkowanie na płasko, potwierdzenie usterki, jazda ręczna z czuwakiem) oraz ustawienia urządzenia (wartości z granicami, propozycje z potwierdzeniem na wyświetlaczu, konfiguracja, wygląd), zob. [angielskie README](../../README.md#commands). Ponadto powiadomienia przez adapter komunikatów (burza, usterki, wiatromierz, czujnik słońca, połączenie, ponowne uruchomienie). Planowane: widżety vis-2. Połączenie i odczyt przetestowano z prawdziwym urządzeniem (firmware 0.0.3, 03.10.2026); polecenia, ustawienia i powiadomienia tylko z symulowanym urządzeniem.
+Wczesna wersja w trakcie rozwoju, opublikowana w npm, ale jeszcze nie w repozytoriach ioBroker. Dostępne: połączenie z automatycznym ponownym łączeniem, stan sterownika jako stany, komunikaty z godziną i historią, polecenia (automatyka, parkowanie na płasko, potwierdzenie usterki, jazda ręczna z czuwakiem) oraz ustawienia urządzenia (wartości z granicami, propozycje z potwierdzeniem na wyświetlaczu, konfiguracja, wygląd), zob. [angielskie README](../../README.md#commands). Ponadto powiadomienia przez adapter komunikatów (burza, usterki, wiatromierz, czujnik słońca, połączenie, ponowne uruchomienie). Od wersji 0.1.0 adapter zawiera sześć widżetów vis-2 (zestaw „Samba Solar Track”): przegląd, sterowanie, komunikaty, wartości, położenie słońca i program uruchomieniowy, w kolorach i układzie wyświetlacza; wybiera się tylko instancję adaptera. Opis w [angielskim README](../../README.md#vis-2-widgets). Połączenie i odczyt przetestowano z prawdziwym urządzeniem (firmware 0.0.3, 03.10.2026); polecenia, ustawienia i powiadomienia tylko z symulowanym urządzeniem. Od wersji 0.1.0 także funkcje oprogramowania do 0.7.8: położenie słońca, program uruchomieniowy z raportami z testów, nachylenie na polecenie z czujnikiem Halla, reset sterowania synchronicznego i oprogramowanie przez internet; stany opisuje [angielski README](../../README.md#states).
 
 ## Wymagania
 
@@ -27,7 +27,7 @@ Wczesna wersja w trakcie rozwoju, opublikowana w npm, ale jeszcze nie w repozyto
 | Ustawienie | Znaczenie |
 | --- | --- |
 | Adres urządzenia | Adres IP lub nazwa hosta; wyświetlacz pokazuje je w konfiguracja > sieć. |
-| Port | Urządzenie używa portu 80. |
+| Port sieciowy | Urządzenie używa portu 80. |
 | Token, blok 1 do 4 | Token urządzenia: cztery pola obok siebie, w każdym blok 8 znaków (0-9, a-f). Wyświetlacz pokazuje go w zębatka > NETZWERK, nagłówek „TOKEN FUER DEN ADAPTER”: bloki 1 i 2 w pierwszym wierszu, 3 i 4 w drugim; wpisuj od lewej do prawej. Wpis jest ukryty jak hasło; podczas wpisywania oko go pokazuje. Pola są zapisywane w postaci zaszyfrowanej, a zapisany blok pozostaje ukryty: aby go zmienić, usuń go całkowicie i wpisz ponownie. Bez tokenu adapter tylko odczytuje. Błędny lub niepełny blok jest oznaczany na czerwono, czerwony wiersz pod polami podaje przyczynę, a zapisanie jest zablokowane; jeśli mimo to do adaptera trafi błędny token, dziennik wskaże blok. Token z dawnego pojedynczego pola (wersja 0.0.4 lub starsza) wersja 0.0.6 lub nowsza przenosi przy pierwszym uruchomieniu do czterech pól, po czym adapter uruchamia się ponownie jeden raz; nieużyteczna stara wartość nie jest przenoszona i jest zgłaszana jako błąd, dopóki cztery pola nie zostaną wypełnione. |
 | Zapisuj komunikaty urządzenia w dzienniku ioBroker | Od którego poziomu komunikaty urządzenia pojawiają się także w dzienniku ioBroker. Wszystkie komunikaty są i tak zapisywane w stanach w `messages`. |
 | Komunikaty w historii | Liczba komunikatów w `messages.history` (od 1 do 500). |
@@ -37,6 +37,9 @@ Wczesna wersja w trakcie rozwoju, opublikowana w npm, ale jeszcze nie w repozyto
 Poziomy dziennika, znaczniki i zmiana poziomu są opisane w [angielskim README](../../README.md#logging-and-debugging). Token nigdy nie pojawia się w dzienniku.
 
 ## Changelog
+
+### 0.1.0 (2026-11-15)
+- (ssbingo) Obsługa oprogramowania układowego do 0.7.8: stany POSITION, COMMISSION i ASTRO; położenie słońca; program uruchomieniowy z raportami z testów; nachylenie na polecenie z czujnikiem Halla; reset sterowania synchronicznego; oprogramowanie przez internet; nachylenie w stopniach; oznaczenia STROMIEJ/PŁASKIEJ; nowe ustawienia; powiadomienie o nieukończonym programie uruchomieniowym; nazwy obiektów w 11 językach. Stany danej funkcji powstają tylko wtedy, gdy oprogramowanie ją zgłasza; widżety vis-2: przegląd, sterowanie, komunikaty, wartości, położenie słońca i program uruchomieniowy (React, Module Federation, 11 języków); nowe stany `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` i `update.*`; strona ustawień nie powtarza już tekstu angielskiego w innych językach (port sieciowy, części tokenu, nagłówki)
 
 ### 0.0.7 (2026-10-03)
 - (ssbingo) wpisywanie tokenu: czerwony wiersz pod czterema polami podaje przyczynę, gdy blok jest niepełny lub błędny; zapisany blok można znowu zmienić (usunąć go całkowicie i wpisać ponownie); na telefonie każde pole zajmuje pełną szerokość; po przeniesieniu starego tokenu pierwsze uruchomienie kończy się poprawnie, zanim js-controller uruchomi adapter ponownie (brak drugiego połączenia w trybie compact); jaśniejsze teksty dziennika o starym polu tokenu

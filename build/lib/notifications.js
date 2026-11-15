@@ -18,7 +18,7 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var notifications_exports = {};
 __export(notifications_exports, {
-  LANGUAGES: () => LANGUAGES,
+  LANGUAGES: () => import_i18n.LANGUAGES,
   MESSAGING_ADAPTERS: () => MESSAGING_ADAPTERS,
   NOTIFICATIONS: () => NOTIFICATIONS,
   messagingOptions: () => messagingOptions,
@@ -26,7 +26,7 @@ __export(notifications_exports, {
   translate: () => translate
 });
 module.exports = __toCommonJS(notifications_exports);
-const LANGUAGES = ["en", "de", "ru", "pt", "nl", "fr", "it", "es", "pl", "uk", "zh-cn"];
+var import_i18n = require("./i18n");
 const NOTIFICATIONS = {
   stormStarted: {
     en: "{name}: storm protection active. Gust {gust} km/h, threshold {threshold} km/h. The module drives to the flat position.",
@@ -145,6 +145,19 @@ const NOTIFICATIONS = {
     uk: "{name}: \u0434\u0430\u0442\u0447\u0438\u043A \u0441\u043E\u043D\u0446\u044F \u0437\u043D\u043E\u0432\u0443 \u043F\u0440\u0430\u0446\u044E\u0454.",
     "zh-cn": "{name}\uFF1A\u592A\u9633\u4F20\u611F\u5668\u5DF2\u6062\u590D\u5DE5\u4F5C\u3002"
   },
+  commissionPending: {
+    en: "{name}: the setup program is not completed. Automatic tracking and the night position rest until it is completed at the display; storm protection keeps working.",
+    de: "{name}: Das Setup-Programm ist nicht abgeschlossen. Nachf\xFChrung und Nachtstellung ruhen, bis es am Display abgeschlossen ist; der Sturmschutz arbeitet weiter.",
+    ru: "{name}: \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0430 \u0432\u0432\u043E\u0434\u0430 \u0432 \u044D\u043A\u0441\u043F\u043B\u0443\u0430\u0442\u0430\u0446\u0438\u044E \u043D\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430. \u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u0441\u043B\u0435\u0436\u0435\u043D\u0438\u0435 \u0438 \u043D\u043E\u0447\u043D\u043E\u0435 \u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442, \u043F\u043E\u043A\u0430 \u043E\u043D\u0430 \u043D\u0435 \u0431\u0443\u0434\u0435\u0442 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430 \u043D\u0430 \u0434\u0438\u0441\u043F\u043B\u0435\u0435; \u0437\u0430\u0449\u0438\u0442\u0430 \u043E\u0442 \u0448\u0442\u043E\u0440\u043C\u0430 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u0435\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C.",
+    pt: "{name}: o programa de configura\xE7\xE3o n\xE3o est\xE1 conclu\xEDdo. O seguimento autom\xE1tico e a posi\xE7\xE3o noturna ficam parados at\xE9 ser conclu\xEDdo no ecr\xE3; a prote\xE7\xE3o contra tempestades continua a funcionar.",
+    nl: "{name}: het installatieprogramma is niet voltooid. Automatisch volgen en de nachtstand rusten tot het op het display is voltooid; de stormbeveiliging blijft werken.",
+    fr: "{name} : le programme de mise en service n'est pas termin\xE9. Le suivi automatique et la position de nuit sont suspendus jusqu'\xE0 ce qu'il soit termin\xE9 \xE0 l'\xE9cran ; la protection contre les temp\xEAtes reste active.",
+    it: "{name}: il programma di messa in servizio non \xE8 completato. L'inseguimento automatico e la posizione notturna restano fermi finch\xE9 non viene completato sul display; la protezione dalle tempeste continua a funzionare.",
+    es: "{name}: el programa de puesta en marcha no est\xE1 terminado. El seguimiento autom\xE1tico y la posici\xF3n nocturna quedan en reposo hasta terminarlo en la pantalla; la protecci\xF3n contra tormentas sigue funcionando.",
+    pl: "{name}: program uruchomieniowy nie zosta\u0142 uko\u0144czony. Automatyczne \u015Bledzenie i pozycja nocna s\u0105 wstrzymane, dop\xF3ki nie zostanie uko\u0144czony na wy\u015Bwietlaczu; ochrona przed burz\u0105 dzia\u0142a dalej.",
+    uk: "{name}: \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u0443 \u0432\u0432\u0435\u0434\u0435\u043D\u043D\u044F \u0432 \u0435\u043A\u0441\u043F\u043B\u0443\u0430\u0442\u0430\u0446\u0456\u044E \u043D\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u043E. \u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u043D\u0435 \u0441\u0442\u0435\u0436\u0435\u043D\u043D\u044F \u0442\u0430 \u043D\u0456\u0447\u043D\u0435 \u043F\u043E\u043B\u043E\u0436\u0435\u043D\u043D\u044F \u043D\u0435 \u043F\u0440\u0430\u0446\u044E\u044E\u0442\u044C, \u0434\u043E\u043A\u0438 \u0457\u0457 \u043D\u0435 \u0431\u0443\u0434\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u043E \u043D\u0430 \u0434\u0438\u0441\u043F\u043B\u0435\u0457; \u0437\u0430\u0445\u0438\u0441\u0442 \u0432\u0456\u0434 \u0448\u0442\u043E\u0440\u043C\u0443 \u043F\u0440\u0430\u0446\u044E\u0454 \u0434\u0430\u043B\u0456.",
+    "zh-cn": "{name}\uFF1A\u8C03\u8BD5\u7A0B\u5E8F\u5C1A\u672A\u5B8C\u6210\u3002\u5728\u663E\u793A\u5C4F\u4E0A\u5B8C\u6210\u4E4B\u524D\uFF0C\u81EA\u52A8\u8DDF\u8E2A\u548C\u591C\u95F4\u4F4D\u7F6E\u6682\u505C\uFF1B\u98CE\u66B4\u4FDD\u62A4\u7EE7\u7EED\u5DE5\u4F5C\u3002"
+  },
   connectionLost: {
     en: "{name}: no connection to the device for {minutes} minute(s). The tracker keeps working on its own, but ioBroker receives no messages.",
     de: "{name}: Seit {minutes} Minute(n) keine Verbindung zum Ger\xE4t. Der Tracker arbeitet selbstst\xE4ndig weiter, ioBroker erh\xE4lt aber keine Meldungen.",
@@ -209,7 +222,7 @@ function messagingOptions(instanceIds) {
   return options.sort((a, b) => a.value.localeCompare(b.value));
 }
 function supportedLanguage(language) {
-  return LANGUAGES.includes(language) ? language : "en";
+  return import_i18n.LANGUAGES.includes(language) ? language : "en";
 }
 function translate(key, language, params) {
   const texts = NOTIFICATIONS[key];

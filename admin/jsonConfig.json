@@ -266,6 +266,17 @@
             "lg": 4,
             "xl": 4
         },
+        "notifyCommission": {
+            "type": "checkbox",
+            "label": "notifyCommissionLabel",
+            "hidden": "!data.notifyEnabled",
+            "newLine": false,
+            "xs": 12,
+            "sm": 12,
+            "md": 6,
+            "lg": 4,
+            "xl": 4
+        },
         "notifyConnection": {
             "type": "checkbox",
             "label": "notifyConnectionLabel",

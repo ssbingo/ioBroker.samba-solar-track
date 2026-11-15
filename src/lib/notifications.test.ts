@@ -46,8 +46,12 @@ describe("notifications => texts", () => {
             sun: { ok: false },
         };
         detector.update(ok);
-        const keys = [...detector.update(bad), ...detector.update(ok)].map(event => event.key);
-        expect(keys).to.have.length(9);
+        const keys = [
+            ...detector.update(bad),
+            ...detector.update(ok),
+            ...detector.update({ ...ok, state: "COMMISSION" }),
+        ].map(event => event.key);
+        expect(keys).to.have.length(10);
         for (const key of [...keys, "connectionLost", "connectionRestored", "deviceRestarted"]) {
             expect(NOTIFICATIONS, key).to.have.property(key);
         }

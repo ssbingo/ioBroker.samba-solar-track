@@ -2,7 +2,7 @@ const crypto = require("node:crypto");
 const path = require("path");
 const { tests } = require("@iobroker/testing");
 const { expect } = require("chai");
-const { MockDevice, TOKEN, TOKEN_BLOCKS } = require("./mock-device");
+const { FEATURES_078, MockDevice, REPORT_TEXT, TOKEN, TOKEN_BLOCKS } = require("./mock-device");
 
 const NAMESPACE = "samba-solar-track.0";
 
@@ -149,6 +149,26 @@ tests.integration(path.join(__dirname, ".."), {
                 await expectState("info.connection", true);
                 await until(() => harness.hasLog("The device has restarted", "info"), `log line "The device has restarted"`.replace(/"/g, ""));
 
+                // an older firmware without the features of 0.7.x gets none of their objects
+                for (const id of [
+                    "sunPosition",
+                    "sunPosition.known",
+                    "commissioning.report0",
+                    "firmware.latest",
+                    "control.fwInstall",
+                    "battery",
+                    "battery.percent",
+                    "update.percent",
+                    "supply.v24",
+                    "supply.checks",
+                ]) {
+                    expect((await harness.objects.getObjectAsync(`${NAMESPACE}.${id}`)) ?? null, id).to.equal(null);
+                }
+                // every name exists in the 11 languages of ioBroker
+                const nameOf = async id => (await harness.objects.getObjectAsync(`${NAMESPACE}.${id}`))?.common?.name;
+                expect(Object.keys(await nameOf("status.state"))).to.have.length(11);
+                expect(await nameOf("axes.elevation.limitPlus")).to.include({ en: "Limit switch FLATTER open" });
+
                 // no secret in the log, even at level silly
                 const logs = harness.getLogs();
                 expect(logs.length).to.be.greaterThan(20);
@@ -261,6 +281,152 @@ tests.integration(path.join(__dirname, ".."), {
                 await write("control.jogElevation", 5);
                 await until(async () => (await lastResult()).reason === "range", "result range");
                 await expectState("control.jogElevation", 0, true);
+
+                expectNoSecret(harness.getLogs());
+                expect(harness.getLogs("error")).to.deep.equal([]);
+            });
+        });
+
+        suite("Firmware 0.7.8 with one axis (mock device)", getHarness => {
+            /** @type {MockDevice} */
+            let device;
+
+            before(async () => {
+                device = new MockDevice({ features: FEATURES_078, mode: 1, fw: "0.7.8" });
+                // the flat position lies in direction MINUS: the elevation names are swapped
+                device.status.axes.elevation.flatDir = -1;
+                await device.start();
+            });
+
+            after(async () => {
+                await device.stop();
+            });
+
+            it("creates the objects of the features, reads the test reports and passes on the new commands", async function () {
+                this.timeout(120000);
+                const harness = getHarness();
+                const state = async id => harness.states.getStateAsync(`${NAMESPACE}.${id}`);
+                const object = async id => (await harness.objects.getObjectAsync(`${NAMESPACE}.${id}`)) ?? null;
+                const write = (id, val) => harness.states.setStateAsync(`${NAMESPACE}.${id}`, { val, ack: false });
+                const expectState = async (id, expected) => {
+                    let last;
+                    await until(async () => (last = (await state(id))?.val) === expected, `${id} to become ${JSON.stringify(expected)}`).catch(
+                        error => {
+                            throw new Error(`${error.message} (last ${JSON.stringify(last)})`);
+                        },
+                    );
+                };
+                const lastResult = async () => JSON.parse((await state("control.lastResult"))?.val ?? "{}");
+
+                await harness.changeAdapterConfig("samba-solar-track", {
+                    common: { loglevel: "silly" },
+                    native: { ip: "127.0.0.1", port: device.port, ...tokenFields() },
+                });
+                await harness.startAdapterAndWait(true);
+
+                // position of the sun (A2), setup program (A3), tilt with Hall tap (B1, B2), firmware (B4), tilt (B5)
+                await expectState("info.firmware", "0.7.8");
+                await expectState("sunPosition.sunrise", 1794291186000);
+                await expectState("sunPosition.bestTilt", 68.5);
+                await expectState("sunPosition.astroTarget", null);
+                await expectState("commissioning.done", true);
+                await expectState("commissioning.total", 13);
+                await expectState("position.angle", 38);
+                await expectState("position.hallOk", true);
+                await expectState("firmware.latest", "0.7.9");
+                await expectState("axes.elevation.angle", 38);
+                await expectState("axes.elevation.flatDirection", -1);
+                await expectState("axes.elevation.syncResetPort", "j23");
+                // battery, 24 V / 5 V, check of the charge lock and progress of an update (0.1.0)
+                await expectState("battery.percent", 82);
+                await expectState("battery.charging", true);
+                await expectState("battery.level", "ok");
+                await expectState("supply.v24", true);
+                await expectState("supply.v5", true);
+                await expectState("supply.adcOk", true);
+                await expectState("supply.checks", "[]");
+                await expectState("update.active", false);
+                await expectState("update.percent", 0);
+                await expectState("update.phase", "none");
+                expect((await object("battery.percent")).common.role).to.equal("value.battery");
+                expect((await object("update.percent")).common.role).to.equal("value.progress");
+                expect(Object.keys((await object("battery")).common.name)).to.have.length(11);
+                expect((await object("sunPosition")).common.name).to.include({ en: "Position of the sun (site and time)" });
+                expect(Object.keys((await object("sunPosition.night")).common.name)).to.have.length(11);
+                expect((await object("sunPosition.sunrise")).common.role).to.equal("date.sunrise");
+                // only with two axes
+                expect(await object("axes.azimuth.syncResetPort")).to.equal(null);
+                expect(await object("control.syncResetAzimuth")).to.equal(null);
+
+                // the names follow the direction of the flat position (B6)
+                await until(
+                    async () => (await object("axes.elevation.limitPlus"))?.common?.name?.en === "Limit switch STEEPER open",
+                    "elevation names for flatDir -1",
+                );
+                expect((await object("control.jogElevation")).common.states).to.deep.equal({ "-1": "FLATTER", 0: "Stop", 1: "STEEPER" });
+
+                // test reports (A4, A9): the newest as text and as data set, a missing one is empty
+                await expectState("commissioning.report0", REPORT_TEXT);
+                await expectState("commissioning.report1", "");
+                await expectState("commissioning.report.travelSteeper", 52300);
+                await expectState("commissioning.report.stepsOpen", 1);
+                await expectState("commissioning.report.date", 1794407520000);
+
+                // the settings of firmware 0.7.8 (A5, B1 to B3), only those of this operating mode
+                await until(async () => (await object("params.commissioning.siteLatitude")) !== null, "siteLatitude");
+                for (const id of ["params.control.cloudAstro", "params.commissioning.rackAzimuth", "params.commissioning.elevHall", "params.control.elevPreset1"]) {
+                    await until(async () => (await object(id)) !== null, `object ${id}`);
+                }
+                expect(await object("params.commissioning.syncResetAzimuth")).to.equal(null);
+                expect((await object("params.commissioning.siteLatitude")).common.name.fr).to.be.a("string").and.not.equal("");
+                // the value is written only after the adapter knows the setting (loadParams), wait for it before writing
+                await until(
+                    async () => (await harness.states.getStateAsync(`${NAMESPACE}.params.commissioning.siteLatitude`))?.ack === true,
+                    "value of siteLatitude",
+                );
+                await write("params.commissioning.siteLatitude", 51.0504);
+                await until(() => device.params.find(e => e.key === "siteLatitude").value === 51.0504, "latitude at the device");
+
+                // tilt on command (B1)
+                await write("control.position", 30);
+                await expectState("status.state", "POSITION");
+                await expectState("position.target", 30);
+                await expectState("control.position", 30);
+                await write("control.position", 31);
+                await until(async () => (await lastResult()).command === "position 31°", "result of position 31");
+                expect(await lastResult()).to.include({ ok: false, reason: "range" });
+                await expectState("control.position", 30);
+                await write("control.positionResume", true);
+                await expectState("position.target", null);
+
+                // reset of the synchronous control (B3): the second one is refused with the detail of the device
+                await write("control.syncResetElevation", true);
+                await expectState("axes.elevation.syncResetPhase", "pulse");
+                await until(() => harness.hasLog("The device starts the reset of the synchronous control elevation", "info"), "info about the reset");
+                await write("control.syncResetElevation", true);
+                await until(async () => (await lastResult()).reason === "busy", "reset refused");
+                expect(await lastResult()).to.include({ detail: "Reset laeuft schon" });
+
+                // firmware over the internet (B4): the version has to be the one found
+                await write("control.fwCheck", true);
+                await expectState("firmware.state", "checking");
+                await write("control.fwInstall", "0.7.8");
+                await until(async () => (await lastResult()).command === "install firmware 0.7.8", "refused install");
+                expect(await lastResult()).to.include({ ok: false, reason: "range" });
+                await expectState("control.fwInstall", "");
+                await write("control.fwInstall", "0.7.9");
+                await expectState("firmware.state", "downloading");
+                await expectState("control.fwInstall", "0.7.9");
+
+                // the setup program runs again and ends with a new report: the reports are read again
+                const before = device.reportRequests;
+                device.reports.unshift("PRUEFBERICHT 2");
+                device.setStatus({ state: "COMMISSION", commissioning: { ...device.status.commissioning, done: false, active: true } });
+                await expectState("status.state", "COMMISSION");
+                device.setStatus({ state: "IDLE", commissioning: { ...device.status.commissioning, done: true, active: false } });
+                await expectState("commissioning.report0", "PRUEFBERICHT 2");
+                await expectState("commissioning.report1", REPORT_TEXT);
+                expect(device.reportRequests).to.be.greaterThan(before);
 
                 expectNoSecret(harness.getLogs());
                 expect(harness.getLogs("error")).to.deep.equal([]);
@@ -443,7 +609,7 @@ tests.integration(path.join(__dirname, ".."), {
                 });
                 await harness.startAdapterAndWait(true);
                 await until(async () => (await state("status.state"))?.val === "IDLE", "status.state IDLE");
-                await until(() => harness.hasLog("[ntf] Notifications to telegram.0 for: storm, fault, sensor, connection, restart", "info"), "summary of the notifications");
+                await until(() => harness.hasLog("[ntf] Notifications to telegram.0 for: storm, fault, sensor, commission, connection, restart", "info"), "summary of the notifications");
 
                 // storm begins and ends
                 device.setStatus({

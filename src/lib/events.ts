@@ -5,7 +5,7 @@
 import { readPath, type DeviceStatus } from "./protocol";
 
 /** Kinds of events the user can switch on and off */
-export const EVENT_CATEGORIES = ["storm", "fault", "wind", "sensor", "connection", "restart"] as const;
+export const EVENT_CATEGORIES = ["storm", "fault", "wind", "sensor", "commission", "connection", "restart"] as const;
 
 /** Kind of event */
 export type EventCategory = (typeof EVENT_CATEGORIES)[number];
@@ -26,6 +26,8 @@ interface Snapshot {
     faultMotor: boolean;
     windOk: boolean;
     sunOk: boolean;
+    /** The controller is in the state COMMISSION: the setup program is not completed */
+    commission: boolean;
 }
 
 /**
@@ -52,6 +54,11 @@ function speed(value: unknown): string {
 /** Finds the events between two status reports of the device */
 export class EventDetector {
     private previous: Snapshot | undefined;
+    /**
+     * The setup program was reported as not completed; reported again only after it was
+     * completed in between (`commissioning.done`), not each time a higher state interrupts it.
+     */
+    private commissionReported = false;
 
     /**
      * Compares a status with the one before.
@@ -66,10 +73,16 @@ export class EventDetector {
             faultMotor: flag(status, "fault.motor", false),
             windOk: flag(status, "wind.ok", true),
             sunOk: flag(status, "sun.ok", true),
+            commission: readPath(status, "state") === "COMMISSION",
         };
+        if (readPath(status, "commissioning.done") === true) {
+            this.commissionReported = false;
+        }
         const before = this.previous;
         this.previous = now;
         if (!before) {
+            // the starting point: a pending setup program counts as known
+            this.commissionReported = now.commission;
             return [];
         }
         const events: DeviceEvent[] = [];
@@ -104,6 +117,10 @@ export class EventDetector {
             events.push({ category: "sensor", key: "sunLost", params: {} });
         } else if (now.sunOk && !before.sunOk) {
             events.push({ category: "sensor", key: "sunBack", params: {} });
+        }
+        if (now.commission && !before.commission && !this.commissionReported) {
+            this.commissionReported = true;
+            events.push({ category: "commission", key: "commissionPending", params: {} });
         }
         return events;
     }

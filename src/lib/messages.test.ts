@@ -58,6 +58,17 @@ describe("messages => MessageStore", () => {
         expect(formatMessage(message!)).to.equal("[I][track] message 1");
     });
 
+    it("passes on every tag of the firmware, also sun and setup of firmware 0.7.0", () => {
+        const store = new MessageStore(10);
+        store.setBootId("a");
+        const tags = ["sun", "setup", "sync", "hall", "elpos", "brandnewtag"];
+        tags.forEach((tag, index) => {
+            const { message } = store.add({ seq: index + 1, ms: index, lvl: "I", tag, msg: "Text" }, 0);
+            expect(formatMessage(message!)).to.equal(`[I][${tag}] Text`);
+        });
+        expect(store.messages.map(m => m.tag)).to.deep.equal([...tags].reverse());
+    });
+
     it("keeps the newest messages first and respects the limit", () => {
         const store = new MessageStore(3);
         store.setBootId("a");

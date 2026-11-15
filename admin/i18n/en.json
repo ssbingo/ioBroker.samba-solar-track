@@ -30,6 +30,7 @@
     "notifyFaultLabel": "Faults (runtime of a drive, switching outputs)",
     "notifyWindLabel": "Wind sensor stops answering or answers again",
     "notifySensorLabel": "Sun sensor reports a fault or works again",
+    "notifyCommissionLabel": "Setup program not completed",
     "notifyConnectionLabel": "Device not reachable or reachable again",
     "notifyRestartLabel": "Device has restarted",
     "notifyConnectionMinutesLabel": "Notify after minutes without connection",
