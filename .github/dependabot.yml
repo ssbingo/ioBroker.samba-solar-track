@@ -6,7 +6,10 @@ version: 2
 updates:
 
   - package-ecosystem: 'npm'
-    directory: '/'
+    # adapter and the vis-2 widgets (src-widgets has its own package.json)
+    directories:
+      - '/'
+      - '/src-widgets'
     schedule:
       interval: 'cron'
       timezone: 'Europe/Berlin'
