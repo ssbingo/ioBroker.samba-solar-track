@@ -29,8 +29,6 @@ function buildWidgets() {
             copyFiles([`${SRC}build/icon-set.json`], `widgets/${adapterName}`);
             copyFiles([`${SRC}build/assets/*.*`], `widgets/${adapterName}/assets`);
             copyFiles([`${SRC}build/img/*`], `widgets/${adapterName}/img`);
-            // Licence of the bundled font Montserrat (SIL Open Font License 1.1)
-            copyFiles([`${SRC}src/fonts/OFL.txt`], `widgets/${adapterName}/fonts`);
         });
 }
 

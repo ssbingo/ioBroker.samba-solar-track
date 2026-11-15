@@ -24,7 +24,7 @@ export const TOKEN_BLOCK_LENGTH = TOKEN_LENGTH / TOKEN_BLOCKS;
 
 /** Where the user finds the token, for log texts */
 export const TOKEN_HINT =
-    'The display shows it under the gear > NETZWERK > "TOKEN FUER DEN ADAPTER" as 4 blocks of 8 characters ' +
+    'The display shows it under the gear > NETWORK > "TOKEN FOR THE ADAPTER" as 4 blocks of 8 characters ' +
     "(0-9, a-f); enter one block per field in the adapter settings.";
 
 /** Answer of GET /api/info (only the fixed contract is mandatory) */

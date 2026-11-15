@@ -200,6 +200,7 @@
     "unknown": "ONBEKEND",
     "unknown_lower": "stand onbekend",
     "unpark": "PARKEREN OPHEFFEN",
+    "widget_title": "Titel (leeg = naam van de widget)",
     "wind": "Windsnelheid",
     "wind_fault": "Windmeter antwoordt niet",
     "wind_from": "Wind uit {dir} ({deg}°)"

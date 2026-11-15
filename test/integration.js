@@ -337,7 +337,7 @@ tests.integration(path.join(__dirname, ".."), {
                 await expectState("axes.elevation.angle", 38);
                 await expectState("axes.elevation.flatDirection", -1);
                 await expectState("axes.elevation.syncResetPort", "j23");
-                // battery, 24 V / 5 V, check of the charge lock and progress of an update (0.1.0)
+                // battery, 24 V / 5 V, check of the charge lock and progress of an update (0.1.1)
                 await expectState("battery.percent", 82);
                 await expectState("battery.charging", true);
                 await expectState("battery.level", "ok");
@@ -780,7 +780,7 @@ tests.integration(path.join(__dirname, ".."), {
                 const errors = harness.getLogs("error");
                 expect(errors).to.have.length(1);
                 expect(errors[0].message).to.contain("[cfg] The token in the adapter settings cannot be used: block 2 has 7 characters instead of 8.");
-                expect(errors[0].message).to.contain('gear > NETZWERK > "TOKEN FUER DEN ADAPTER" as 4 blocks of 8 characters');
+                expect(errors[0].message).to.contain('gear > NETWORK > "TOKEN FOR THE ADAPTER" as 4 blocks of 8 characters');
                 expect(harness.hasLog("token from the four fields incomplete or wrong (read only)", "info")).to.equal(true);
                 // no token was sent, so the device has nothing to refuse
                 expect(harness.hasLog("did not accept the token")).to.equal(false);

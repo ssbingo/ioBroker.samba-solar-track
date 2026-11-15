@@ -2,9 +2,13 @@ import React from "react";
 
 import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps } from "@iobroker/types-vis-2";
 
+import { Box, Chip } from "@mui/material";
+
 import SstWidgetBase, { type SstBaseRxData, type SstBaseState } from "./SstWidgetBase";
-import { clock, fmt, sstCommonGroup, VIS_SET } from "./common";
+import { clock, fmt, sstCommonGroup, sstGrid, VIS_SET } from "./common";
 import { compass } from "./lock";
+import { Hint, Line } from "./parts";
+import { sunColor } from "./theme";
 
 const REL_IDS = [
     "info.connection",
@@ -57,7 +61,9 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
             visWidgetLabel: "SstSunPath",
             visHelp: "help_sun_path",
             visAttrs: [sstCommonGroup()],
-            visDefaultStyle: { width: 400, height: 250 },
+            visDefaultStyle: { width: 420, height: 280, position: "absolute" },
+            visDefaultGrid: sstGrid(12, 5),
+            visResizable: true,
             visPrev: "widgets/samba-solar-track/img/SstSunPath.svg",
             visOrder: 5,
         };
@@ -79,30 +85,38 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
         return X0 + f * (X1 - X0);
     }
 
-    private hint(text: string): React.JSX.Element {
-        return this.card(
-            <>
-                <div className="sst-head">
-                    <div className="sst-ttl">{this.tx("SstSunPath")}</div>
-                </div>
-                <div className="sst-hint">{text}</div>
-            </>,
-        );
+    // eslint-disable-next-line class-methods-use-this
+    protected titleKey(): string {
+        return "SstSunPath";
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected designSize(): [number, number] {
+        return [388, 248];
     }
 
     renderWidgetBody(props: RxRenderWidgetProps): React.JSX.Element {
         super.renderWidgetBody(props);
+        const theme = this.theme;
+        const p = theme.palette;
+        const font = theme.typography.fontFamily;
         const known = this.flag("sunPosition.known");
         if (known === null) {
-            return this.hint(this.connected() ? this.tx("sun_needs_firmware") : this.tx("band_offline"));
+            return this.renderCard(
+                props,
+                <Hint theme={theme}>{this.connected() ? this.tx("sun_needs_firmware") : this.tx("band_offline")}</Hint>,
+            );
         }
         if (!known) {
-            return this.hint(
-                this.flag("sunPosition.timeOk") === false
-                    ? this.tx("sun_no_time")
-                    : this.flag("sunPosition.siteSet") === false
-                      ? this.tx("sun_no_site")
-                      : this.tx("sun_unknown"),
+            return this.renderCard(
+                props,
+                <Hint theme={theme}>
+                    {this.flag("sunPosition.timeOk") === false
+                        ? this.tx("sun_no_time")
+                        : this.flag("sunPosition.siteSet") === false
+                          ? this.tx("sun_no_site")
+                          : this.tx("sun_unknown")}
+                </Hint>,
             );
         }
         const rise = this.num("sunPosition.sunrise");
@@ -156,32 +170,25 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
             lat !== null
                 ? `${Math.abs(lat).toFixed(1)}° ${lat >= 0 ? this.tx("lat_north") : this.tx("lat_south")}`
                 : "";
-        return this.card(
+        const night = p.mode === "dark" ? p.secondary.light : p.secondary.main;
+        const content = (
             <>
-                <div className="sst-head">
-                    <div className="sst-ttl">{this.tx("SstSunPath")}</div>
-                    <span className="sst-conn">{latText}</span>
-                </div>
-                <svg
+                <Box
+                    component="svg"
                     viewBox="0 0 380 170"
-                    style={{ width: "100%", height: "auto", flex: "1 1 auto", minHeight: 0 }}
+                    preserveAspectRatio="xMidYMid meet"
+                    sx={{ width: "100%", flex: "1 1 auto", minHeight: 0, display: "block" }}
                     role="img"
                     aria-label={this.tx("SstSunPath")}
+                    fontFamily={font}
                 >
-                    <rect
-                        x={0}
-                        y={0}
-                        width={380}
-                        height={170}
-                        fill="#12161F"
-                    />
                     {dayStartTime !== null ? (
                         <rect
                             x={X0}
                             y={20}
                             width={Math.max(0, SstSunPath.xOf(dayStartTime, day) - X0)}
                             height={BASE - 20}
-                            fill="#8E44AD"
+                            fill={night}
                             opacity={0.16}
                         />
                     ) : null}
@@ -191,7 +198,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                             y={20}
                             width={Math.max(0, X1 - SstSunPath.xOf(nightStart, day))}
                             height={BASE - 20}
-                            fill="#8E44AD"
+                            fill={night}
                             opacity={0.16}
                         />
                     ) : null}
@@ -201,7 +208,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                             y={20}
                             width={X1 - X0}
                             height={BASE - 20}
-                            fill="#8E44AD"
+                            fill={night}
                             opacity={0.16}
                         />
                     ) : null}
@@ -210,7 +217,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                         y1={BASE}
                         x2={X1}
                         y2={BASE}
-                        stroke="#8A93A6"
+                        stroke={this.muted}
                         strokeWidth={1}
                     />
                     {rise !== null && set !== null ? (
@@ -218,14 +225,14 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                             <path
                                 d={`M${xRise.toFixed(1)} ${BASE} Q${((xRise + xSet) / 2).toFixed(1)} ${ctrlY.toFixed(1)} ${xSet.toFixed(1)} ${BASE}`}
                                 fill="none"
-                                stroke="#2a3350"
+                                stroke={p.divider}
                                 strokeWidth={3}
                             />
                             {up ? (
                                 <polyline
                                     points={donePts.join(" ")}
                                     fill="none"
-                                    stroke="#FFCC00"
+                                    stroke={sunColor(theme)}
                                     strokeWidth={3}
                                 />
                             ) : null}
@@ -235,7 +242,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                                     y1={BASE}
                                     x2={xNoon}
                                     y2={apex - 4}
-                                    stroke="#8A93A6"
+                                    stroke={this.muted}
                                     strokeDasharray="3 3"
                                 />
                             ) : null}
@@ -245,7 +252,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                                         cx={sx}
                                         cy={sy}
                                         r={8}
-                                        fill="#FFCC00"
+                                        fill={sunColor(theme)}
                                     />
                                     <text
                                         x={sx}
@@ -253,7 +260,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                                         textAnchor="middle"
                                         fontSize={11}
                                         fontWeight={700}
-                                        fill="#fff"
+                                        fill={p.text.primary}
                                     >
                                         {`${fmt(el, 1)}°`}
                                     </text>
@@ -264,7 +271,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                                 y={158}
                                 textAnchor="middle"
                                 fontSize={10}
-                                fill="#8A93A6"
+                                fill={this.muted}
                             >
                                 {`↑ ${clock(rise)}`}
                             </text>
@@ -273,7 +280,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                                 y={158}
                                 textAnchor="middle"
                                 fontSize={10}
-                                fill="#8A93A6"
+                                fill={this.muted}
                             >
                                 {`${clock(noon)} · ${fmt(noonEl, 1)}°`}
                             </text>
@@ -282,7 +289,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                                 y={158}
                                 textAnchor="middle"
                                 fontSize={10}
-                                fill="#8A93A6"
+                                fill={this.muted}
                             >
                                 {`↓ ${clock(set)}`}
                             </text>
@@ -293,7 +300,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                             y={90}
                             textAnchor="middle"
                             fontSize={12}
-                            fill="#8A93A6"
+                            fill={this.muted}
                         >
                             {alwaysUp ? this.tx("polar_day") : alwaysDown ? this.tx("polar_night") : "–"}
                         </text>
@@ -304,7 +311,7 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                             y={34}
                             textAnchor="middle"
                             fontSize={9}
-                            fill="#c79ae0"
+                            fill={night}
                         >
                             {this.tx("night")}
                         </text>
@@ -315,28 +322,50 @@ export default class SstSunPath extends SstWidgetBase<SunRxData, SunState> {
                             y={34}
                             textAnchor="middle"
                             fontSize={9}
-                            fill="#c79ae0"
+                            fill={night}
                         >
                             {this.tx("night")}
                         </text>
                     ) : null}
-                    {!up && rise !== null && set !== null ? (
+                    {!up && rise !== null && set !== null && (el === null || el <= 0) ? (
                         <text
                             x={190}
                             y={70}
                             textAnchor="middle"
                             fontSize={11}
-                            fill="#8A93A6"
+                            fill={this.muted}
                         >
                             {this.tx("sun_below", { deg: fmt(el, 1) })}
                         </text>
                     ) : null}
-                </svg>
-                <div className="sst-kr">
-                    <span className="sst-small">{footer.join(" · ") || " "}</span>
-                    <span className="sst-small sst-gold">{state ? this.tx(`state_${state}`) : ""}</span>
-                </div>
-            </>,
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5em" }}>
+                    <Line
+                        size="0.8em"
+                        color={this.muted}
+                    >
+                        {footer.join(" · ") || " "}
+                    </Line>
+                    {state ? (
+                        <Chip
+                            size="small"
+                            variant="outlined"
+                            color={state === "NIGHT" ? "secondary" : "default"}
+                            label={this.tx(`state_${state}`)}
+                            sx={{ fontSize: "0.75em", height: "1.8em", flex: "0 0 auto", maxWidth: "55%" }}
+                        />
+                    ) : null}
+                </Box>
+            </>
         );
+        const latInfo = latText ? (
+            <Box
+                component="span"
+                sx={{ fontSize: "0.8em", color: this.muted, whiteSpace: "nowrap" }}
+            >
+                {latText}
+            </Box>
+        ) : null;
+        return this.renderCard(props, content, latInfo);
     }
 }

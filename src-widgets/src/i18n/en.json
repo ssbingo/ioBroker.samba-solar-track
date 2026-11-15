@@ -200,6 +200,7 @@
     "unknown": "UNKNOWN",
     "unknown_lower": "position unknown",
     "unpark": "CANCEL PARKING",
+    "widget_title": "Title (empty = name of the widget)",
     "wind": "Wind speed",
     "wind_fault": "Anemometer not answering",
     "wind_from": "Wind from {dir} ({deg}°)"

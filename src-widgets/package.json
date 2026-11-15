@@ -1,14 +1,15 @@
 {
     "name": "iobroker.samba-solar-track-widgets",
     "private": true,
-    "version": "0.1.0",
+    "version": "0.1.1",
     "type": "module",
     "dependencies": {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
         "@iobroker/types-vis-2": "^2.20.1",
-        "@mui/material": "^9.4.0",
         "@module-federation/vite": "^1.23.0",
+        "@mui/material": "^9.4.0",
+        "@mui/system": "^9.5.0",
         "@vitejs/plugin-react": "^5.2.0",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",

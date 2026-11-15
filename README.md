@@ -33,11 +33,11 @@ This is an early version under development. It is published on npm but not yet i
 | Commands (automatic on/off, park flat, acknowledge fault, manual drive with dead man) | available |
 | Settings of the device (values with limits, proposals, setup, design) | available |
 | Notifications through a messaging adapter (Telegram, Pushover, e-mail and others) | available |
-| Features of firmware 0.4 to 0.7.8: position of the sun, setup program and test reports, tilt on command, Hall tap, reset of the synchronous control, firmware over the internet, STEEPER/FLATTER | available (0.1.0) |
-| vis-2 widgets (overview, control, messages, values, position of the sun, setup program) | available (0.1.0) |
+| Features of firmware 0.4 to 0.7.8: position of the sun, setup program and test reports, tilt on command, Hall tap, reset of the synchronous control, firmware over the internet, STEEPER/FLATTER | available (0.1.1) |
+| vis-2 widgets (overview, control, messages, values, position of the sun, setup program) | available (0.1.1) |
 
 Connection and reading were tested with a real device (firmware 0.0.3, 2026-10-03); commands, settings, notifications
-and everything of version 0.1.0 only against a simulated device that follows the protocol of firmware 0.7.8. The
+and everything of version 0.1.1 only against a simulated device that follows the protocol of firmware 0.7.8. The
 widgets were loaded in vis-2 2.20.9 against that simulated device.
 
 ### Requirements
@@ -57,7 +57,7 @@ ioBroker installation is described in [doc/install.md](doc/install.md).
 | --- | --- |
 | Address of the device | IP address or host name. The display shows both under setup > network. |
 | Port | The device uses port 80. |
-| Token, block 1 to 4 | The token of the device: four fields side by side, one block of 8 characters (0-9, a-f) each. The display shows it under the gear > NETZWERK, heading "TOKEN FUER DEN ADAPTER": blocks 1 and 2 in the first line, 3 and 4 in the second; enter them from left to right. The entry is hidden like a password; while typing, the eye shows it. The fields are stored encrypted, and a saved block stays hidden: to change it, delete it completely and enter it again. Without a token the adapter only reads. A wrong or incomplete block is marked red, a red line under the fields names the reason, and saving is blocked; if a wrong token reaches the adapter anyway, the log names the block. A token from the former single field (version 0.0.4 or older) is moved into the four fields at the first start of 0.0.6 or newer, then the adapter restarts once; an unusable old value is not moved and is reported as an error until the four fields are filled in. |
+| Token, block 1 to 4 | The token of the device: four fields side by side, one block of 8 characters (0-9, a-f) each. The display shows it under the gear > NETWORK, heading "TOKEN FOR THE ADAPTER": blocks 1 and 2 in the first line, 3 and 4 in the second; enter them from left to right. The entry is hidden like a password; while typing, the eye shows it. The fields are stored encrypted, and a saved block stays hidden: to change it, delete it completely and enter it again. Without a token the adapter only reads. A wrong or incomplete block is marked red, a red line under the fields names the reason, and saving is blocked; if a wrong token reaches the adapter anyway, the log names the block. A token from the former single field (version 0.0.4 or older) is moved into the four fields at the first start of 0.0.6 or newer, then the adapter restarts once; an unusable old value is not moved and is reported as an error until the four fields are filled in. |
 | Write messages of the device to the ioBroker log | From which level on messages of the device also appear in the ioBroker log. Default: warnings and errors. All messages are stored in the states under `messages`, whatever is chosen here. |
 | Messages in the history | Number of messages kept in `messages.history` (1 to 500, default 50). |
 | Send notifications, send through | Switches notifications on and chooses the instance of a messaging adapter, see [Notifications](#notifications). |
@@ -203,21 +203,34 @@ the adapter starts; only changes are reported.
 
 ### vis-2 widgets
 
-The adapter brings the widget set "Samba Solar Track" for vis-2 (React, module federation, built like the widgets of
-ioBroker.pondpump). Every widget only needs the adapter instance (attribute "Adapter instance"); it reads the states
-below `samba-solar-track.<instance>.` itself. Colours, tiles, status band and font (Montserrat, bundled, SIL Open Font
-License 1.1, see `widgets/samba-solar-track/fonts/OFL.txt`) follow the design "Standard" of the display. All texts exist
-in the 11 languages of ioBroker; the status band uses the texts of the display. States that an older firmware does not
+The adapter brings the widget set "Samba Solar Track" for vis-2 (React with MUI, module federation, built like the
+widgets of ioBroker.pondpump). The widgets follow the design of vis-2 and the official MUI widget sets
+(vis-2-widgets-material): a card of vis-2 with a title, MUI buttons, switches, chips and progress bars, colours only
+from the theme of vis-2 (light and dark theme), the font of vis-2. They may therefore look different from the display;
+content and functions are those of the display. The status band keeps one text per state as at the display and shows
+its meaning in the colours of the theme: info (moving, manual), success (aligned), warning (tracking), error (storm,
+fault), secondary (setup, sun sensor), dark grey (night, parked), grey (ready, not connected).
+
+Every widget only needs the adapter instance (attribute "Adapter instance"); it reads the states below
+`samba-solar-track.<instance>.` itself. The content scales with the size of the widget (the font size follows the size
+against the default size; the list of messages follows the width and scrolls), nothing is cut off. All texts exist in
+the 11 languages of ioBroker; the status band uses the texts of the display. States that an older firmware does not
 provide show "–" or a hint, they never leave a widget empty.
 
-| Widget | Default size | Content | Attributes |
+Attributes of every widget (group "General"): adapter instance, "Without card background" (`noCard`) and "Title"
+(`widgetTitle`, empty = name of the widget; hidden without card), as in vis-2-widgets-material.
+
+| Widget | Default size | Content | Further attributes |
 | --- | --- | --- | --- |
-| Overview | 420 × 290 | like the start page of the display: wind gauge with storm threshold, gust and peak, cross-hair of the sun sensor with the deviation, tilt with sketch and target, status band with text and colour per state, automatic switch, button PARK FLAT / CANCEL PARKING | instance, without card background |
-| Control | 300 × 290 | automatic switch; STEEPER/FLATTER, with two axes also EAST/WEST (manual drive with dead man); with one axis the angle buttons of `position.presets` (0°, 30°, 60° and the preferred angles) and RESUME AUTOMATIC; park flat, acknowledge; optionally the reset of the synchronous control with a question first | instance, without card background, show angle buttons, offer the reset of the synchronous control |
-| Messages | 400 × 290 | latest messages of the device with time and level, filter all / warnings / errors | instance, without card background, filter at the start, show debug messages |
-| Values | 360 × 250 | wind, gust, direction, tilt, height and azimuth of the sun, battery, 24 V / 5 V, firmware, connection | instance, without card background |
-| Position of the sun | 400 × 250 | arc of the sun today from `sunPosition.*` (firmware 0.7.0): sunrise, noon with its height, sunset, night windows, the sun now, orientation of the rack and best tilt (one axis) | instance, without card background |
-| Setup program | 300 × 250 | state of the setup program and key values of the newest test report (result, travel times, Hall tap or azimuth), progress of the steps; display only | instance, without card background |
+| Overview | 440 × 300 | like the start page of the display: wind gauge with storm threshold, gust and peak, cross-hair of the sun sensor with the deviation, tilt with sketch and target, status band with text and colour per state, automatic switch, button PARK FLAT / CANCEL PARKING | – |
+| Control | 320 × 330 | automatic switch; STEEPER/FLATTER, with two axes also EAST/WEST (manual drive with dead man); with one axis the angle buttons of `position.presets` (0°, 30°, 60° and the preferred angles) and RESUME AUTOMATIC; park flat, acknowledge; optionally the reset of the synchronous control with a question first (dialog) | show angle buttons, offer the reset of the synchronous control |
+| Messages | 420 × 300 | latest messages of the device with time and level, filter all / warnings / errors (chips), list scrolls | filter at the start, show debug messages |
+| Values | 380 × 270 | wind, gust, direction, tilt, height and azimuth of the sun, battery, 24 V / 5 V, firmware, connection | – |
+| Position of the sun | 420 × 280 | arc of the sun today from `sunPosition.*` (firmware 0.7.0): sunrise, noon with its height, sunset, night windows, the sun now, orientation of the rack and best tilt (one axis), state | – |
+| Setup program | 320 × 290 | state of the setup program and key values of the newest test report (result, travel times, Hall tap or azimuth), progress of the steps; display only | – |
+
+All buttons, switches and chips can be used with the keyboard (Tab, Space, Enter); a drive button runs while Space or
+Enter is held. A disabled button names the reason of the lock as its tooltip.
 
 Safety rules of the widgets:
 
@@ -270,8 +283,8 @@ The token never appears in the log.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### 0.1.0 (2026-11-15)
-- (ssbingo) firmware up to 0.7.8: states `POSITION`, `COMMISSION` and `ASTRO`; channel `sunPosition` (position of the sun, sunrise, sunset, night); channel `commissioning` with the setup program and its test reports (text and data set); tilt on command with Hall tap (`position`, `control.position`, `control.positionResume`); reset of the synchronous control (`axes.*.syncReset…`, `control.syncReset…`); firmware over the internet (`firmware`, `control.fwCheck`, `control.fwInstall`); tilt of the elevation in degrees; names STEEPER/FLATTER of the elevation directions; names of the new settings; notification when the setup program is not completed; every object name in 11 languages. States of a feature are created only when the firmware reports it; vis-2 widgets overview, control, messages, values, position of the sun and setup program (React, module federation, 11 languages); new states `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` and `update.*`; the settings page no longer repeats the English text in other languages (port, token parts, headings)
+### 0.1.1 (2026-11-15)
+- (ssbingo) firmware up to 0.7.8: states `POSITION`, `COMMISSION` and `ASTRO`; channel `sunPosition` (position of the sun, sunrise, sunset, night); channel `commissioning` with the setup program and its test reports (text and data set); tilt on command with Hall tap (`position`, `control.position`, `control.positionResume`); reset of the synchronous control (`axes.*.syncReset…`, `control.syncReset…`); firmware over the internet (`firmware`, `control.fwCheck`, `control.fwInstall`); tilt of the elevation in degrees; names STEEPER/FLATTER of the elevation directions; names of the new settings; notification when the setup program is not completed; every object name in 11 languages. States of a feature are created only when the firmware reports it; vis-2 widgets overview, control, messages, values, position of the sun and setup program (React with MUI in the design of vis-2, light and dark theme of vis-2, content scales with the widget, 11 languages); new states `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` and `update.*`; the settings page no longer repeats the English text in other languages (port, token parts, headings)
 
 ### 0.0.7 (2026-10-03)
 - (ssbingo) token entry: a red line under the four fields names the reason when a block is incomplete or wrong; a saved block can be changed again (delete it completely and enter it again); on phones each field takes the full width; after moving the old token the first start ends cleanly before js-controller restarts the adapter (no second connection in compact mode); clearer log texts about the old token field
@@ -280,7 +293,7 @@ The token never appears in the log.
 - (ssbingo) token entry: four fields side by side (Block 1 to 4) without help lines; the old single token field is no longer shown: a token entered there with 0.0.4 or older is moved into the four fields at the first start (encrypted), and the old field is emptied
 
 ### 0.0.5 (2026-10-03)
-- (ssbingo) token entry in four fields, one per block of 8 characters as shown at the display; a token entered earlier with spaces works too; a wrong block is named in the log; the texts name the right place of the token (gear > NETZWERK); the four fields are hidden like a password, the eye shows the entry
+- (ssbingo) token entry in four fields, one per block of 8 characters as shown at the display; a token entered earlier with spaces works too; a wrong block is named in the log; the texts name the right place of the token (gear > NETWORK); the four fields are hidden like a password, the eye shows the entry
 
 ### 0.0.4 (2026-10-02)
 - (ssbingo) notifications through a messaging adapter: storm, faults, wind sensor, sun sensor, connection, restart

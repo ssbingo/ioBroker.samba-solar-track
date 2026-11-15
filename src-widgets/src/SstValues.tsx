@@ -2,9 +2,13 @@ import React from "react";
 
 import type { RxRenderWidgetProps, RxWidgetInfo } from "@iobroker/types-vis-2";
 
+import { Box, Chip } from "@mui/material";
+
 import SstWidgetBase, { type SstBaseRxData, type SstBaseState } from "./SstWidgetBase";
-import { fmt, sstCommonGroup, VIS_SET } from "./common";
+import { fmt, plain, sstCommonGroup, sstGrid, VIS_SET } from "./common";
 import { compass } from "./lock";
+import { Label, Tile } from "./parts";
+import { stateText } from "./theme";
 
 const REL_IDS = [
     "info.connection",
@@ -45,7 +49,9 @@ export default class SstValues extends SstWidgetBase<ValuesRxData, ValuesState> 
             visWidgetLabel: "SstValues",
             visHelp: "help_values",
             visAttrs: [sstCommonGroup()],
-            visDefaultStyle: { width: 360, height: 250 },
+            visDefaultStyle: { width: 380, height: 270, position: "absolute" },
+            visDefaultGrid: sstGrid(10, 5),
+            visResizable: true,
             visPrev: "widgets/samba-solar-track/img/SstValues.svg",
             visOrder: 4,
         };
@@ -62,25 +68,50 @@ export default class SstValues extends SstWidgetBase<ValuesRxData, ValuesState> 
     }
 
     // eslint-disable-next-line class-methods-use-this
-    private tile(label: string, value: React.ReactNode, unit = "", cls = ""): React.JSX.Element {
+    protected titleKey(): string {
+        return "SstValues";
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected designSize(): [number, number] {
+        return [348, 238];
+    }
+
+    private tile(label: string, value: string, unit = "", kind: "ok" | "bad" | "warn" | "" = ""): React.JSX.Element {
         return (
-            <div
-                className="sst-v"
+            <Tile
+                theme={this.theme}
                 key={label}
+                title={`${label}: ${value}${unit && value !== "–" ? ` ${unit}` : ""}`}
+                sx={{ justifyContent: "space-between", gap: "0.15em" }}
             >
-                <div className="sst-k">{label}</div>
-                <div
-                    className={`sst-n${cls ? ` ${cls}` : ""}`}
-                    title={typeof value === "string" ? `${value}${unit ? ` ${unit}` : ""}` : undefined}
+                <Label theme={this.theme}>{label}</Label>
+                <Box
+                    sx={{
+                        fontSize: "1.25em",
+                        fontWeight: 500,
+                        lineHeight: 1.2,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        color: stateText(this.theme, kind),
+                    }}
                 >
                     {value}
-                    {unit && value !== "–" ? <span className="sst-u">{unit}</span> : null}
-                </div>
-            </div>
+                    {unit && value !== "–" ? (
+                        <Box
+                            component="span"
+                            sx={{ fontSize: "0.6em", color: this.muted, ml: "0.2em", fontWeight: 400 }}
+                        >
+                            {unit}
+                        </Box>
+                    ) : null}
+                </Box>
+            </Tile>
         );
     }
 
-    private battery(): { value: string; unit: string; cls: string } {
+    private battery(): { value: string; unit: string; cls: "ok" | "bad" | "warn" | "" } {
         const percent = this.num("battery.percent");
         if (this.flag("battery.fitted") === false) {
             return { value: this.tx("battery_none"), unit: "", cls: "" };
@@ -89,21 +120,21 @@ export default class SstValues extends SstWidgetBase<ValuesRxData, ValuesState> 
             return { value: "–", unit: "", cls: "" };
         }
         const level = this.str("battery.level");
-        const cls = level === "critical" ? "sst-bad" : level === "low" ? "sst-warnc" : "";
+        const cls = level === "critical" ? "bad" : level === "low" ? "warn" : "";
         return { value: `${fmt(percent)}`, unit: this.flag("battery.charging") === true ? "% ⚡" : "%", cls };
     }
 
-    private supply(): { value: string; cls: string } {
+    private supply(): { value: string; cls: "ok" | "bad" | "" } {
         const v24 = this.flag("supply.v24");
         const v5 = this.flag("supply.v5");
         if (v24 === false) {
-            return { value: this.tx("supply_24_missing"), cls: "sst-bad" };
+            return { value: this.tx("supply_24_missing"), cls: "bad" };
         }
         if (v5 === false) {
-            return { value: this.tx("supply_5_missing"), cls: "sst-bad" };
+            return { value: this.tx("supply_5_missing"), cls: "bad" };
         }
         if (v24 === true && v5 === true) {
-            return { value: this.tx("supply_ok"), cls: "sst-ok" };
+            return { value: this.tx("supply_ok"), cls: "ok" };
         }
         return { value: "–", cls: "" };
     }
@@ -119,35 +150,47 @@ export default class SstValues extends SstWidgetBase<ValuesRxData, ValuesState> 
         const battery = this.battery();
         const supply = this.supply();
         const firmware = this.str("info.firmware");
-        return this.card(
-            <>
-                <div className="sst-head">
-                    <div className="sst-ttl">{this.tx("SstValues")}</div>
-                    <span className={`sst-conn ${connected ? "sst-ok" : "sst-bad"}`}>
-                        {connected ? this.tx("conn_ok") : this.tx("conn_lost")}
-                        {connected && this.flag("info.simulation") === true ? ` · ${this.tx("simulation")}` : ""}
-                    </span>
-                </div>
-                <div className="sst-vals">
-                    {this.tile(this.tx("wind"), fmt(windOk ? this.num("wind.speed") : null, 1), "km/h")}
-                    {this.tile(this.tx("gust"), fmt(windOk ? this.num("wind.gust") : null, 1), "km/h")}
-                    {this.tile(
-                        this.tx("direction"),
-                        hasDir ? fmt(dir) : "–",
-                        hasDir ? `° ${compass(dir, this.tx("compass"))}` : "",
-                    )}
-                    {this.tile(
-                        this.tx("tilt"),
-                        fmt(this.num("axes.elevation.angle")),
-                        `°${source === "hall" ? ` ${this.tx("source_hall_short")}` : source === "time" ? ` ${this.tx("source_time_short")}` : ""}`,
-                    )}
-                    {this.tile(this.tx("sun_height"), fmt(this.num("sunPosition.elevation"), 1), "°")}
-                    {this.tile(this.tx("sun_azimuth"), fmt(this.num("sunPosition.azimuth")), "°")}
-                    {this.tile(this.tx("battery"), battery.value, battery.unit, battery.cls)}
-                    {this.tile(this.tx("supply"), supply.value, "", supply.cls)}
-                    {this.tile(this.tx("firmware"), firmware || "–")}
-                </div>
-            </>,
+        const status = (
+            <Chip
+                size="small"
+                variant="outlined"
+                color={connected ? "success" : "error"}
+                label={`${plain(connected ? this.tx("conn_ok") : this.tx("conn_lost"))}${
+                    connected && this.flag("info.simulation") === true ? ` · ${this.tx("simulation")}` : ""
+                }`}
+                sx={{ fontSize: "0.75em", height: "1.9em", maxWidth: "60%" }}
+            />
         );
+        const content = (
+            <Box
+                sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gridAutoRows: "minmax(0, 1fr)",
+                    gap: "0.45em",
+                    flex: "1 1 auto",
+                    minHeight: 0,
+                }}
+            >
+                {this.tile(this.tx("wind"), fmt(windOk ? this.num("wind.speed") : null, 1), "km/h")}
+                {this.tile(this.tx("gust"), fmt(windOk ? this.num("wind.gust") : null, 1), "km/h")}
+                {this.tile(
+                    this.tx("direction"),
+                    hasDir ? fmt(dir) : "–",
+                    hasDir ? `° ${compass(dir, this.tx("compass"))}` : "",
+                )}
+                {this.tile(
+                    this.tx("tilt"),
+                    fmt(this.num("axes.elevation.angle")),
+                    `°${source === "hall" ? ` ${this.tx("source_hall_short")}` : source === "time" ? ` ${this.tx("source_time_short")}` : ""}`,
+                )}
+                {this.tile(this.tx("sun_height"), fmt(this.num("sunPosition.elevation"), 1), "°")}
+                {this.tile(this.tx("sun_azimuth"), fmt(this.num("sunPosition.azimuth")), "°")}
+                {this.tile(this.tx("battery"), battery.value, battery.unit, battery.cls)}
+                {this.tile(this.tx("supply"), supply.value, "", supply.cls)}
+                {this.tile(this.tx("firmware"), firmware || "–")}
+            </Box>
+        );
+        return this.renderCard(props, content, status);
     }
 }

@@ -200,6 +200,7 @@
     "unknown": "未知",
     "unknown_lower": "位置未知",
     "unpark": "取消停放",
+    "widget_title": "标题（留空 = 小部件名称）",
     "wind": "风速",
     "wind_fault": "风速计无响应",
     "wind_from": "风向 {dir}（{deg}°）"

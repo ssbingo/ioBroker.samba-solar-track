@@ -200,6 +200,7 @@
     "unknown": "UNBEKANNT",
     "unknown_lower": "Stellung unbekannt",
     "unpark": "PARKEN AUFHEBEN",
+    "widget_title": "Titel (leer = Name des Widgets)",
     "wind": "Wind",
     "wind_fault": "Windmesser antwortet nicht",
     "wind_from": "Wind aus {dir} ({deg}°)"

@@ -2,9 +2,23 @@ import React from "react";
 
 import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps } from "@iobroker/types-vis-2";
 
+import {
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    FormControlLabel,
+    Switch,
+} from "@mui/material";
+
 import SstWidgetBase, { type SstBaseRxData, type SstBaseState } from "./SstWidgetBase";
-import { parseJson, sstCommonGroup, VIS_SET } from "./common";
+import { parseJson, sstCommonGroup, sstGrid, VIS_SET } from "./common";
 import { driveLock, LOCK_IDS, remoteLock } from "./lock";
+import { Label, Reason } from "./parts";
+import { stateText } from "./theme";
 
 const REL_IDS = [
     ...LOCK_IDS,
@@ -80,7 +94,9 @@ export default class SstControl extends SstWidgetBase<ControlRxData, ControlStat
                     ],
                 },
             ],
-            visDefaultStyle: { width: 300, height: 290 },
+            visDefaultStyle: { width: 320, height: 330, position: "absolute" },
+            visDefaultGrid: sstGrid(8, 7),
+            visResizable: true,
             visPrev: "widgets/samba-solar-track/img/SstControl.svg",
             visOrder: 2,
         };
@@ -94,6 +110,16 @@ export default class SstControl extends SstWidgetBase<ControlRxData, ControlStat
     // eslint-disable-next-line class-methods-use-this
     protected relIds(): string[] {
         return REL_IDS;
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected titleKey(): string {
+        return "SstControl";
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected designSize(): [number, number] {
+        return [288, 260];
     }
 
     // eslint-disable-next-line class-methods-use-this
@@ -193,7 +219,11 @@ export default class SstControl extends SstWidgetBase<ControlRxData, ControlStat
         }
     };
 
-    private holdProps(axis: JogAxis, value: number, button: string): React.ButtonHTMLAttributes<HTMLButtonElement> {
+    private holdProps(
+        axis: JogAxis,
+        value: number,
+        button: string,
+    ): Omit<React.HTMLAttributes<HTMLButtonElement>, "color"> {
         return {
             onPointerDown: e => {
                 if (e.button !== 0) {
@@ -275,45 +305,48 @@ export default class SstControl extends SstWidgetBase<ControlRxData, ControlStat
 
     private renderResetDialog(): React.JSX.Element | null {
         const axis = this.state.confirmReset;
-        if (!axis) {
+        if (!axis || this.editing) {
             return null;
         }
+        const close = (): void => this.setState({ confirmReset: null });
         return (
-            <div
-                className="sst-dialog"
-                role="alertdialog"
-                aria-label={this.tx("sync_reset")}
+            <Dialog
+                open
+                onClose={close}
+                aria-labelledby="sst-sync-reset-title"
             >
-                <p>
-                    <b>{axis === "elevation" ? this.tx("sync_reset_elevation") : this.tx("sync_reset_azimuth")}</b>
-                </p>
-                <p>
-                    {axis === "elevation"
-                        ? this.tx("sync_reset_question_elevation")
-                        : this.tx("sync_reset_question_azimuth")}
-                </p>
-                <div className="sst-grid2">
-                    <button
-                        type="button"
-                        className="sst-btn"
-                        onClick={() => this.setState({ confirmReset: null })}
+                <DialogTitle id="sst-sync-reset-title">
+                    {axis === "elevation" ? this.tx("sync_reset_elevation") : this.tx("sync_reset_azimuth")}
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {axis === "elevation"
+                            ? this.tx("sync_reset_question_elevation")
+                            : this.tx("sync_reset_question_azimuth")}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={close}
+                        autoFocus
                     >
                         {this.tx("cancel")}
-                    </button>
-                    <button
-                        type="button"
-                        className="sst-btn sst-danger"
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
                         onClick={this.onConfirmReset}
                     >
                         {this.tx("sync_reset_start")}
-                    </button>
-                </div>
-            </div>
+                    </Button>
+                </DialogActions>
+            </Dialog>
         );
     }
 
     renderWidgetBody(props: RxRenderWidgetProps): React.JSX.Element {
         super.renderWidgetBody(props);
+        const theme = this.theme;
         const dual = this.num("status.mode") === 2;
         const remote = remoteLock(this);
         const drive = driveLock(this);
@@ -331,29 +364,72 @@ export default class SstControl extends SstWidgetBase<ControlRxData, ControlStat
         const resetRunning =
             ["wait", "pulse", "run"].includes(this.str("axes.elevation.syncResetPhase")) ||
             ["wait", "pulse", "run"].includes(this.str("axes.azimuth.syncResetPhase"));
+        const btnSx = {
+            fontSize: "0.85em",
+            lineHeight: 1.15,
+            minWidth: 0,
+            minHeight: "2.6em",
+            px: "0.4em",
+            py: "0.45em",
+            width: "100%",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+        } as const;
+        const row = (children: React.ReactNode, cols = 2): React.JSX.Element => (
+            <Box sx={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: "0.45em" }}>
+                {children}
+            </Box>
+        );
         const jogButton = (
             axis: JogAxis,
             value: number,
             key: string,
             arrow: string,
             label: string,
-        ): React.JSX.Element => (
-            <button
-                type="button"
-                className={`sst-btn${held?.button === key ? " sst-held" : ""}`}
-                disabled={!!jogReason}
-                aria-pressed={held?.button === key}
-                {...this.holdProps(axis, value, key)}
-            >
-                <span
-                    className="sst-ar"
-                    aria-hidden="true"
+        ): React.JSX.Element => {
+            const pressed = held?.button === key;
+            return (
+                <Reason
+                    title={jogReason ? this.tx(jogReason) : undefined}
+                    grow
                 >
-                    {arrow}
-                </span>
-                {label}
-            </button>
-        );
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={!!jogReason}
+                        aria-pressed={pressed}
+                        disableRipple
+                        {...this.holdProps(axis, value, key)}
+                        sx={{
+                            ...btnSx,
+                            minHeight: "3.2em",
+                            flexDirection: "column",
+                            gap: "0.1em",
+                            userSelect: "none",
+                            WebkitUserSelect: "none",
+                            touchAction: "none",
+                            ...(pressed
+                                ? {
+                                      bgcolor: theme.palette.primary.dark,
+                                      outline: `0.2em solid ${theme.palette.warning.main}`,
+                                      outlineOffset: "-0.2em",
+                                  }
+                                : {}),
+                        }}
+                    >
+                        <Box
+                            component="span"
+                            aria-hidden="true"
+                            sx={{ fontSize: "1.2em", lineHeight: 1 }}
+                        >
+                            {arrow}
+                        </Box>
+                        {label}
+                    </Button>
+                </Reason>
+            );
+        };
         let note = this.tx("note_dead_man");
         if (drive.reason) {
             note = this.tx(`${drive.reason}_note`);
@@ -362,118 +438,161 @@ export default class SstControl extends SstWidgetBase<ControlRxData, ControlStat
         } else if (resetRunning) {
             note = this.tx("note_sync_reset_running");
         }
-        return this.card(
+        const noteKind = drive.reason || jogReason ? "warn" : "";
+        const autoSwitch = (
+            <Reason title={remote.reason ? this.tx(remote.reason) : undefined}>
+                <FormControlLabel
+                    labelPlacement="start"
+                    disabled={!!remote.reason || this.str("status.state") === "SETUP"}
+                    sx={{ m: 0, gap: "0.2em", "& .MuiFormControlLabel-label": { fontSize: "0.85em" } }}
+                    label={this.tx("automatic")}
+                    control={
+                        <Switch
+                            size="small"
+                            checked={auto}
+                            onChange={this.onToggleAuto}
+                        />
+                    }
+                />
+            </Reason>
+        );
+        const content = (
             <>
-                <div className="sst-head">
-                    <div className="sst-ttl">{this.tx("SstControl")}</div>
-                    <span className="sst-conn">{this.tx("automatic")}</span>
-                    <button
-                        type="button"
-                        className="sst-sw"
-                        role="switch"
-                        aria-checked={auto}
-                        aria-label={this.tx("automatic")}
-                        disabled={!!remote.reason || this.str("status.state") === "SETUP"}
-                        onClick={this.onToggleAuto}
-                    />
-                </div>
-                <div className="sst-grid2">
-                    {jogButton("elevation", steeper, "steeper", "▲", this.tx("dir_steeper"))}
-                    {jogButton("elevation", -steeper, "flatter", "▼", this.tx("dir_flatter"))}
-                </div>
-                {dual ? (
-                    <div className="sst-grid2">
-                        {jogButton("azimuth", 1, "east", "◀", this.tx("dir_east"))}
-                        {jogButton("azimuth", -1, "west", "▶", this.tx("dir_west"))}
-                    </div>
-                ) : null}
+                {row(
+                    <>
+                        {jogButton("elevation", steeper, "steeper", "▲", this.tx("dir_steeper"))}
+                        {jogButton("elevation", -steeper, "flatter", "▼", this.tx("dir_flatter"))}
+                    </>,
+                )}
+                {dual
+                    ? row(
+                          <>
+                              {jogButton("azimuth", 1, "east", "◀", this.tx("dir_east"))}
+                              {jogButton("azimuth", -1, "west", "▶", this.tx("dir_west"))}
+                          </>,
+                      )
+                    : null}
                 {presets ? (
                     <>
-                        <div
-                            className="sst-kr"
-                            style={{ marginTop: 2 }}
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "0.4em",
+                                minHeight: "1.8em",
+                            }}
                         >
-                            <span className="sst-k">{this.tx("go_to_angle")}</span>
+                            <Label theme={theme}>{this.tx("go_to_angle")}</Label>
                             {target !== null ? (
-                                <button
-                                    type="button"
-                                    className="sst-chip"
+                                <Button
+                                    size="small"
+                                    variant="text"
                                     disabled={!!drive.reason}
                                     onClick={this.onResume}
+                                    sx={{ fontSize: "0.72em", minWidth: 0, py: 0, whiteSpace: "nowrap" }}
                                 >
                                     {this.tx("resume_automatic")}
-                                </button>
+                                </Button>
                             ) : null}
-                        </div>
-                        <div
-                            className="sst-gridn"
-                            style={{ gridTemplateColumns: `repeat(${Math.min(presets.length, 5)},1fr)` }}
-                        >
-                            {presets.slice(0, 5).map(deg => (
-                                <button
+                        </Box>
+                        {row(
+                            presets.slice(0, 5).map(deg => (
+                                <Button
                                     key={deg}
-                                    type="button"
-                                    className={`sst-btn${target === deg ? " sst-on" : ""}`}
+                                    variant={target === deg ? "contained" : "outlined"}
                                     aria-pressed={target === deg}
                                     // angles in between need measured travel times; 0° and 60° always work
                                     disabled={!!drive.reason || (!calibrated && deg !== 0 && deg < 60)}
                                     onClick={() => this.onAngle(deg)}
+                                    sx={{ ...btnSx, minHeight: "2.3em", px: 0 }}
                                 >
                                     {deg}°
-                                </button>
-                            ))}
-                        </div>
+                                </Button>
+                            )),
+                            Math.min(presets.length, 5),
+                        )}
                     </>
                 ) : null}
-                <div
-                    className="sst-grid2"
-                    style={{ marginTop: 2 }}
+                {row(
+                    <>
+                        <Reason
+                            title={drive.reason ? this.tx(drive.reason) : undefined}
+                            grow
+                        >
+                            <Button
+                                variant="outlined"
+                                color="inherit"
+                                disabled={!!drive.reason}
+                                onClick={this.onPark}
+                                sx={btnSx}
+                            >
+                                {parked ? this.tx("unpark") : this.tx("park_flat")}
+                            </Button>
+                        </Reason>
+                        <Reason
+                            title={remote.reason ? this.tx(remote.reason) : undefined}
+                            grow
+                        >
+                            <Button
+                                variant="contained"
+                                color="warning"
+                                disabled={!!remote.reason}
+                                onClick={this.onAck}
+                                sx={btnSx}
+                            >
+                                {this.tx("acknowledge")}
+                            </Button>
+                        </Reason>
+                    </>,
+                )}
+                {resetEl || resetAz
+                    ? row(
+                          <>
+                              {resetEl ? (
+                                  <Button
+                                      variant="outlined"
+                                      color="error"
+                                      disabled={!!drive.reason || resetRunning}
+                                      onClick={() => this.setState({ confirmReset: "elevation" })}
+                                      sx={btnSx}
+                                  >
+                                      {this.tx("sync_reset_elevation")}
+                                  </Button>
+                              ) : null}
+                              {resetAz ? (
+                                  <Button
+                                      variant="outlined"
+                                      color="error"
+                                      disabled={!!drive.reason || resetRunning}
+                                      onClick={() => this.setState({ confirmReset: "azimuth" })}
+                                      sx={btnSx}
+                                  >
+                                      {this.tx("sync_reset_azimuth")}
+                                  </Button>
+                              ) : null}
+                          </>,
+                          resetEl && resetAz ? 2 : 1,
+                      )
+                    : null}
+                <Box
+                    sx={{
+                        fontSize: "0.75em",
+                        lineHeight: 1.35,
+                        color: noteKind ? stateText(theme, "warn") : this.muted,
+                        mt: "auto",
+                        overflow: "hidden",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical",
+                    }}
+                    title={note}
                 >
-                    <button
-                        type="button"
-                        className="sst-btn sst-park"
-                        disabled={!!drive.reason}
-                        onClick={this.onPark}
-                    >
-                        {parked ? this.tx("unpark") : this.tx("park_flat")}
-                    </button>
-                    <button
-                        type="button"
-                        className="sst-btn sst-ack"
-                        disabled={!!remote.reason}
-                        onClick={this.onAck}
-                    >
-                        {this.tx("acknowledge")}
-                    </button>
-                </div>
-                {resetEl || resetAz ? (
-                    <div className="sst-grid2">
-                        {resetEl ? (
-                            <button
-                                type="button"
-                                className="sst-btn"
-                                disabled={!!drive.reason || resetRunning}
-                                onClick={() => this.setState({ confirmReset: "elevation" })}
-                            >
-                                {this.tx("sync_reset_elevation")}
-                            </button>
-                        ) : null}
-                        {resetAz ? (
-                            <button
-                                type="button"
-                                className="sst-btn"
-                                disabled={!!drive.reason || resetRunning}
-                                onClick={() => this.setState({ confirmReset: "azimuth" })}
-                            >
-                                {this.tx("sync_reset_azimuth")}
-                            </button>
-                        ) : null}
-                    </div>
-                ) : null}
-                <div className="sst-note">{note}</div>
+                    {note}
+                </Box>
                 {this.renderResetDialog()}
-            </>,
-            "sst-rel",
+            </>
         );
+        return this.renderCard(props, content, autoSwitch);
     }
 }

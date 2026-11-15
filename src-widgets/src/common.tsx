@@ -1,4 +1,4 @@
-import type { RxWidgetInfoAttributesField } from "@iobroker/types-vis-2";
+import type { RxWidgetInfoAttributesField, RxWidgetInfoGrid } from "@iobroker/types-vis-2";
 
 import translations from "./translations";
 
@@ -43,7 +43,10 @@ export function instancePrefix(rx: { instance?: string }): string {
     return `${ADAPTER}.${instanceNumber(rx)}`;
 }
 
-/** The shared "common" attribute group (adapter instance) used by every widget of the set. */
+/**
+ * The shared "common" attribute group used by every widget of the set: adapter instance, card on/off and the
+ * title of the card - the fields `noCard` and `widgetTitle` as in vis-2-widgets-material (title hidden without card).
+ */
 export function sstCommonGroup(): { name: string; fields: RxWidgetInfoAttributesField[] } {
     return {
         name: "common",
@@ -61,9 +64,39 @@ export function sstCommonGroup(): { name: string; fields: RxWidgetInfoAttributes
                 type: "checkbox",
                 label: "no_card",
                 default: false,
+                noBinding: false,
+            },
+            {
+                name: "widgetTitle",
+                label: "widget_title",
+                hidden: "data.noCard === true",
             },
         ] as RxWidgetInfoAttributesField[],
     };
+}
+
+/**
+ * Grid of a section (vis-2 2.20): how many cells the widget takes and its smallest size there.
+ *
+ * @param columns - columns of 12 per section column
+ * @param rows - rows
+ */
+export function sstGrid(columns: number, rows: number): RxWidgetInfoGrid {
+    return {
+        columns,
+        rows,
+        minColumns: Math.max(3, Math.round(columns * 0.6)),
+        minRows: Math.max(2, Math.round(rows * 0.6)),
+    };
+}
+
+/**
+ * Removes a leading marker (●, ✔) of a text that the widgets now show as a coloured chip.
+ *
+ * @param text - the translated text
+ */
+export function plain(text: string): string {
+    return text.replace(/^[●✔]\s*/u, "");
 }
 
 /**

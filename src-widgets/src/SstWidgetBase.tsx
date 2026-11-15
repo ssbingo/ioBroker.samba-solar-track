@@ -1,16 +1,20 @@
 import React from "react";
 
-import type { VisRxWidgetProps, VisRxWidgetState } from "@iobroker/types-vis-2";
+import { Box, Typography, type Theme } from "@mui/material";
+
+import type { RxRenderWidgetProps, VisRxWidgetProps, VisRxWidgetState } from "@iobroker/types-vis-2";
 import type VisRxWidget from "@iobroker/types-vis-2/visRxWidget";
 
-import { injectStyles } from "./styles";
 import { ADAPTER, fill, instancePrefix } from "./common";
+import { mutedText } from "./theme";
 
 export interface SstBaseRxData {
     /** Adapter instance: "0" or "samba-solar-track.0" */
     instance?: string;
-    /** true = no card background (the widget sits on a background of its own) */
-    noCard?: boolean;
+    /** true = no card (the widget sits on a background of its own), as `noCard` of vis-2-widgets-material */
+    noCard?: boolean | "true";
+    /** Title of the card, as `widgetTitle` of vis-2-widgets-material; empty = name of the widget */
+    widgetTitle?: string;
 }
 
 export interface SstBaseState extends VisRxWidgetState {
@@ -20,17 +24,30 @@ export interface SstBaseState extends VisRxWidgetState {
     objStates: Record<string, Record<string, string>>;
     /** Monotonic tick for periodic re-renders (clocks, counters) */
     tick: number;
+    /** Factor of the content against the default size of the widget (1 = `visDefaultStyle`) */
+    sstScale: number;
 }
 
+/** Font size of the content at the default size of the widget, in px */
+const BASE_FONT = 13;
+/** Limits of the scale, so the content stays readable on a tiny widget and does not explode on a huge one */
+const MIN_SCALE = 0.7;
+const MAX_SCALE = 2.6;
+
 /**
- * Common base of all Samba Solar Track widgets (like `PumpWidgetBase` of ioBroker.pondpump).
+ * Common base of all Samba Solar Track widgets, like `Generic` of vis-2-widgets-material.
  *
- * The widget is bound to an adapter instance only; it subscribes to the states it needs (`relIds()`) relative to
- * `samba-solar-track.<instance>.`, keeps their values in `this.state.fv` and offers small typed helpers.
- * Every state is read and subscribed on its own: a state that an older firmware does not provide (and the
- * adapter therefore does not create) just stays null and never blanks out the widget.
- * `write()` always writes with `ack:false`, i.e. as a command; the adapter forwards it to the device, which
- * decides (storm protection, limit switches, dead time and run time monitoring cannot be bypassed, F2).
+ * - The widget is bound to an adapter instance only; it subscribes to the states it needs (`relIds()`) relative to
+ *   `samba-solar-track.<instance>.`, keeps their values in `this.state.fv` and offers small typed helpers. Every
+ *   state is read and subscribed on its own: a state that an older firmware does not provide (and the adapter
+ *   therefore does not create) just stays null and never blanks out the widget.
+ * - `write()` always writes with `ack:false`, i.e. as a command; the adapter forwards it to the device, which
+ *   decides (storm protection, limit switches, dead time and run time monitoring cannot be bypassed, F2). In the
+ *   editor nothing is written.
+ * - `renderCard()` draws the card with `wrapContent()` of vis-2 (the card of every MUI widget set), or no card with
+ *   `noCard`. Colours and font come from the theme of vis-2 only.
+ * - The content scales with the size of the widget: a ResizeObserver compares the content area with the default
+ *   size (`visDefaultStyle`) and sets the font size of the content; everything inside is sized in `em`.
  */
 export default abstract class SstWidgetBase<
     TRxData extends SstBaseRxData,
@@ -41,11 +58,29 @@ export default abstract class SstWidgetBase<
     protected subscribedIds: string[] = [];
     protected sstMounted = false;
     private tickTimer: ReturnType<typeof setInterval> | null = null;
+    private resizeObserver: ResizeObserver | null = null;
+    private observed: HTMLElement | null = null;
     /** Set > 0 in a subclass constructor to receive a periodic re-render */
     protected tickMs = 0;
 
     /** States (relative to the instance) this widget subscribes to */
     protected abstract relIds(): string[];
+
+    /** Name of the widget (i18n key), shown as the title when `widgetTitle` is empty */
+    protected abstract titleKey(): string;
+
+    /** Size of the content area in px at the default size of the widget (the design size, scale 1) */
+    protected abstract designSize(): [number, number];
+
+    /**
+     * How the content follows the size: "fit" = by the smaller of width and height (everything stays visible),
+     * "width" = by the width, but not above the default size unless the height grows as well (for content that
+     * scrolls vertically, like a list, so a flat widget does not shrink the text)
+     */
+    // eslint-disable-next-line class-methods-use-this
+    protected scaleMode(): "fit" | "width" {
+        return "fit";
+    }
 
     /** States (relative to the instance) whose `common.states` the widget needs (read once) */
     // eslint-disable-next-line class-methods-use-this
@@ -55,7 +90,7 @@ export default abstract class SstWidgetBase<
 
     constructor(props: VisRxWidgetProps) {
         super(props);
-        this.state = { ...this.state, fv: {}, objStates: {}, tick: 0 };
+        this.state = { ...this.state, fv: {}, objStates: {}, tick: 0, sstScale: 1 };
     }
 
     static getI18nPrefix(): string {
@@ -75,7 +110,6 @@ export default abstract class SstWidgetBase<
     componentDidMount(): void {
         super.componentDidMount();
         this.sstMounted = true;
-        injectStyles();
         void this.subscribeAll();
         if (this.tickMs > 0) {
             this.tickTimer = setInterval(
@@ -91,12 +125,20 @@ export default abstract class SstWidgetBase<
             clearInterval(this.tickTimer);
             this.tickTimer = null;
         }
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = null;
+        this.observed = null;
         this.unsubscribeAll();
         super.componentWillUnmount();
     }
 
     onRxDataChanged(): void {
         void this.subscribeAll();
+    }
+
+    /** The theme of vis-2 (light or dark, as chosen in vis-2) */
+    protected get theme(): Theme {
+        return this.props.context.theme as unknown as Theme;
     }
 
     /** Object id prefix of the chosen instance, e.g. `samba-solar-track.0` */
@@ -219,9 +261,147 @@ export default abstract class SstWidgetBase<
         return this.flag("info.connection") === true;
     }
 
-    /** The outer card with the class names of the set */
-    protected card(children: React.ReactNode, extraClass = ""): React.JSX.Element {
-        const noCard = this.state.rxData.noCard === true;
-        return <div className={`sst${noCard ? "" : " sst-card"}${extraClass ? ` ${extraClass}` : ""}`}>{children}</div>;
+    /** Colour of labels and secondary text */
+    protected get muted(): string {
+        return mutedText(this.theme);
+    }
+
+    /** Observes the size of the content area to scale the content with the widget */
+    private setRoot = (el: HTMLDivElement | null): void => {
+        if (el === this.observed) {
+            return;
+        }
+        this.resizeObserver?.disconnect();
+        this.observed = el;
+        if (!el || typeof ResizeObserver === "undefined") {
+            return;
+        }
+        this.resizeObserver = new ResizeObserver(entries => {
+            const box = entries[0]?.contentRect;
+            if (!box || !this.sstMounted || box.width <= 0 || box.height <= 0) {
+                return;
+            }
+            const [w, h] = this.designSize();
+            // "width": a flat list keeps the default text size, a big one grows with width and height
+            const factor =
+                this.scaleMode() === "width"
+                    ? Math.min(box.width / w, Math.max(1, box.height / h))
+                    : Math.min(box.width / w, box.height / h);
+            const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, factor));
+            if (Math.abs(scale - this.state.sstScale) > 0.02) {
+                this.applyPartial(() => ({ sstScale: scale }));
+            }
+        });
+        this.resizeObserver.observe(el);
+    };
+
+    /** Font size of the content in px (everything inside is sized in em) */
+    protected get fontPx(): number {
+        return BASE_FONT * this.state.sstScale;
+    }
+
+    /**
+     * The widget in its card: title (`widgetTitle` or the name of the widget), optional controls on the right of
+     * the title and the content. With `noCard` (or inside another widget) only the content and the controls.
+     *
+     * @param props - the properties of `renderWidgetBody`
+     * @param content - the content below the title
+     * @param extra - controls on the right of the title (switch, chips), or null
+     */
+    protected renderCard(
+        props: RxRenderWidgetProps,
+        content: React.ReactNode,
+        extra: React.ReactNode = null,
+    ): React.JSX.Element {
+        const rx = this.state.rxData;
+        const noCard = rx.noCard === true || rx.noCard === "true" || !!props.widget?.usedInWidget;
+        const custom = typeof rx.widgetTitle === "string" && rx.widgetTitle.trim() ? rx.widgetTitle : "";
+        const theme = this.theme;
+        const fontPx = this.fontPx;
+        const header = (title: string | null): React.JSX.Element | null =>
+            title || extra ? (
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5em",
+                        width: "100%",
+                        minHeight: "2em",
+                        flex: "0 0 auto",
+                    }}
+                >
+                    {title ? (
+                        <Typography
+                            component="div"
+                            sx={{
+                                fontSize: "1.25em",
+                                fontWeight: 500,
+                                lineHeight: 1.2,
+                                flex: "1 1 auto",
+                                minWidth: 0,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                            }}
+                        >
+                            {title}
+                        </Typography>
+                    ) : (
+                        <Box sx={{ flex: "1 1 auto" }} />
+                    )}
+                    {extra}
+                </Box>
+            ) : null;
+
+        const root = (withHeader: boolean, title: string | null): React.JSX.Element => (
+            <Box
+                ref={this.setRoot}
+                sx={{
+                    position: "relative",
+                    width: "100%",
+                    height: "100%",
+                    minWidth: 0,
+                    minHeight: 0,
+                    flex: "1 1 auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5em",
+                    overflow: "hidden",
+                    boxSizing: "border-box",
+                    fontFamily: theme.typography.fontFamily,
+                    fontSize: `${fontPx}px`,
+                    lineHeight: 1.3,
+                    color: theme.palette.text.primary,
+                    textAlign: "left",
+                    fontVariantNumeric: "tabular-nums",
+                    "& *": { boxSizing: "border-box" },
+                }}
+            >
+                {withHeader ? header(title) : null}
+                {content}
+            </Box>
+        );
+
+        if (noCard) {
+            return root(true, null);
+        }
+        if (custom) {
+            // vis-2 draws the title of `widgetTitle` itself; the controls go next to it
+            return this.wrapContent(
+                root(false, null),
+                extra ? (
+                    <Box sx={{ fontSize: `${fontPx}px`, display: "flex", alignItems: "center" }}>{extra}</Box>
+                ) : null,
+                { boxSizing: "border-box", height: "100%", alignItems: "stretch", padding: 12, overflow: "hidden" },
+                { fontSize: Math.round(fontPx * 1.25), fontWeight: 500, paddingBottom: Math.round(fontPx * 0.4) },
+            ) as React.JSX.Element;
+        }
+        return this.wrapContent(root(true, this.tx(this.titleKey())), null, {
+            boxSizing: "border-box",
+            height: "100%",
+            alignItems: "stretch",
+            padding: 12,
+            overflow: "hidden",
+        }) as React.JSX.Element;
     }
 }

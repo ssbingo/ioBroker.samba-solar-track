@@ -200,6 +200,7 @@
     "unknown": "NIEZNANE",
     "unknown_lower": "pozycja nieznana",
     "unpark": "ZAKOŃCZ PARKOWANIE",
+    "widget_title": "Tytuł (puste = nazwa widżetu)",
     "wind": "Wiatr",
     "wind_fault": "Anemometr nie odpowiada",
     "wind_from": "Wiatr z {dir} ({deg}°)"

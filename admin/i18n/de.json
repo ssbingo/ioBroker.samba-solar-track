@@ -5,7 +5,7 @@
     "ipHelp": "IP-Adresse oder Gerätename, am Display unter Einrichtung > Netzwerk zu sehen",
     "portLabel": "Portnummer",
     "portHelp": "Das Gerät verwendet die Portnummer 80",
-    "tokenText": "Token für den Adapter: Das Display zeigt es unter Zahnrad > NETZWERK, Überschrift „TOKEN FUER DEN ADAPTER“, in 4 Teilen zu je 8 Zeichen (0-9, a-f): Teil 1 und 2 in der ersten Zeile, 3 und 4 in der zweiten. Von links nach rechts eintragen. Die Eingabe ist verdeckt; beim Eintippen zeigt das Auge sie an. Gespeicherte Teile bleiben verdeckt; zum Ändern einen Teil ganz löschen und neu eintragen. Ohne Token liest der Adapter nur; Befehle und Einstellungen brauchen es.",
+    "tokenText": "Token für den Adapter: Das Display zeigt es unter Zahnrad > NETZWERK, Überschrift „TOKEN FÜR DEN ADAPTER“, in 4 Teilen zu je 8 Zeichen (0-9, a-f): Teil 1 und 2 in der ersten Zeile, 3 und 4 in der zweiten. Von links nach rechts eintragen. Die Eingabe ist verdeckt; beim Eintippen zeigt das Auge sie an. Gespeicherte Teile bleiben verdeckt; zum Ändern einen Teil ganz löschen und neu eintragen. Ohne Token liest der Adapter nur; Befehle und Einstellungen brauchen es.",
     "tokenBlock1Label": "Teil 1",
     "tokenBlock2Label": "Teil 2",
     "tokenBlock3Label": "Teil 3",

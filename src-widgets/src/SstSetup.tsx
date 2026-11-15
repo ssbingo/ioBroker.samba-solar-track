@@ -2,8 +2,12 @@ import React from "react";
 
 import type { RxRenderWidgetProps, RxWidgetInfo } from "@iobroker/types-vis-2";
 
+import { Box, Chip, LinearProgress } from "@mui/material";
+
 import SstWidgetBase, { type SstBaseRxData, type SstBaseState } from "./SstWidgetBase";
-import { fmt, sstCommonGroup, VIS_SET } from "./common";
+import { fmt, plain, sstCommonGroup, sstGrid, VIS_SET } from "./common";
+import { Hint, Label, Line, Tile } from "./parts";
+import { stateText } from "./theme";
 
 const REL_IDS = [
     "info.connection",
@@ -63,7 +67,9 @@ export default class SstSetup extends SstWidgetBase<SetupRxData, SetupState> {
             visWidgetLabel: "SstSetup",
             visHelp: "help_setup",
             visAttrs: [sstCommonGroup()],
-            visDefaultStyle: { width: 300, height: 250 },
+            visDefaultStyle: { width: 320, height: 290, position: "absolute" },
+            visDefaultGrid: sstGrid(8, 6),
+            visResizable: true,
             visPrev: "widgets/samba-solar-track/img/SstSetup.svg",
             visOrder: 6,
         };
@@ -80,15 +86,39 @@ export default class SstSetup extends SstWidgetBase<SetupRxData, SetupState> {
     }
 
     // eslint-disable-next-line class-methods-use-this
-    private row(label: string, value: string, cls = ""): React.JSX.Element {
+    protected titleKey(): string {
+        return "SstSetup";
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected designSize(): [number, number] {
+        return [288, 258];
+    }
+
+    private row(label: string, value: string, kind: "ok" | "bad" | "" = ""): React.JSX.Element {
         return (
-            <div
-                className="sst-kr"
+            <Box
                 key={label}
+                sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "0.5em" }}
             >
-                <span className="sst-small">{label}</span>
-                <span className={`sst-mid${cls ? ` ${cls}` : ""}`}>{value}</span>
-            </div>
+                <Line
+                    size="0.8em"
+                    color={this.muted}
+                >
+                    {label}
+                </Line>
+                <Box
+                    sx={{
+                        fontSize: "0.9em",
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                        color: stateText(this.theme, kind),
+                        flex: "0 0 auto",
+                    }}
+                >
+                    {value}
+                </Box>
+            </Box>
         );
     }
 
@@ -99,17 +129,14 @@ export default class SstSetup extends SstWidgetBase<SetupRxData, SetupState> {
 
     renderWidgetBody(props: RxRenderWidgetProps): React.JSX.Element {
         super.renderWidgetBody(props);
+        const theme = this.theme;
         const done = this.flag("commissioning.done");
         if (done === null) {
-            return this.card(
-                <>
-                    <div className="sst-head">
-                        <div className="sst-ttl">{this.tx("SstSetup")}</div>
-                    </div>
-                    <div className="sst-hint">
-                        {this.connected() ? this.tx("setup_needs_firmware") : this.tx("band_offline")}
-                    </div>
-                </>,
+            return this.renderCard(
+                props,
+                <Hint theme={theme}>
+                    {this.connected() ? this.tx("setup_needs_firmware") : this.tx("band_offline")}
+                </Hint>,
             );
         }
         const active = this.flag("commissioning.active") === true;
@@ -128,7 +155,7 @@ export default class SstSetup extends SstWidgetBase<SetupRxData, SetupState> {
             this.row(
                 this.tx("report_result"),
                 passed === true ? this.tx("report_passed") : passed === false ? this.tx("report_not_passed") : "–",
-                passed === true ? "sst-ok" : passed === false ? "sst-bad" : "",
+                passed === true ? "ok" : passed === false ? "bad" : "",
             ),
             this.row(this.tx("report_travel_steeper"), this.seconds(this.num("commissioning.report.travelSteeper"))),
             this.row(this.tx("report_travel_flatter"), this.seconds(this.num("commissioning.report.travelFlatter"))),
@@ -145,52 +172,65 @@ export default class SstSetup extends SstWidgetBase<SetupRxData, SetupState> {
                 this.row(
                     this.tx("report_hall"),
                     hall > 0 ? this.tx("report_hall_ok", { n: hall }) : this.tx("report_hall_off"),
-                    hall > 0 ? "sst-ok" : "",
+                    hall > 0 ? "ok" : "",
                 ),
             );
         }
-        return this.card(
+        const status = (
+            <Chip
+                size="small"
+                variant="outlined"
+                color={done ? "success" : active ? "info" : "warning"}
+                label={plain(done ? this.tx("setup_done") : active ? this.tx("setup_running") : this.tx("setup_open"))}
+                sx={{ fontSize: "0.75em", height: "1.9em", maxWidth: "60%" }}
+            />
+        );
+        const content = (
             <>
-                <div className="sst-head">
-                    <div className="sst-ttl">{this.tx("SstSetup")}</div>
-                    <span className={`sst-conn ${done ? "sst-ok" : "sst-bad"}`}>
-                        {done ? this.tx("setup_done") : active ? this.tx("setup_running") : this.tx("setup_open")}
-                    </span>
-                </div>
-                <div
-                    className="sst-tile"
-                    style={{ gap: 4, flex: "1 1 auto" }}
+                <Tile
+                    theme={theme}
+                    sx={{ gap: "0.3em", flex: "1 1 auto" }}
                 >
-                    <div className="sst-kr">
-                        <span className="sst-k">{this.tx("test_report")}</span>
-                        <span className="sst-small">
+                    <Box
+                        sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "0.5em" }}
+                    >
+                        <Label theme={theme}>{this.tx("test_report")}</Label>
+                        <Line
+                            size="0.78em"
+                            color={this.muted}
+                        >
                             {dateText}
                             {this.flag("commissioning.report.simulation") === true ? ` · ${this.tx("simulation")}` : ""}
-                        </span>
-                    </div>
+                        </Line>
+                    </Box>
                     {rows}
-                </div>
-                <div className="sst-kr">
-                    <span className="sst-k">{this.tx("steps")}</span>
+                </Tile>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "0.5em" }}>
+                    <Label theme={theme}>{this.tx("steps")}</Label>
                     {!done && step ? (
-                        <span className="sst-small">{STEPS.includes(step) ? this.tx(`step_${step}`) : step}</span>
+                        <Line size="0.8em">{STEPS.includes(step) ? this.tx(`step_${step}`) : step}</Line>
                     ) : null}
-                </div>
-                <div className="sst-bar">
-                    <div
-                        style={{
-                            width: `${Math.round(progress * 100)}%`,
-                            background: done ? "var(--sst-auto)" : "var(--sst-warn)",
-                        }}
-                    />
-                </div>
-                <div className="sst-kr">
-                    <span className="sst-small">
+                </Box>
+                <LinearProgress
+                    variant="determinate"
+                    value={Math.round(progress * 100)}
+                    color={done ? "success" : "warning"}
+                    aria-label={this.tx("steps")}
+                    sx={{ height: "0.55em", borderRadius: "0.3em", flex: "0 0 auto" }}
+                />
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "0.5em" }}>
+                    <Line size="0.8em">
                         {total !== null && shownNumber !== null ? this.tx("steps_of", { n: shownNumber, total }) : "–"}
-                    </span>
-                    <span className="sst-note">{this.tx("setup_display_only")}</span>
-                </div>
-            </>,
+                    </Line>
+                    <Line
+                        size="0.75em"
+                        color={this.muted}
+                    >
+                        {this.tx("setup_display_only")}
+                    </Line>
+                </Box>
+            </>
         );
+        return this.renderCard(props, content, status);
     }
 }

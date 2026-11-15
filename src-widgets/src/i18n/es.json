@@ -200,6 +200,7 @@
     "unknown": "DESCONOCIDO",
     "unknown_lower": "posición desconocida",
     "unpark": "ANULAR APARCADO",
+    "widget_title": "Título (vacío = nombre del widget)",
     "wind": "Viento",
     "wind_fault": "El anemómetro no responde",
     "wind_from": "Viento del {dir} ({deg}°)"

@@ -286,7 +286,7 @@ describe("protocol => tokenSummary", () => {
 
 describe("protocol => TOKEN_HINT", () => {
     it("names the place of the token at the display and its form", () => {
-        expect(TOKEN_HINT).to.contain('gear > NETZWERK > "TOKEN FUER DEN ADAPTER"');
+        expect(TOKEN_HINT).to.contain('gear > NETWORK > "TOKEN FOR THE ADAPTER"');
         expect(TOKEN_HINT).to.contain("4 blocks of 8 characters");
         expect(TOKEN_HINT).to.not.contain("remote access");
     });

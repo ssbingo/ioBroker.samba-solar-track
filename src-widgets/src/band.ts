@@ -4,7 +4,7 @@
  * The widget only knows what the adapter reports, so it derives "a drive is moving" from the outputs of the axes.
  */
 import { mmss } from "./common";
-import type { BandColor } from "./styles";
+import type { BandColor } from "./theme";
 
 /** States of the adapter the status band reads */
 export const BAND_IDS = [

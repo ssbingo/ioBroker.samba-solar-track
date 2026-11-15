@@ -99,7 +99,7 @@ nutzt wie bei `ioBroker.pondpump` „Trusted Publishing“ statt eines `NPM_TOKE
 | `test/mock-device.js` | nachgebildetes Gerät nach `PROTOCOL.md` für Unit- und Integrationstest |
 | `test/integration.js` | Adapter im echten js-controller gegen das nachgebildete Gerät |
 | `build/` | Ergebnis von `npm run build`; wird committet (der Adapter-Checker verlangt es) |
-| `src-widgets/` | vis-2-Widgets in React (Vite, Module Federation, Aufbau wie `ioBroker.pondpump`): `SstWidgetBase.tsx` (Basisklasse, Abo relativ zur Instanz), sechs Widgets `Sst*.tsx`, `band.ts` (Statusband wie `updateStatus()` der Firmware), `lock.ts` (Sperren F2–F4), `styles.ts` (Farben Design „Standard“, Schrift Montserrat OFL in `src/fonts/`), `i18n/*.json` (11 Sprachen; Statusbandtexte aus `zehnzoll/sprachen/` übernommen) |
+| `src-widgets/` | vis-2-Widgets in React (Vite, Module Federation, Aufbau wie `ioBroker.pondpump`): `SstWidgetBase.tsx` (Basisklasse wie `Generic` von vis-2-widgets-material: Abo relativ zur Instanz, Karte über `wrapContent()` von vis-2, `noCard`/`widgetTitle`, Skalierung per ResizeObserver), sechs Widgets `Sst*.tsx`, `band.ts` (Statusband wie `updateStatus()` der Firmware), `lock.ts` (Sperren F2–F4), `theme.ts` (Farben nur aus `context.theme.palette`, Statusband auf MUI-Farben), `parts.tsx` (Kachel, Beschriftung, Statusband aus MUI), `i18n/*.json` (11 Sprachen; Statusbandtexte aus `zehnzoll/sprachen/` übernommen) |
 | `widgets/samba-solar-track/` | Ergebnis von `npm run build:widgets` (`tasks.js`); wird committet, damit `build-adapter ts` und die CI kein Vite brauchen |
 | `src/lib/texts.test.ts` | prüft admin/i18n, `io-package.json` (Titel, Beschreibung, news), Benachrichtigungen und Widget-Texte: alle 11 Sprachen, keine Kopie des Englischen außer „Samba Solar Track“ |
 
@@ -134,7 +134,7 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   Leerzeichen und Großbuchstaben werden aufbereitet, ein falscher Block wird im Log genannt.
   Das alte Feld `token` gilt nur, solange die vier Felder leer sind, und ist nur sichtbar,
   solange es einen Wert hat. Alle Texte nennen den richtigen Ort des Tokens.
-- **Erledigt (0.0.6):** Die vier Felder stehen nebeneinander (damals „Block 1“ bis „Block 4“, seit 0.1.0 „Teil 1“ bis „Teil 4“), ohne
+- **Erledigt (0.0.6):** Die vier Felder stehen nebeneinander (damals „Block 1“ bis „Block 4“, seit 0.1.1 „Teil 1“ bis „Teil 4“), ohne
   Hilfezeilen, verdeckt mit Auge (Wunsch des Nutzers vom 3.10.2026); das alte Feld `token` wird
   nicht mehr angezeigt. Beim Start übernimmt der Adapter ein gültiges Token daraus einmalig in
   die vier Felder (`updateConfig`, verschlüsselt) und leert es; sind die vier Felder belegt,
@@ -155,7 +155,7 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   Token wurde nicht angenommen. Die Ursache ist nicht bestätigt; möglich sind Leerzeichen in der
   Eingabe (die 0.0.5 entfernt) oder ein Tippfehler. Alles Übrige nur gegen das nachgebildete
   Gerät geprüft.
-- **Erledigt (0.1.0, 15.11.2026, nicht veröffentlicht):** Stand der Firmware 0.7.8 nach der
+- **Erledigt (0.1.1, 15.11.2026, als 0.1.1 veröffentlicht):** Stand der Firmware 0.7.8 nach der
   Aufgabenliste `docs/planung/iobroker-adapter-aufgaben.md` im Firmware-Projekt (A1–A9, B1–B6,
   C1–C4, C6, C8). Kanäle und Datenpunkte mit `feature`/`mode` in `states.ts` entstehen erst, wenn
   das Gerät das Merkmal in `features` meldet und die Betriebsart passt (`syncLayout` in `main.ts`,
@@ -172,7 +172,7 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   (STEEPER/FLATTER wie am Display, `relabelElevation`); Namen der neuen Einstellungen;
   Benachrichtigung `commission` (Setup-Programm nicht abgeschlossen, einmal je Auftreten, ab Werk
   an); alle Objektnamen in 11 Sprachen. Geprüft nur gegen das nachgebildete Gerät.
-- **Ebenfalls in 0.1.0 (15.11.2026, nicht veröffentlicht):** Datenpunkte `battery.*` (Merkmal `battery`),
+- **Ebenfalls in 0.1.1 (15.11.2026, als 0.1.1 veröffentlicht):** Datenpunkte `battery.*` (Merkmal `battery`),
   `supply.v24`/`v5` (`power`), `supply.adcOk`/`checks` (`chargecheck`), Kanal `update` mit `active`/`percent`
   (`update`) und `phase`/`error` (`updatepark`). Texte der Einstellungsseite ohne Kopie des Englischen (de
   „Portnummer“, „Teil 1“–„Teil 4“; fr „Port réseau“, „Messages de l’appareil“, „Alertes“; pl „Port sieciowy“), geprüft
@@ -186,8 +186,21 @@ Testinstallation noch das alte Instanzobjekt; dann mit frischem Temp-Verzeichnis
   2.20.9 (dev-server mit web und vis-2) gegen das nachgebildete Gerät, auch Totmann und Browserabbruch.
   Bewusste Abweichungen vom Display, weil kein Widget-Text dem Englischen gleichen darf: einzelne Wörter wie
   STOP, WEST, ELEVATION, „Wind“, Stufenkürzel INF/WRN/ERR (im Widget Zeichen i/!/✕ mit übersetztem Titel). Farben des
-  Statusbands je Zustand wie am Display (`pal()`: Nacht und Parken #34495E, Setup-Programm, Einrichtung und
+  Statusbands damals je Zustand wie am Display (abgelöst durch den Umbau im nächsten Punkt; `pal()`: Nacht und Parken #34495E, Setup-Programm, Einrichtung und
   Sonnensensor violett #8E44AD); die Vorschau hatte Nacht violett und „Setup fehlt“ orange gezeigt.
+- **Ebenfalls in 0.1.1 (15.11.2026, als 0.1.1 veröffentlicht): Widgets im vis-2-Design.** Entscheidung des Nutzers vom
+  15.11.2026: Display und Widgets dürfen sich unterscheiden, die Widgets folgen dem Design von vis-2 (hell/dunkel), nicht
+  mehr dem Gerätedesign „Standard“. Umbau nach vis-2 2.20.9 und vis-2-widgets-material: Karte über `wrapContent()` (Titel
+  `widgetTitle`, leer = Name des Widgets, ausgeblendet mit `noCard`), MUI-Bausteine (Button, Switch mit
+  FormControlLabel, Chip, LinearProgress, Dialog für die Rückfrage beim Reset der Synchronsteuerung), Farben nur aus
+  `this.props.context.theme`, Schrift von vis-2 (Montserrat entfernt), `visDefaultGrid` mit Mindestgrößen,
+  `visResizable`, neue Vorschaubilder. Statusband: Texte wie bisher, Farben info/success/warning/error/secondary, Nacht und
+  Parken grey[800], bereit/ohne Verbindung grey. Inhalt skaliert mit dem Widget (ResizeObserver, alles in em; Meldungen nach
+  der Breite, Liste rollt). `@mui/system` als Abhängigkeit, weil vis-2 es teilt (`moduleFederationShared`); das Manifest
+  teilt React, `react/jsx-runtime`, `react-dom`, MUI und `@emotion/react` als Singletons, im Browser wird keine
+  Rückfallkopie geladen. Neuer Text `widget_title` in 11 Sprachen. Geprüft in echter vis-2 2.20.9 hell und dunkel:
+  Automatik, Sturm, Nacht, Handbetrieb, zwei Achsen, gesperrt, Setup fehlt, Firmware 0.4.8, Editor; Totmann (Maus,
+  Leertaste, Loslassen, Browserabbruch) erneut bestanden. Farben der Statusbänder weichen damit bewusst vom Display ab.
 - **Offen, in dieser Reihenfolge:** Handbuch, Uhrzeit des Geräts (`time` in `GET /api/info`, ab Firmware 0.0.4).
   Nicht abgebildet sind weiterhin `axes.*.dutyPauseMs` und `lang` (nicht Teil der Aufgabenliste). Die Widgets sind
   noch nicht mit einem echten Gerät geprüft.

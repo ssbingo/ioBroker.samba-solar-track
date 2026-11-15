@@ -40,7 +40,7 @@ const PROTOCOL_VERSION = 1;
 const TOKEN_LENGTH = 32;
 const TOKEN_BLOCKS = 4;
 const TOKEN_BLOCK_LENGTH = TOKEN_LENGTH / TOKEN_BLOCKS;
-const TOKEN_HINT = 'The display shows it under the gear > NETZWERK > "TOKEN FUER DEN ADAPTER" as 4 blocks of 8 characters (0-9, a-f); enter one block per field in the adapter settings.';
+const TOKEN_HINT = 'The display shows it under the gear > NETWORK > "TOKEN FOR THE ADAPTER" as 4 blocks of 8 characters (0-9, a-f); enter one block per field in the adapter settings.';
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

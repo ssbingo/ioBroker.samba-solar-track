@@ -2,8 +2,12 @@ import React from "react";
 
 import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps } from "@iobroker/types-vis-2";
 
+import { Box, Chip, type Theme } from "@mui/material";
+
 import SstWidgetBase, { type SstBaseRxData, type SstBaseState } from "./SstWidgetBase";
-import { clock, parseJson, sstCommonGroup, VIS_SET } from "./common";
+import { clock, parseJson, sstCommonGroup, sstGrid, VIS_SET } from "./common";
+import { Hint } from "./parts";
+import { tileBackground } from "./theme";
 
 const REL_IDS = ["info.connection", "messages.history", "messages.lost"];
 
@@ -28,13 +32,22 @@ interface MessagesState extends SstBaseState {
 }
 
 /** Badge per level: a sign instead of a word (the same in every language) and the translated level as title */
-const LEVELS: Record<string, { cls: string; sign: string; key: string }> = {
-    E: { cls: "sst-e", sign: "✕", key: "level_error" },
-    W: { cls: "sst-w", sign: "!", key: "level_warning" },
-    I: { cls: "sst-i", sign: "i", key: "level_info" },
-    D: { cls: "sst-d", sign: "·", key: "level_debug" },
-    V: { cls: "sst-d", sign: "·", key: "level_debug" },
+const LEVELS: Record<string, { color: "error" | "warning" | "info" | "grey"; sign: string; key: string }> = {
+    E: { color: "error", sign: "✕", key: "level_error" },
+    W: { color: "warning", sign: "!", key: "level_warning" },
+    I: { color: "info", sign: "i", key: "level_info" },
+    D: { color: "grey", sign: "·", key: "level_debug" },
+    V: { color: "grey", sign: "·", key: "level_debug" },
 };
+
+/** Colours of a level badge from the palette */
+function levelPaint(theme: Theme, color: "error" | "warning" | "info" | "grey"): { bg: string; fg: string } {
+    if (color === "grey") {
+        const bg = theme.palette.grey[theme.palette.mode === "dark" ? 700 : 300];
+        return { bg, fg: theme.palette.getContrastText(bg) };
+    }
+    return { bg: theme.palette[color].main, fg: theme.palette[color].contrastText };
+}
 
 /**
  * Widget 3 - messages: the latest messages of the device (`messages.history`) with the time of day the adapter
@@ -75,7 +88,9 @@ export default class SstMessages extends SstWidgetBase<MessagesRxData, MessagesS
                     ],
                 },
             ],
-            visDefaultStyle: { width: 400, height: 290 },
+            visDefaultStyle: { width: 420, height: 300, position: "absolute" },
+            visDefaultGrid: sstGrid(12, 6),
+            visResizable: true,
             visPrev: "widgets/samba-solar-track/img/SstMessages.svg",
             visOrder: 3,
         };
@@ -89,6 +104,21 @@ export default class SstMessages extends SstWidgetBase<MessagesRxData, MessagesS
     // eslint-disable-next-line class-methods-use-this
     protected relIds(): string[] {
         return REL_IDS;
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected titleKey(): string {
+        return "SstMessages";
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected designSize(): [number, number] {
+        return [388, 268];
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected scaleMode(): "fit" | "width" {
+        return "width"; // the list scrolls; a flat widget must not shrink the text
     }
 
     private messages(): Message[] {
@@ -111,65 +141,110 @@ export default class SstMessages extends SstWidgetBase<MessagesRxData, MessagesS
             }
             return showDebug || (lvl !== "D" && lvl !== "V");
         });
+        const theme = this.theme;
         const chip = (value: Filter, key: string): React.JSX.Element => (
-            <button
-                type="button"
-                className="sst-chip"
+            <Chip
+                size="small"
+                label={this.tx(key)}
+                color={filter === value ? "primary" : "default"}
+                variant={filter === value ? "filled" : "outlined"}
                 aria-pressed={filter === value}
                 onClick={() => this.setState({ filter: value })}
-            >
-                {this.tx(key)}
-            </button>
+                sx={{ fontSize: "0.78em", height: "1.9em", "& .MuiChip-label": { px: "0.7em" } }}
+            />
         );
         const lost = this.num("messages.lost");
-        return this.card(
+        const filters = (
+            <Box
+                role="group"
+                aria-label={this.tx("filter")}
+                sx={{ display: "flex", gap: "0.3em", flex: "0 0 auto" }}
+            >
+                {chip("all", "filter_all")}
+                {chip("warn", "filter_warn")}
+                {chip("error", "filter_error")}
+            </Box>
+        );
+        const content = (
             <>
-                <div className="sst-head">
-                    <div className="sst-ttl">{this.tx("SstMessages")}</div>
-                    <div
-                        className="sst-chips"
-                        role="group"
-                        aria-label={this.tx("filter")}
-                    >
-                        {chip("all", "filter_all")}
-                        {chip("warn", "filter_warn")}
-                        {chip("error", "filter_error")}
-                    </div>
-                </div>
-                <div className="sst-log">
+                <Box
+                    role="log"
+                    aria-label={this.tx("SstMessages")}
+                    tabIndex={0}
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.25em",
+                        overflowY: "auto",
+                        overflowX: "hidden",
+                        flex: "1 1 auto",
+                        minHeight: 0,
+                        "&:focus-visible": { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
+                    }}
+                >
                     {list.length ? (
                         list.slice(0, 60).map(m => {
                             const level = LEVELS[(m.lvl || "I").toUpperCase()] ?? LEVELS.I;
+                            const paint = levelPaint(theme, level.color);
                             return (
-                                <div
-                                    className="sst-ln"
+                                <Box
                                     key={`${m.seq}-${m.ts}`}
                                     title={`${m.tag ? `[${m.tag}] ` : ""}${m.msg}`}
+                                    sx={{
+                                        display: "grid",
+                                        gridTemplateColumns: "3.6em 1.7em minmax(0, 1fr)",
+                                        gap: "0.45em",
+                                        alignItems: "center",
+                                        bgcolor: tileBackground(theme),
+                                        borderRadius: `${theme.shape.borderRadius}px`,
+                                        padding: "0.3em 0.5em",
+                                        fontSize: "0.82em",
+                                        flex: "0 0 auto",
+                                    }}
                                 >
-                                    <time dateTime={Number.isFinite(m.ts) ? new Date(m.ts).toISOString() : undefined}>
+                                    <Box
+                                        component="time"
+                                        dateTime={Number.isFinite(m.ts) ? new Date(m.ts).toISOString() : undefined}
+                                        sx={{ color: this.muted }}
+                                    >
                                         {clock(m.ts)}
-                                    </time>
-                                    <span
-                                        className={`sst-lv ${level.cls}`}
+                                    </Box>
+                                    <Box
+                                        component="span"
                                         title={this.tx(level.key)}
                                         aria-label={this.tx(level.key)}
+                                        sx={{
+                                            bgcolor: paint.bg,
+                                            color: paint.fg,
+                                            borderRadius: "0.3em",
+                                            textAlign: "center",
+                                            fontWeight: 700,
+                                            fontSize: "0.85em",
+                                            lineHeight: 1.5,
+                                        }}
                                     >
                                         {level.sign}
-                                    </span>
-                                    <span>{m.msg}</span>
-                                </div>
+                                    </Box>
+                                    <Box
+                                        component="span"
+                                        sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                                    >
+                                        {m.msg}
+                                    </Box>
+                                </Box>
                             );
                         })
                     ) : (
-                        <div className="sst-hint">
+                        <Hint theme={theme}>
                             {this.flag("info.connection") === true ? this.tx("no_messages") : this.tx("band_offline")}
-                        </div>
+                        </Hint>
                     )}
-                </div>
+                </Box>
                 {lost !== null && lost > 0 ? (
-                    <div className="sst-note">{this.tx("messages_lost", { n: lost })}</div>
+                    <Box sx={{ fontSize: "0.75em", color: this.muted }}>{this.tx("messages_lost", { n: lost })}</Box>
                 ) : null}
-            </>,
+            </>
         );
+        return this.renderCard(props, content, filters);
     }
 }

@@ -1,12 +1,15 @@
 import React from "react";
 
+import { alpha, Box, Button, FormControlLabel, Switch } from "@mui/material";
+
 import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps } from "@iobroker/types-vis-2";
 
 import SstWidgetBase, { type SstBaseRxData, type SstBaseState } from "./SstWidgetBase";
 import { BAND_IDS, elevationSteeper, statusBand } from "./band";
-import { fmt, sstCommonGroup, VIS_SET } from "./common";
-import { BAND_COLORS } from "./styles";
+import { fmt, sstCommonGroup, sstGrid, VIS_SET } from "./common";
 import { compass, LOCK_IDS, remoteLock } from "./lock";
+import { Label, Line, Reason, StatusBand, Tile } from "./parts";
+import { stateText, sunColor } from "./theme";
 
 const REL_IDS = [
     ...BAND_IDS,
@@ -42,8 +45,9 @@ type OverviewRxData = SstBaseRxData;
 type OverviewState = SstBaseState;
 
 /**
- * Widget 1 - overview, like the start page of the display: wind gauge, sun sensor cross-hair, tilt with sketch
- * and the status band (text and colour per state as at the display) with the button PARK FLAT / CANCEL PARKING.
+ * Widget 1 - overview, with the content of the start page of the display: wind gauge, sun sensor cross-hair, tilt
+ * with sketch and the status band (text per state as at the display, colour from the palette of vis-2) with the
+ * button PARK FLAT / CANCEL PARKING, plus the automatic switch.
  */
 export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewState> {
     constructor(props: VisRxWidgetProps) {
@@ -56,12 +60,14 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
             id: "tplSambaSolarTrackOverview",
             visSet: VIS_SET,
             visSetLabel: "set_label",
-            visSetColor: "#2196F3",
+            visSetColor: "#f5a400",
             visName: "SstOverview",
             visWidgetLabel: "SstOverview",
             visHelp: "help_overview",
             visAttrs: [sstCommonGroup()],
-            visDefaultStyle: { width: 420, height: 290 },
+            visDefaultStyle: { width: 440, height: 300, position: "absolute" },
+            visDefaultGrid: sstGrid(12, 6),
+            visResizable: true,
             visPrev: "widgets/samba-solar-track/img/SstOverview.svg",
             visOrder: 1,
         };
@@ -75,6 +81,16 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
     // eslint-disable-next-line class-methods-use-this
     protected relIds(): string[] {
         return REL_IDS;
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected titleKey(): string {
+        return "SstOverview";
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    protected designSize(): [number, number] {
+        return [408, 268];
     }
 
     private axisText(axis: "elevation" | "azimuth"): string {
@@ -97,6 +113,8 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
     }
 
     private renderWind(): React.JSX.Element {
+        const theme = this.theme;
+        const p = theme.palette;
         const ok = this.flag("wind.ok") !== false;
         const speed = ok ? this.num("wind.speed") : null;
         const storm = this.num("wind.stormThreshold");
@@ -105,7 +123,7 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
         const a = frac * 270;
         const r = 44;
         const cx = 60;
-        const cy = 58;
+        const cy = 54;
         const st = (135 * Math.PI) / 180;
         const en = ((135 + a) * Math.PI) / 180;
         const x1 = cx + r * Math.cos(st);
@@ -114,22 +132,24 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
         const y2 = cy + r * Math.sin(en);
         const arc = `M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 ${a > 180 ? 1 : 0} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
         const gust = this.num("wind.gust");
-        const color = speed !== null && storm !== null && (gust ?? speed) >= storm ? BAND_COLORS.red : "#2196F3";
+        const stormy = speed !== null && storm !== null && (gust ?? speed) >= storm;
+        const color = stormy ? p.error.main : p.primary.main;
         const dir = this.num("wind.direction");
         const showDir =
             this.flag("wind.hasDirection") === true && this.flag("wind.directionOk") !== false && dir !== null;
         return (
-            <div className="sst-tile">
-                <div className="sst-k">{this.tx("wind")}</div>
-                <svg
-                    viewBox="0 0 120 92"
-                    style={{ width: "100%", height: "auto", maxHeight: 110, minHeight: 0, flex: "1 1 auto" }}
+            <Tile theme={theme}>
+                <Label theme={theme}>{this.tx("wind")}</Label>
+                <Box
+                    component="svg"
+                    viewBox="0 0 120 96"
                     aria-hidden="true"
+                    sx={{ width: "100%", flex: "1 1 auto", minHeight: 0, display: "block" }}
                 >
                     <path
                         d={`M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 1 1 ${(cx + r * Math.cos((45 * Math.PI) / 180)).toFixed(1)} ${(cy + r * Math.sin((45 * Math.PI) / 180)).toFixed(1)}`}
                         fill="none"
-                        stroke="#2a3350"
+                        stroke={p.divider}
                         strokeWidth={9}
                         strokeLinecap="round"
                     />
@@ -144,50 +164,58 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
                     ) : null}
                     <text
                         x={60}
-                        y={62}
+                        y={58}
                         textAnchor="middle"
                         fontSize={22}
-                        fontWeight={600}
-                        fill="#fff"
+                        fontWeight={500}
+                        fill={p.text.primary}
+                        fontFamily={theme.typography.fontFamily}
                     >
                         {fmt(speed, 1)}
                     </text>
                     <text
                         x={60}
-                        y={76}
+                        y={72}
                         textAnchor="middle"
-                        fontSize={8}
-                        fill="#8A93A6"
+                        fontSize={9}
+                        fill={this.muted}
+                        fontFamily={theme.typography.fontFamily}
                     >
                         km/h
                     </text>
                     {storm !== null ? (
                         <text
                             x={60}
-                            y={91}
+                            y={92}
                             textAnchor="middle"
-                            fontSize={8}
-                            fontWeight={600}
-                            fill="#FFCC00"
+                            fontSize={9}
+                            fontWeight={500}
+                            fill={stateText(theme, "warn")}
+                            fontFamily={theme.typography.fontFamily}
                         >
                             {this.tx("storm_from", { v: fmt(storm) })}
                         </text>
                     ) : null}
-                </svg>
+                </Box>
                 {!ok ? (
-                    <div className="sst-small sst-bad">{this.tx("wind_fault")}</div>
+                    <Line color={stateText(theme, "bad")}>{this.tx("wind_fault")}</Line>
                 ) : showDir ? (
-                    <div className="sst-small sst-gold">
-                        {this.tx("wind_from", { dir: compass(dir, this.tx("compass")), deg: fmt(dir) })}
-                    </div>
+                    <Line>{this.tx("wind_from", { dir: compass(dir, this.tx("compass")), deg: fmt(dir) })}</Line>
                 ) : null}
-                <div className="sst-mid">{this.tx("gust_value", { v: fmt(ok ? gust : null, 1) })}</div>
-                <div className="sst-small">{this.tx("max_gust_value", { v: fmt(this.num("wind.maxGust"), 1) })}</div>
-            </div>
+                <Line weight={500}>{this.tx("gust_value", { v: fmt(ok ? gust : null, 1) })}</Line>
+                <Line
+                    size="0.78em"
+                    color={this.muted}
+                >
+                    {this.tx("max_gust_value", { v: fmt(this.num("wind.maxGust"), 1) })}
+                </Line>
+            </Tile>
         );
     }
 
     private renderSun(): React.JSX.Element {
+        const theme = this.theme;
+        const p = theme.palette;
         const ok = this.flag("sun.ok") !== false;
         const dual = this.num("status.mode") === 2;
         const eEl = this.num("axes.elevation.deviation") ?? 0;
@@ -201,26 +229,20 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
         const sign = (v: number): string => `${v >= 0 ? "+" : ""}${(v / 10).toFixed(1)}`;
         const dirs = this.tx("compass").split(",");
         return (
-            <div className="sst-tile">
-                <div className="sst-k">{this.tx("sun_sensor")}</div>
-                <svg
+            <Tile theme={theme}>
+                <Label theme={theme}>{this.tx("sun_sensor")}</Label>
+                <Box
+                    component="svg"
                     viewBox="0 0 100 100"
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 104,
-                        margin: "4px 0",
-                        flex: "1 1 auto",
-                        minHeight: 0,
-                    }}
                     aria-hidden="true"
+                    sx={{ width: "100%", flex: "1 1 auto", minHeight: 0, display: "block", my: "0.2em" }}
                 >
                     <circle
                         cx={50}
                         cy={50}
                         r={42}
-                        fill="#000"
-                        stroke="#8A93A6"
+                        fill={p.action.hover}
+                        stroke={p.divider}
                         strokeWidth={1}
                     />
                     <line
@@ -228,7 +250,7 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
                         y1={50}
                         x2={92}
                         y2={50}
-                        stroke="#8A93A6"
+                        stroke={p.divider}
                         strokeWidth={0.8}
                     />
                     <line
@@ -236,7 +258,7 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
                         y1={8}
                         x2={50}
                         y2={92}
-                        stroke="#8A93A6"
+                        stroke={p.divider}
                         strokeWidth={0.8}
                     />
                     <circle
@@ -244,50 +266,63 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
                         cy={50}
                         r={10}
                         fill="none"
-                        stroke="#2196F3"
-                        strokeWidth={0.8}
+                        stroke={p.primary.main}
+                        strokeWidth={1}
                     />
                     {ok ? (
                         <circle
                             cx={x}
                             cy={y}
-                            r={5}
-                            fill="#FFCC00"
-                            opacity={night ? 0.25 : 1}
+                            r={5.5}
+                            fill={sunColor(theme)}
+                            opacity={night ? 0.3 : 1}
                         />
                     ) : null}
                     <text
                         x={12}
-                        y={48}
-                        fontSize={7}
-                        fill="#8A93A6"
+                        y={47}
+                        fontSize={8}
+                        fill={this.muted}
+                        fontFamily={theme.typography.fontFamily}
                     >
                         {dirs[2] || ""}
                     </text>
                     <text
-                        x={83}
-                        y={48}
-                        fontSize={7}
-                        fill="#8A93A6"
+                        x={88}
+                        y={47}
+                        fontSize={8}
+                        textAnchor="end"
+                        fill={this.muted}
+                        fontFamily={theme.typography.fontFamily}
                     >
                         {dirs[6] || ""}
                     </text>
-                </svg>
-                <div className="sst-mid sst-gold">
+                </Box>
+                <Line weight={500}>
                     {ok ? this.tx("deviation_single", { el: sign(eEl) }) : this.tx("sensor_missing")}
-                </div>
-                {dual && ok ? (
-                    <div className="sst-small sst-gold">{this.tx("deviation_azimuth", { az: sign(eAz) })}</div>
-                ) : null}
-                <div className="sst-small">{this.tx("axis_line_elevation", { s: this.axisText("elevation") })}</div>
+                </Line>
+                {dual && ok ? <Line weight={500}>{this.tx("deviation_azimuth", { az: sign(eAz) })}</Line> : null}
+                <Line
+                    size="0.78em"
+                    color={this.muted}
+                >
+                    {this.tx("axis_line_elevation", { s: this.axisText("elevation") })}
+                </Line>
                 {dual ? (
-                    <div className="sst-small">{this.tx("axis_line_azimuth", { s: this.axisText("azimuth") })}</div>
+                    <Line
+                        size="0.78em"
+                        color={this.muted}
+                    >
+                        {this.tx("axis_line_azimuth", { s: this.axisText("azimuth") })}
+                    </Line>
                 ) : null}
-            </div>
+            </Tile>
         );
     }
 
     private renderTilt(): React.JSX.Element {
+        const theme = this.theme;
+        const p = theme.palette;
         const deg = this.num("axes.elevation.angle");
         const shown = deg === null ? 0 : Math.max(0, Math.min(90, deg));
         const source = this.str("axes.elevation.angleSource");
@@ -305,23 +340,34 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
         const src =
             source === "hall" ? this.tx("source_hall_short") : source === "time" ? this.tx("source_time_short") : "";
         return (
-            <div className="sst-tile">
-                <div className="sst-k">{this.tx("tilt")}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, margin: "6px 0 2px" }}>
-                    <span className="sst-big">{fmt(deg)}</span>
-                    <span className="sst-small">°</span>
-                </div>
-                <svg
+            <Tile theme={theme}>
+                <Label theme={theme}>{this.tx("tilt")}</Label>
+                <Box sx={{ display: "flex", alignItems: "baseline", gap: "0.2em", mt: "0.3em" }}>
+                    <Box
+                        component="span"
+                        sx={{ fontSize: "1.9em", fontWeight: 500, lineHeight: 1 }}
+                    >
+                        {fmt(deg)}
+                    </Box>
+                    <Box
+                        component="span"
+                        sx={{ color: this.muted }}
+                    >
+                        °
+                    </Box>
+                </Box>
+                <Box
+                    component="svg"
                     viewBox="0 0 100 56"
-                    style={{ width: "100%", height: "auto", maxHeight: 60, flex: "1 1 auto", minHeight: 0 }}
                     aria-hidden="true"
+                    sx={{ width: "100%", flex: "1 1 auto", minHeight: 0, display: "block" }}
                 >
                     <line
                         x1={6}
                         y1={50}
                         x2={94}
                         y2={50}
-                        stroke="#8A93A6"
+                        stroke={p.divider}
                         strokeWidth={1.5}
                     />
                     <g transform={`rotate(-${shown} 22 46)`}>
@@ -331,89 +377,118 @@ export default class SstOverview extends SstWidgetBase<OverviewRxData, OverviewS
                             width={66}
                             height={5}
                             rx={1}
-                            fill={deg === null ? "#3a4256" : "#2196F3"}
+                            fill={deg === null ? p.action.disabled : p.primary.main}
                         />
                     </g>
                     <circle
                         cx={22}
                         cy={46}
                         r={3}
-                        fill="#fff"
+                        fill={p.text.primary}
                     />
-                </svg>
-                <div className="sst-small">
-                    {deg === null ? this.tx("unknown_lower") : [line, src].filter(Boolean).join(" · ") || " "}
-                </div>
-            </div>
+                </Box>
+                <Line
+                    size="0.78em"
+                    color={this.muted}
+                >
+                    {deg === null ? this.tx("unknown_lower") : [line, src].filter(Boolean).join(" · ") || " "}
+                </Line>
+            </Tile>
         );
     }
 
     private onToggleAuto = (): void => {
-        this.write("control.auto", !(this.flag("status.auto") === true));
+        if (!remoteLock(this).reason) {
+            this.write("control.auto", !(this.flag("status.auto") === true));
+        }
     };
 
     private onPark = (): void => {
-        this.write("control.park", !(this.flag("status.park") === true));
+        if (!remoteLock(this).reason) {
+            this.write("control.park", !(this.flag("status.park") === true));
+        }
     };
 
     renderWidgetBody(props: RxRenderWidgetProps): React.JSX.Element {
         super.renderWidgetBody(props);
+        const theme = this.theme;
         const band = statusBand(this, (k, p) => this.tx(k, p));
         const lock = remoteLock(this);
         const auto = this.flag("status.auto") === true;
         const parked = this.flag("status.park") === true;
         const state = this.str("status.state");
-        return this.card(
+        const autoDisabled = !!lock.reason || state === "SETUP";
+        const autoSwitch = (
+            <Reason title={lock.reason ? this.tx(lock.reason) : undefined}>
+                <FormControlLabel
+                    labelPlacement="start"
+                    disabled={autoDisabled}
+                    sx={{ m: 0, gap: "0.2em", "& .MuiFormControlLabel-label": { fontSize: "0.85em" } }}
+                    label={this.tx("automatic")}
+                    control={
+                        <Switch
+                            size="small"
+                            checked={auto}
+                            onChange={this.onToggleAuto}
+                        />
+                    }
+                />
+            </Reason>
+        );
+        const bandColor = band.color;
+        const content = (
             <>
-                <div className="sst-head">
-                    <div
-                        className="sst-logo"
-                        aria-hidden="true"
-                    />
-                    <div className="sst-ttl">Samba Solar Track</div>
-                    <span className="sst-conn">{this.tx("automatic")}</span>
-                    <button
-                        type="button"
-                        className="sst-sw"
-                        role="switch"
-                        aria-checked={auto}
-                        aria-label={this.tx("automatic")}
-                        title={lock.reason ? this.tx(lock.reason) : this.tx("automatic")}
-                        disabled={!!lock.reason || state === "SETUP"}
-                        onClick={this.onToggleAuto}
-                    />
-                </div>
-                <div
-                    className="sst-tiles"
-                    style={{ gridTemplateColumns: "1.05fr 1fr 1fr" }}
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1.05fr 1fr 1fr",
+                        gap: "0.5em",
+                        flex: "1 1 auto",
+                        minHeight: 0,
+                    }}
                 >
                     {this.renderWind()}
                     {this.renderSun()}
                     {this.renderTilt()}
-                </div>
-                <div
-                    className="sst-band"
-                    style={{ background: BAND_COLORS[band.color] }}
-                >
-                    <span
-                        className="sst-t"
-                        title={band.text}
-                    >
-                        {band.text}
-                    </span>
-                    {state !== "SETUP" ? (
-                        <button
-                            type="button"
-                            className="sst-pill"
-                            disabled={!!lock.reason}
-                            title={lock.reason ? this.tx(lock.reason) : undefined}
-                            onClick={this.onPark}
-                        >
-                            {parked ? this.tx("unpark") : this.tx("park_flat")}
-                        </button>
-                    ) : null}
-                </div>
-            </>,
+                </Box>
+                <StatusBand
+                    theme={theme}
+                    color={bandColor}
+                    text={band.text}
+                    action={
+                        state !== "SETUP" ? (
+                            <Reason title={lock.reason ? this.tx(lock.reason) : undefined}>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="inherit"
+                                    disabled={!!lock.reason}
+                                    onClick={this.onPark}
+                                    sx={{
+                                        fontSize: "0.75em",
+                                        lineHeight: 1.2,
+                                        minWidth: 0,
+                                        whiteSpace: "nowrap",
+                                        px: "0.9em",
+                                        py: "0.4em",
+                                        borderRadius: "999px",
+                                        bgcolor: theme.palette.background.paper,
+                                        color: theme.palette.text.primary,
+                                        "&:hover": { bgcolor: theme.palette.background.default },
+                                        "&.Mui-disabled": {
+                                            bgcolor: alpha(theme.palette.background.paper, 0.55),
+                                            color: alpha(theme.palette.text.primary, 0.55),
+                                        },
+                                    }}
+                                >
+                                    {parked ? this.tx("unpark") : this.tx("park_flat")}
+                                </Button>
+                            </Reason>
+                        ) : null
+                    }
+                />
+            </>
         );
+        return this.renderCard(props, content, autoSwitch);
     }
 }
