@@ -10,7 +10,7 @@
         "@module-federation/vite": "^1.23.0",
         "@mui/material": "^9.4.0",
         "@mui/system": "^9.5.0",
-        "@vitejs/plugin-react": "^5.2.0",
+        "@vitejs/plugin-react": "^6.2.1",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",
         "typescript": "^5.9.3",
