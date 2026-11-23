@@ -103,8 +103,8 @@ const PARAM_NAMES = {
   },
   // reset of the synchronous control (feature syncreset)
   syncResetElevation: {
-    en: "Reset contact of the synchronous control elevation (0 = off, 1 = J23, 2 = J5)",
-    de: "Reset-Kontakt der Synchronsteuerung Elevation (0 = aus, 1 = J23, 2 = J5)"
+    en: "Reset contact of the synchronous control elevation (0 = off, 1 = J23)",
+    de: "Reset-Kontakt der Synchronsteuerung Elevation (0 = aus, 1 = J23)"
   },
   syncResetAzimuth: {
     en: "Reset contact of the synchronous control azimuth (0 = off, 1 = J23)",

@@ -38,6 +38,9 @@ Los niveles de registro, las etiquetas y el cambio de nivel se describen en el [
 
 ## Changelog
 
+### 0.1.2 (2026-11-23)
+- (ssbingo) Reinicio del control síncrono solo mediante J23 (firmware 0.8.2): opción J5 eliminada
+
 ### 0.1.1 (2026-11-15)
 - (ssbingo) Compatibilidad con el firmware hasta 0.7.8: estados POSITION, COMMISSION y ASTRO; posición del sol; programa de puesta en marcha con informes de prueba; inclinación por orden con sensor Hall; reinicio del control síncrono; firmware por internet; inclinación en grados; denominaciones MÁS INCL./MÁS PLANO; nuevos ajustes; notificación si el programa de puesta en marcha no está terminado; nombres de objetos en 11 idiomas. Los estados de una función solo se crean si el firmware la comunica; widgets vis-2 resumen, mando, mensajes, valores, posición del sol y programa de puesta en marcha (React con MUI en el diseño de vis-2, tema claro y oscuro de vis-2, el contenido se adapta al tamaño del widget, 11 idiomas); nuevos estados `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` y `update.*`; la página de ajustes ya no repite el texto inglés en otros idiomas (puerto, partes del token, títulos)
 

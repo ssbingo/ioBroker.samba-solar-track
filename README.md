@@ -283,6 +283,9 @@ The token never appears in the log.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### 0.1.2 (2026-11-23)
+- (ssbingo) reset of the synchronous control only via J23 (firmware 0.8.2): option J5 removed from `syncResetPort` and from the description of `syncResetElevation`
+
 ### 0.1.1 (2026-11-15)
 - (ssbingo) firmware up to 0.7.8: states `POSITION`, `COMMISSION` and `ASTRO`; channel `sunPosition` (position of the sun, sunrise, sunset, night); channel `commissioning` with the setup program and its test reports (text and data set); tilt on command with Hall tap (`position`, `control.position`, `control.positionResume`); reset of the synchronous control (`axes.*.syncReset…`, `control.syncReset…`); firmware over the internet (`firmware`, `control.fwCheck`, `control.fwInstall`); tilt of the elevation in degrees; names STEEPER/FLATTER of the elevation directions; names of the new settings; notification when the setup program is not completed; every object name in 11 languages. States of a feature are created only when the firmware reports it; vis-2 widgets overview, control, messages, values, position of the sun and setup program (React with MUI in the design of vis-2, light and dark theme of vis-2, content scales with the widget, 11 languages); new states `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` and `update.*`; the settings page no longer repeats the English text in other languages (port, token parts, headings)
 

@@ -38,6 +38,9 @@ Log-Stufen, Tags und das Umschalten der Log-Stufe stehen im [englischen README](
 
 ## Changelog
 
+### 0.1.2 (2026-11-23)
+- (ssbingo) Reset der Synchronsteuerung nur noch über J23 (Firmware 0.8.2): Option J5 entfernt
+
 ### 0.1.1 (2026-11-15)
 - (ssbingo) Unterstützung der Firmware bis 0.7.8: Zustände POSITION, COMMISSION und ASTRO; Sonnenstand; Setup-Programm mit Prüfberichten; Neigung auf Befehl mit Hall-Abgriff; Reset der Synchronsteuerung; Firmware über das Internet; Neigung in Grad; Bezeichnungen STEILER/FLACHER; neue Einstellungen; Benachrichtigung bei nicht abgeschlossenem Setup-Programm; Objektnamen in 11 Sprachen. Datenpunkte eines Merkmals entstehen nur, wenn die Firmware es meldet; vis-2-Widgets Übersicht, Bedienung, Meldungen, Werte, Sonnenstand und Setup-Programm (React mit MUI im Design von vis-2, helles und dunkles Thema von vis-2, Inhalt skaliert mit dem Widget, 11 Sprachen); neue Datenpunkte `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` und `update.*`; die Einstellungsseite wiederholt in anderen Sprachen nicht mehr den englischen Text (Portnummer, Teile des Tokens, Überschriften)
 

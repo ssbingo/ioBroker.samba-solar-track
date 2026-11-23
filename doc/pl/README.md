@@ -38,6 +38,9 @@ Poziomy dziennika, znaczniki i zmiana poziomu są opisane w [angielskim README](
 
 ## Changelog
 
+### 0.1.2 (2026-11-23)
+- (ssbingo) Reset sterownika synchronicznego tylko przez J23 (oprogramowanie 0.8.2): usunięto opcję J5
+
 ### 0.1.1 (2026-11-15)
 - (ssbingo) Obsługa oprogramowania układowego do 0.7.8: stany POSITION, COMMISSION i ASTRO; położenie słońca; program uruchomieniowy z raportami z testów; nachylenie na polecenie z czujnikiem Halla; reset sterowania synchronicznego; oprogramowanie przez internet; nachylenie w stopniach; oznaczenia STROMIEJ/PŁASKIEJ; nowe ustawienia; powiadomienie o nieukończonym programie uruchomieniowym; nazwy obiektów w 11 językach. Stany danej funkcji powstają tylko wtedy, gdy oprogramowanie ją zgłasza; widżety vis-2: przegląd, sterowanie, komunikaty, wartości, położenie słońca i program uruchomieniowy (React z MUI w stylu vis-2, jasny i ciemny motyw vis-2, treść skaluje się z widżetem, 11 języków); nowe stany `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` i `update.*`; strona ustawień nie powtarza już tekstu angielskiego w innych językach (port sieciowy, części tokenu, nagłówki)
 

@@ -182,7 +182,8 @@ function syncResetStates(axis, mode) {
       },
       type: "string",
       role: "text",
-      states: { off: "off", j23: "J23", j5: "J5 (output azimuth PLUS)" },
+      states: { off: "off", j23: "J23" },
+      // J5 removed in firmware 0.8.2
       status: `${path}.port`,
       ...common
     },

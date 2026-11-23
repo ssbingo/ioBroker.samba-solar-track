@@ -38,6 +38,9 @@ Les niveaux de journalisation, les balises et le changement de niveau sont décr
 
 ## Changelog
 
+### 0.1.2 (2026-11-23)
+- (ssbingo) Réinitialisation de la commande synchrone uniquement via J23 (micrologiciel 0.8.2) : option J5 supprimée
+
 ### 0.1.1 (2026-11-15)
 - (ssbingo) Prise en charge du micrologiciel jusqu'à 0.7.8 : états POSITION, COMMISSION et ASTRO ; position du soleil ; programme de mise en service avec rapports d'essai ; inclinaison sur commande avec capteur Hall ; réinitialisation de la commande synchrone ; micrologiciel par Internet ; inclinaison en degrés ; libellés PLUS RAIDE/PLUS PLAT ; nouveaux réglages ; notification si le programme de mise en service n'est pas terminé ; noms des objets en 11 langues. Les états d'une fonction ne sont créés que si le micrologiciel la signale ; widgets vis-2 vue d'ensemble, commande, messages, valeurs, position du soleil et programme de mise en service (React avec MUI dans le style de vis-2, thème clair et sombre de vis-2, le contenu suit la taille du widget, 11 langues) ; nouveaux états `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` et `update.*` ; la page de configuration ne répète plus le texte anglais dans les autres langues (port réseau, parties du jeton, titres)
 

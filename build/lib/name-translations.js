@@ -2684,16 +2684,16 @@ const NAME_TRANSLATIONS = {
     uk: "\u041A\u0440\u043E\u043A\u0456\u0432 \u0425\u043E\u043B\u043B\u0430 \u043D\u0430 \u0445\u0456\u0434 (0 = \u043D\u0435 \u0432\u0438\u043C\u0456\u0440\u044F\u043D\u043E)",
     "zh-cn": "\u6BCF\u884C\u7A0B\u970D\u5C14\u6B65\u6570\uFF080 = \u672A\u6D4B\u91CF\uFF09"
   },
-  "Reset contact of the synchronous control elevation (0 = off, 1 = J23, 2 = J5)": {
-    ru: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441\u0431\u0440\u043E\u0441\u0430 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u043D\u043E\u0433\u043E \u043A\u043E\u043D\u0442\u0440\u043E\u043B\u043B\u0435\u0440\u0430 \u044D\u043B\u0435\u0432\u0430\u0446\u0438\u0438 (0 = \u0432\u044B\u043A\u043B., 1 = J23, 2 = J5)",
-    pt: "Contacto de reset do controlador s\xEDncrono da eleva\xE7\xE3o (0 = desligado, 1 = J23, 2 = J5)",
-    nl: "Resetcontact van de synchroonsturing elevatie (0 = uit, 1 = J23, 2 = J5)",
-    fr: "Contact de r\xE9initialisation de la commande synchrone \xE9l\xE9vation (0 = d\xE9sactiv\xE9, 1 = J23, 2 = J5)",
-    it: "Contatto di reset del controllo sincrono elevazione (0 = spento, 1 = J23, 2 = J5)",
-    es: "Contacto de reinicio del control s\xEDncrono de elevaci\xF3n (0 = desactivado, 1 = J23, 2 = J5)",
-    pl: "Styk resetu sterownika synchronicznego elewacji (0 = wy\u0142., 1 = J23, 2 = J5)",
-    uk: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441\u043A\u0438\u0434\u0430\u043D\u043D\u044F \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u043D\u043E\u0433\u043E \u043A\u043E\u043D\u0442\u0440\u043E\u043B\u0435\u0440\u0430 \u0435\u043B\u0435\u0432\u0430\u0446\u0456\u0457 (0 = \u0432\u0438\u043C\u043A., 1 = J23, 2 = J5)",
-    "zh-cn": "\u4EF0\u89D2\u540C\u6B65\u63A7\u5236\u5668\u590D\u4F4D\u89E6\u70B9\uFF080 = \u5173\u95ED\uFF0C1 = J23\uFF0C2 = J5\uFF09"
+  "Reset contact of the synchronous control elevation (0 = off, 1 = J23)": {
+    ru: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441\u0431\u0440\u043E\u0441\u0430 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u043D\u043E\u0433\u043E \u043A\u043E\u043D\u0442\u0440\u043E\u043B\u043B\u0435\u0440\u0430 \u044D\u043B\u0435\u0432\u0430\u0446\u0438\u0438 (0 = \u0432\u044B\u043A\u043B., 1 = J23)",
+    pt: "Contacto de reset do controlador s\xEDncrono da eleva\xE7\xE3o (0 = desligado, 1 = J23)",
+    nl: "Resetcontact van de synchroonsturing elevatie (0 = uit, 1 = J23)",
+    fr: "Contact de r\xE9initialisation de la commande synchrone \xE9l\xE9vation (0 = d\xE9sactiv\xE9, 1 = J23)",
+    it: "Contatto di reset del controllo sincrono elevazione (0 = spento, 1 = J23)",
+    es: "Contacto de reinicio del control s\xEDncrono de elevaci\xF3n (0 = desactivado, 1 = J23)",
+    pl: "Styk resetu sterownika synchronicznego elewacji (0 = wy\u0142., 1 = J23)",
+    uk: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441\u043A\u0438\u0434\u0430\u043D\u043D\u044F \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u043D\u043E\u0433\u043E \u043A\u043E\u043D\u0442\u0440\u043E\u043B\u0435\u0440\u0430 \u0435\u043B\u0435\u0432\u0430\u0446\u0456\u0457 (0 = \u0432\u0438\u043C\u043A., 1 = J23)",
+    "zh-cn": "\u4EF0\u89D2\u540C\u6B65\u63A7\u5236\u5668\u590D\u4F4D\u89E6\u70B9\uFF080 = \u5173\u95ED\uFF0C1 = J23\uFF09"
   },
   "Reset contact of the synchronous control azimuth (0 = off, 1 = J23)": {
     ru: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441\u0431\u0440\u043E\u0441\u0430 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u043D\u043E\u0433\u043E \u043A\u043E\u043D\u0442\u0440\u043E\u043B\u043B\u0435\u0440\u0430 \u0430\u0437\u0438\u043C\u0443\u0442\u0430 (0 = \u0432\u044B\u043A\u043B., 1 = J23)",

@@ -38,6 +38,9 @@ Logniveaus, tags en het omschakelen van het logniveau staan in de [Engelse READM
 
 ## Changelog
 
+### 0.1.2 (2026-11-23)
+- (ssbingo) Reset van de synchroonsturing alleen nog via J23 (firmware 0.8.2): optie J5 verwijderd
+
 ### 0.1.1 (2026-11-15)
 - (ssbingo) Ondersteuning van firmware tot 0.7.8: toestanden POSITION, COMMISSION en ASTRO; zonnestand; installatieprogramma met testrapporten; helling op commando met Hall-sensor; reset van de synchroonbesturing; firmware via internet; helling in graden; benamingen STEILER/VLAKKER; nieuwe instellingen; melding bij een niet voltooid installatieprogramma; objectnamen in 11 talen. Datapunten van een functie worden alleen aangemaakt als de firmware die meldt; vis-2-widgets overzicht, bediening, meldingen, waarden, zonnestand en installatieprogramma (React met MUI in de vormgeving van vis-2, licht en donker thema van vis-2, inhoud schaalt mee met de widget, 11 talen); nieuwe datapunten `battery.*`, `supply.v24`, `supply.v5`, `supply.adcOk`, `supply.checks` en `update.*`; de instellingenpagina herhaalt in andere talen niet meer de Engelse tekst (poort, delen van het token, koppen)
 
